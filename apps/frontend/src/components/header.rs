@@ -11,11 +11,8 @@ pub fn header() -> Html {
                 // Logo / Brand
                 <div class="flex items-center gap-6">
                     <Link<Route> to={Route::Home} classes="flex items-center gap-2 group">
-                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex items-center justify-center text-white font-bold text-lg group-hover:scale-105 transition-transform">
-                            {"M"}
-                        </div>
                         <span class="text-xl font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
-                            {"Legacy Viewer"}
+                            {"MP Stats Legacy Viewer"}
                         </span>
                     </Link<Route>>
 
