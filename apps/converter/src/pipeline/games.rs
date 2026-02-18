@@ -47,7 +47,7 @@ pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -
             if latest.exists() {
                 if let Ok(file) = File::open(latest.join("_meta.json")) {
                     if let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file)) {
-                        count = meta.entries;
+                        count = meta.total_entries;
                     }
                 }
             }
