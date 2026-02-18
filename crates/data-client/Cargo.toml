@@ -1,0 +1,17 @@
+[package]
+name = "mp-stats-data-client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mp-stats-core = { workspace = true }
+serde = { workspace = true }
+smol_str = { workspace = true }
+postcard = { workspace = true }
+flate2 = { workspace = true }
+lzma-rs = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+csv = { workspace = true }
+gloo-net = { workspace = true }
+gloo-console = { workspace = true }
