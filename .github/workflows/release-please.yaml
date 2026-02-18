@@ -11,7 +11,7 @@ concurrency:
 permissions: { }
 
 env:
-  DOCKER_REPO: timmi6790/mp-stats-legacy-viewer
+  DOCKER_REPO: timschoenle/mp-stats-legacy-viewer
   HELM_REPO: TimSchoenle/helm-charts
   CHART_PATH: charts/mp-stats-legacy-viewer
 
