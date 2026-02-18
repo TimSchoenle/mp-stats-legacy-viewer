@@ -1,0 +1,22 @@
+[package]
+name = "mp-stats-converter"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "converter"
+path = "src/main.rs"
+
+[dependencies]
+mp-stats-core = { workspace = true }
+mp-stats-common = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+smol_str = { workspace = true }
+anyhow = { workspace = true }
+walkdir = { workspace = true }
+rayon = { workspace = true }
+binary-layout = {workspace = true}
+lzma-rs = { workspace = true }
+tar = {workspace = true}
+dashmap = {workspace = true}
