@@ -13,8 +13,6 @@ pub fn process_java_players(
     java_out: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
-    // Input: java/players/SHARD.json.xz (Stride Arrays)
-    // Output: java/players/PREFIX.bin (LZMA Postcard, e.g. EF4.bin)
     let players_in = java_in.join("players");
     let players_out = java_out.join("players");
     fs::create_dir_all(&players_out)?;
@@ -39,7 +37,7 @@ pub fn process_java_players(
         }
     }
 
-    println!("Found {} V13 player shards to process.", files.len());
+    println!("Found {} player shards to process.", files.len());
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
     // Using DashMap for concurrent access
