@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-dark-950 text-gray-200 font-sans antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-bold tracking-tight text-white;
+    }
+}
+
+@layer components {
+    .card {
+        @apply bg-dark-850 border border-gray-700 shadow-lg rounded-lg;
+    }
+
+    .btn-primary {
+        @apply px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors shadow-md active:scale-95;
+    }
+
+    .nav-link {
+        @apply px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors;
+    }
+
+    .nav-link.active {
+        @apply text-white bg-gray-800 font-semibold;
+    }
+
+    .stat-row {
+        @apply flex justify-between items-center py-2 border-b border-gray-700/50 last:border-0;
+    }
+
+    .rank-badge {
+        @apply px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 text-xs font-mono;
+    }
+}
