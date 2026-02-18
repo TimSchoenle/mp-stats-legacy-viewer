@@ -56,7 +56,7 @@ pub fn process_dictionary_and_names(
                         }
                         local_ids.insert(id, (uuid, name));
                     } else {
-                        local_ids.insert(id, (uuid, "unknown".to_string()));
+                        local_ids.insert(id, (uuid.clone(), uuid.to_string()));
                     }
                 }
                 Ok((local_names, local_ids))
