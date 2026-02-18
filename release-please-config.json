@@ -6,6 +6,7 @@
   "packages": {
     ".": {
       "release-type": "rust",
+      "package-name": "mp-stats-workspace",
       "draft": false,
       "prerelease": false,
       "include-component-in-tag": false,
