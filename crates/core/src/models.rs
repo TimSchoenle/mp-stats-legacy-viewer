@@ -50,7 +50,6 @@ pub struct LeaderboardMeta {
 pub struct GameLeaderboardData {
     pub game_id: SmolStr,
     pub game_name: SmolStr,
-    // Map<StatId, Map<BoardId, LeaderboardMeta>>
     pub stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>>,
 }
 
@@ -262,9 +261,7 @@ pub struct NameLookup {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct MetaFile {
-    pub total_pages: u32,
-    pub entries: u32,
-    pub save_time: u64,
+    pub total_entries: u32,
 }
 
 // --- Historical Leaderboard Models ---

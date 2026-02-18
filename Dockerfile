@@ -52,10 +52,6 @@ COPY . .
 # Build the server (default glibc target)
 RUN cargo build --release -p mp-stats-server
 
-# =============================================================================
-# Stage 2: Runtime — Debian slim (~80MB, minimal attack surface)
-# Contains only: the server binary, assets, data, and CA certificates.
-# =============================================================================
 FROM debian:bookworm-slim
 
 RUN apt-get update \
