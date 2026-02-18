@@ -1064,7 +1064,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-converter"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "binary-layout",
@@ -1082,7 +1082,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-core"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-data-client"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1111,7 +1111,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-data-server"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1123,7 +1123,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-frontend"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "mp-stats-core",
  "mp-stats-data-client",
@@ -1136,7 +1136,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-server"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "axum",
  "clap",
