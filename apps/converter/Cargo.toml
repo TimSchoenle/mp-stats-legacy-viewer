@@ -1,6 +1,6 @@
 [package]
 name = "mp-stats-converter"
-version = "0.0.1"
+version = "0.2.0"
 edition.workspace = true
 
 [[bin]]
