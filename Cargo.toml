@@ -2,6 +2,11 @@
 version = "0.0.1"
 edition = "2024"
 
+[package]
+name = "mp-stats-platform"
+version = "0.1.0"
+publish = false
+
 [workspace]
 members = [
     "crates/core",
