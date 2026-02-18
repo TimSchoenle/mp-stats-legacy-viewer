@@ -1,0 +1,34 @@
+[package]
+name = "mp-stats-frontend"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "mp-stats-frontend"
+path = "src/main.rs"
+
+[dependencies]
+mp-stats-core = { workspace = true }
+yew = { workspace = true }
+yew-router = { workspace = true }
+serde = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+web-sys = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+mp-stats-data-client = { workspace = true }
+
+[profile.release]
+# less code to include into binary
+panic = 'abort'
+# optimization over all codebase ( better optimization, slower build )
+codegen-units = 1
+# optimization for size ( more aggressive )
+opt-level = 'z'
+# optimization for size
+# opt-level = 's'
+# link time optimization using using whole-program analysis
+lto = true

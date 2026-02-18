@@ -1,0 +1,12 @@
+[build]
+target = "index.html"
+release = true
+dist = "dist"
+public_url = "/"
+
+[tools]
+# wasm_opt = "version_latest"
+
+[[proxy]]
+rewrite = "/data/"
+backend = "http://127.0.0.1:8081/data/"

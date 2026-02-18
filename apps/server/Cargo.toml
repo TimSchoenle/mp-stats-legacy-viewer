@@ -1,0 +1,19 @@
+[package]
+name = "mp-stats-server"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
+
+[dependencies]
+mp-stats-core = { workspace = true }
+mp-stats-data-server = { workspace = true }
+mp-stats-frontend = { workspace = true }
+yew = { workspace = true, features = ["ssr"]}
+yew-router = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+clap = { workspace = true }
