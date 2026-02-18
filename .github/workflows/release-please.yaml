@@ -1,0 +1,138 @@
+name: release-please
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: { }
+
+env:
+  DOCKER_REPO: timmi6790/mp-stats-legacy-viewer
+  HELM_REPO: TimSchoenle/helm-charts
+  CHART_PATH: charts/mp-stats-legacy-viewer
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create release commits and tags
+      issues: write # Required to create release issues
+      pull-requests: write # Required to create release PRs
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Generate Bot Token
+        id: generate_token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        with:
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
+        id: release
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+
+  docker-release:
+    name: Docker Release
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Required to checkout the code
+      id-token: write # Required for OIDC authentication with Cosign
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ env.DOCKER_REPO }}
+          tags: |
+            type=raw,value=${{ needs.release-please.outputs.tag_name }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            version=${{ needs.release-please.outputs.tag_name }}
+            release=${{ needs.release-please.outputs.tag_name }}
+            vendor=Tim Schönle
+            VERSION=${{ needs.release-please.outputs.tag_name }}
+
+      - name: Sign the images with GitHub OIDC Token
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          images=""
+          for tag in ${TAGS}; do
+            images+="${tag}@${DIGEST} "
+          done
+          cosign sign --yes ${images}
+
+  helm-release:
+    name: Helm Release
+    needs: [ release-please, docker-release ]
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Required to checkout the code
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - uses: TimSchoenle/actions/actions/helm/update-chart-version@17b3a87c2fce68d0ed7837394ff91fae6a7fe834 # actions-helm-update-chart-version-v1.4.5
+        with:
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          helm-repo: ${{ env.HELM_REPO }}
+          chart-path: ${{ env.CHART_PATH }}
+          new-tag: ${{ needs.release-please.outputs.tag_name }}
+          image-digest: ${{ needs.docker-release.outputs.image_digest }}
