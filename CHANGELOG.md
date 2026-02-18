@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.2.0...v0.2.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* incorrect docker repo ([385c056](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/385c056e02450479705e02d4598f001a0094bde5))
+
 ## [0.2.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.1.0...v0.2.0) (2026-02-18)
 
 
