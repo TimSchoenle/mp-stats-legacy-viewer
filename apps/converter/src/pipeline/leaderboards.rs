@@ -1,13 +1,13 @@
 use anyhow::Result;
-use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
-use mp_stats_common::formats::FILE_META;
+use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
+use mp_stats_common::formats::FILE_META;
 use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{BufReader, Read};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -255,10 +255,7 @@ fn process_history(
     println!("Extracting history archive: {}", history_in.display());
 
     // Decompress the .xz file first
-    let file = File::open(&history_in)?;
-    let mut reader = BufReader::new(file);
-    let mut decompressed_tar = Vec::new();
-    lzma_rs::xz_decompress(&mut reader, &mut decompressed_tar)?;
+    let decompressed_tar = read_lzma_raw(&*history_in)?;
 
     // Now extract the tar archive
     let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
