@@ -1,4 +1,4 @@
-FROM rust:1.85-slim@sha256:9f841bbe9e7d8e37ceb96ed907265a3a0df7f44e3737d0b100e7907a679acb36 AS base
+FROM rust:1.93-slim@sha256:9663b80a1621253d30b146454f903de48f0af925c967be48c84745537cd35d8b AS base
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
