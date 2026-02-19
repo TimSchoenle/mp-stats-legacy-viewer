@@ -1,5 +1,5 @@
-use crate::components::search_bar::SearchBar;
 use crate::Route;
+use crate::components::search_bar::SearchBar;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;

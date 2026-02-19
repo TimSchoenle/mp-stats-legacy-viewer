@@ -6,9 +6,7 @@ pub enum Route {
     #[at("/")]
     Home,
     #[at("/:edition")]
-    Landing {
-        edition: PlatformEdition
-    },
+    Landing { edition: PlatformEdition },
     #[at("/:edition/game/:game")]
     Game {
         edition: PlatformEdition,
