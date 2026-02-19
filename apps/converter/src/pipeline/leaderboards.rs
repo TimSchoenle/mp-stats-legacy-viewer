@@ -1,7 +1,7 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
-use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
 use mp_stats_common::formats::FILE_META;
+use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
 use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
 use rayon::prelude::*;
 use smol_str::SmolStr;
