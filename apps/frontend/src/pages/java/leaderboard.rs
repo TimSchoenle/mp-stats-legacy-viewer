@@ -2,15 +2,15 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+use crate::Route;
 use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::{DataProviderWrapper, ENTRIES_PER_PAGE_F64};
 use yew::platform::spawn_local;
 use yew::{
-    function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties,
+    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
 };
 
 const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
@@ -115,7 +115,10 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
                     snapshots_loading.set(true);
                     spawn_local(async move {
-                        match provider.fetch_history_snapshots(&edition, &board, &game, &stat).await {
+                        match provider
+                            .fetch_history_snapshots(&edition, &board, &game, &stat)
+                            .await
+                        {
                             Ok(mut data) => {
                                 // Sort by timestamp descending (newest first)
                                 data.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -194,13 +197,23 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                         spawn_local(async move {
                             let result = if snapshot == "latest" {
                                 provider
-                                    .fetch_leaderboard(&props.edition, &board, &game, &stat, page_idx)
+                                    .fetch_leaderboard(
+                                        &props.edition,
+                                        &board,
+                                        &game,
+                                        &stat,
+                                        page_idx,
+                                    )
                                     .await
                             } else {
                                 provider
                                     .fetch_history_leaderboard(
                                         &props.edition,
-                                        &board, &game, &stat, &snapshot, page_idx,
+                                        &board,
+                                        &game,
+                                        &stat,
+                                        &snapshot,
+                                        page_idx,
                                     )
                                     .await
                             };
