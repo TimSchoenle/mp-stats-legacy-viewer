@@ -9,14 +9,19 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-FROM base AS frontend
+FROM base AS frontend_base
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y nodejs npm
+RUN cd apps/frontend & npm init -y && npm install tailwindcss @tailwindcss/cli
 
 # Install Trunk for WASM builds
 RUN cargo install --locked trunk
 
 # Add WASM build target
 RUN rustup target add wasm32-unknown-unknown
+
+FROM frontend_base AS frontend
 
 COPY . .
 
