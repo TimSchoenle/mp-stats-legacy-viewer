@@ -39,37 +39,31 @@ pub struct PreloadedLeaderboardData(pub Vec<LeaderboardEntry>);
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 pub trait DataProvider {
-    async fn fetch_java_meta(&self) -> Result<JavaMeta>;
-    async fn fetch_id_map(&self) -> Result<IdMap>;
+    async fn fetch_meta(&self, edition: &PlatformEdition,
+    ) -> Result<JavaMeta>;
+    async fn fetch_id_map(&self, edition: &PlatformEdition,
+    ) -> Result<IdMap>;
 
-    async fn fetch_java_leaderboard(
+    async fn fetch_leaderboard(
         &self,
+        edition: &PlatformEdition,
         board: &str,
         game: &str,
         stat: &str,
         chunk: u32,
     ) -> Result<Vec<LeaderboardEntry>>;
-    async fn fetch_java_player(&self, uuid: &str) -> Result<JavaPlayerProfile>;
+    async fn fetch_player(&self, edition: &PlatformEdition,
+                          uuid: &str) -> Result<JavaPlayerProfile>;
 
-    async fn fetch_bedrock_leaderboard(
-        &self,
-        board: &str,
-        game: &str,
-        stat: &str,
-        chunk: u32,
-    ) -> Result<Vec<BedrockLeaderboardChunk>>;
-    async fn fetch_bedrock_player(&self, name: &str) -> Result<BedrockPlayerProfile>;
+    async fn find_player_uuid(&self, edition: &PlatformEdition,
+                              name: &str) -> Result<Option<NameLookup>>;
 
-    async fn find_player_uuid(&self, name: &str) -> Result<Option<NameLookup>>;
-
-    async fn fetch_bedrock_meta(&self) -> Result<BedrockMeta>;
-    async fn fetch_bedrock_game_stats(&self, game_id: &str) -> Result<BedrockGameData>;
-
-    async fn fetch_game_leaderboards(&self, game_id: &str) -> Result<GameLeaderboardData>;
+    async fn fetch_game_leaderboards(&self, edition: &PlatformEdition, game_id: &str) -> Result<GameLeaderboardData>;
 
     // History leaderboard methods
     async fn fetch_history_snapshots(
         &self,
+        edition: &PlatformEdition,
         board: &str,
         game: &str,
         stat: &str,
@@ -77,6 +71,7 @@ pub trait DataProvider {
 
     async fn fetch_history_leaderboard(
         &self,
+        edition: &PlatformEdition,
         board: &str,
         game: &str,
         stat: &str,

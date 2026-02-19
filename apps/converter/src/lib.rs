@@ -3,7 +3,7 @@ pub mod models;
 pub mod pipeline;
 
 use anyhow::Result;
-use mp_stats_core::models::IdMap;
+use mp_stats_core::models::{IdMap, PlatformEdition};
 use std::path::{Path, PathBuf};
 
 pub use io::{
@@ -45,34 +45,35 @@ impl Converter {
         // Setup staging
         setup_staging_directory(&self.staging_dir)?;
 
-        // Setup Java directories
-        let java_in = self.input_dir.join("java");
-        let java_out = self.staging_dir.join("java");
-        std::fs::create_dir_all(&java_out)?;
+        let edition_iter = PlatformEdition::iter();
+        for edition in edition_iter {
+            println!("Processing {}", edition.display_name());
 
-        // Step 1: Process Metadata & Build ID Maps
-        println!("Step 1: Processing Metadata...");
-        let id_map = self.process_metadata(&java_in, &java_out)?;
+            // Setup directories
+            let directory_in = self.input_dir.join(edition.directory_name());
+            let directory_out = self.staging_dir.join(edition.directory_name());
+            std::fs::create_dir_all(&directory_out)?;
 
-        // Step 2: Dictionary & Names Index
-        println!("Step 2: Processing Dictionary & Names...");
-        let lookup_map = process_dictionary_and_names(&java_in, &java_out)?;
+            // Step 1: Process Metadata & Build ID Maps
+            println!("Step 1: Processing Metadata...");
+            let id_map = self.process_metadata(&directory_in, &directory_out)?;
 
-        // Step 3: Process Java Leaderboards
-        println!("Step 3: Processing Leaderboards...");
-        process_java_leaderboards(&java_in, &java_out, &id_map, &lookup_map)?;
+            // Step 2: Dictionary & Names Index
+            println!("Step 2: Processing Dictionary & Names...");
+            let lookup_map = process_dictionary_and_names(&directory_in, &directory_out)?;
 
-        // Step 3b: Process Game Metadata
-        println!("Step 3b: Processing Game Metadata...");
-        process_game_metadata(&java_in, &java_out, &id_map)?;
+            // Step 3: Process Leaderboards
+            println!("Step 3: Processing Leaderboards...");
+            process_java_leaderboards(&directory_in, &directory_out, &id_map, &lookup_map)?;
 
-        // Step 3c: Process Java Players
-        println!("Step 3c: Processing Java Players...");
-        process_java_players(&java_in, &java_out, &lookup_map)?;
+            // Step 3b: Process Game Metadata
+            println!("Step 3b: Processing Game Metadata...");
+            process_game_metadata(&directory_in, &directory_out, &id_map)?;
 
-        // Step 4: Bedrock (Copy optimized)
-        println!("Step 4: Processing Bedrock (Copying)...");
-        self.process_bedrock()?;
+            // Step 3c: Process Java Players
+            println!("Step 3c: Processing Players...");
+            process_java_players(&directory_in, &directory_out, &lookup_map)?;
+        }
 
         // Step 5: Finalize
         println!("Step 5: Finalizing Output...");
@@ -98,17 +99,5 @@ impl Converter {
         mp_stats_common::compression::write_lzma_bin(&map_out, &id_map)?;
 
         Ok(id_map)
-    }
-
-    fn process_bedrock(&self) -> Result<()> {
-        let bedrock_in = self.input_dir.join("bedrock");
-        let bedrock_out = self.staging_dir.join("bedrock");
-
-        if !bedrock_in.exists() {
-            return Ok(());
-        }
-
-        copy_dir_all(&bedrock_in, &bedrock_out)?;
-        Ok(())
     }
 }
