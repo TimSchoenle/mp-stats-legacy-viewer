@@ -18,18 +18,45 @@ pub fn game_bin(edition: &PlatformEdition, game_id: &str) -> String {
     format!("{}/games/{game_id}.bin", edition.directory_name())
 }
 
-pub fn leaderboard_chunk_bin(edition: &PlatformEdition, board: &str, game: &str, stat: &str, chunk: u32) -> String {
+pub fn leaderboard_chunk_bin(
+    edition: &PlatformEdition,
+    board: &str,
+    game: &str,
+    stat: &str,
+    chunk: u32,
+) -> String {
     let filename = chunk_filename(chunk);
-    format!("{}/leaderboards/{board}/{game}/{stat}/latest/{filename}", edition.directory_name())
+    format!(
+        "{}/leaderboards/{board}/{game}/{stat}/latest/{filename}",
+        edition.directory_name()
+    )
 }
 
-pub fn history_leaderboard_chunk_bin(edition: &PlatformEdition, board: &str, game: &str, stat: &str, snapshot_id: &str, chunk: u32) -> String {
+pub fn history_leaderboard_chunk_bin(
+    edition: &PlatformEdition,
+    board: &str,
+    game: &str,
+    stat: &str,
+    snapshot_id: &str,
+    chunk: u32,
+) -> String {
     let filename = chunk_filename(chunk);
-    format!("{}/leaderboards/{board}/{game}/{stat}/history/{snapshot_id}/{filename}", edition.directory_name())
+    format!(
+        "{}/leaderboards/{board}/{game}/{stat}/history/{snapshot_id}/{filename}",
+        edition.directory_name()
+    )
 }
 
-pub fn history_snapshots_meta(edition: &PlatformEdition, board: &str, game: &str, stat: &str) -> String {
-    format!("{}/leaderboards/{board}/{game}/{stat}/history/_snapshots.json", edition.directory_name())
+pub fn history_snapshots_meta(
+    edition: &PlatformEdition,
+    board: &str,
+    game: &str,
+    stat: &str,
+) -> String {
+    format!(
+        "{}/leaderboards/{board}/{game}/{stat}/history/_snapshots.json",
+        edition.directory_name()
+    )
 }
 
 pub fn player_shard_bin(edition: &PlatformEdition, shard: &str) -> String {

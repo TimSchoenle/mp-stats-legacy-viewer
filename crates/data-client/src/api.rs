@@ -1,6 +1,9 @@
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
-use mp_stats_core::models::{GameLeaderboardData, IdMap, JavaLeaderboardPage, JavaMeta, JavaPlayerProfile, LeaderboardEntry, NameLookup, PlatformEdition};
+use mp_stats_core::models::{
+    GameLeaderboardData, IdMap, JavaLeaderboardPage, JavaMeta, JavaPlayerProfile, LeaderboardEntry,
+    NameLookup, PlatformEdition,
+};
 use mp_stats_core::routes;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -62,7 +65,11 @@ pub async fn fetch_game_leaderboards(
 }
 
 pub async fn fetch_meta(edition: &PlatformEdition) -> Result<JavaMeta, gloo_net::Error> {
-    let id_map = fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition))).await.ok_or(gloo_net::Error::GlooError("Failed to fetch id map".to_string()))?;
+    let id_map = fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
+        .await
+        .ok_or(gloo_net::Error::GlooError(
+            "Failed to fetch id map".to_string(),
+        ))?;
 
     let mut games: Vec<mp_stats_core::models::Game> = id_map
         .games
@@ -79,8 +86,9 @@ pub async fn fetch_meta(edition: &PlatformEdition) -> Result<JavaMeta, gloo_net:
 }
 
 pub async fn fetch_id_map(edition: &PlatformEdition) -> Result<IdMap, gloo_net::Error> {
-    if let Some(map) = fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition))).await {
-        return Ok(map)
+    if let Some(map) = fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition))).await
+    {
+        return Ok(map);
     }
 
     Err(gloo_net::Error::GlooError(
@@ -176,8 +184,10 @@ pub async fn fetch_player(
     ))
 }
 
-pub async fn find_player_uuid(edition: &PlatformEdition,
-                              name: &str) -> Result<Option<NameLookup>, gloo_net::Error> {
+pub async fn find_player_uuid(
+    edition: &PlatformEdition,
+    name: &str,
+) -> Result<Option<NameLookup>, gloo_net::Error> {
     if name.len() < 3 {
         return Ok(None);
     }
@@ -185,7 +195,11 @@ pub async fn find_player_uuid(edition: &PlatformEdition,
 
     // Fetch names_index/{prefix}.bin
     // TODO: MAKE ME COMPATIBLE WITH BEDROCK
-    let url = format!("/data/{}/names_index/{}.bin", edition.directory_name(), prefix);
+    let url = format!(
+        "/data/{}/names_index/{}.bin",
+        edition.directory_name(),
+        prefix
+    );
 
     if let Some(map) = fetch_bin::<HashMap<String, String>>(&url).await {
         if let Some(uuid) = map.get(name) {
@@ -248,14 +262,12 @@ pub async fn fetch_history_leaderboard(
             .zip(page.uuids)
             .zip(page.names)
             .zip(page.scores)
-            .map(
-                |(((rank, uuid), name), score)| LeaderboardEntry {
-                    rank,
-                    uuid,
-                    name,
-                    score,
-                },
-            )
+            .map(|(((rank, uuid), name), score)| LeaderboardEntry {
+                rank,
+                uuid,
+                name,
+                score,
+            })
             .collect();
 
         return Ok(entries);

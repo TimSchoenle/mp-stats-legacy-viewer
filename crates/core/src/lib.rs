@@ -39,10 +39,8 @@ pub struct PreloadedLeaderboardData(pub Vec<LeaderboardEntry>);
 #[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
 pub trait DataProvider {
-    async fn fetch_meta(&self, edition: &PlatformEdition,
-    ) -> Result<JavaMeta>;
-    async fn fetch_id_map(&self, edition: &PlatformEdition,
-    ) -> Result<IdMap>;
+    async fn fetch_meta(&self, edition: &PlatformEdition) -> Result<JavaMeta>;
+    async fn fetch_id_map(&self, edition: &PlatformEdition) -> Result<IdMap>;
 
     async fn fetch_leaderboard(
         &self,
@@ -52,13 +50,23 @@ pub trait DataProvider {
         stat: &str,
         chunk: u32,
     ) -> Result<Vec<LeaderboardEntry>>;
-    async fn fetch_player(&self, edition: &PlatformEdition,
-                          uuid: &str) -> Result<JavaPlayerProfile>;
+    async fn fetch_player(
+        &self,
+        edition: &PlatformEdition,
+        uuid: &str,
+    ) -> Result<JavaPlayerProfile>;
 
-    async fn find_player_uuid(&self, edition: &PlatformEdition,
-                              name: &str) -> Result<Option<NameLookup>>;
+    async fn find_player_uuid(
+        &self,
+        edition: &PlatformEdition,
+        name: &str,
+    ) -> Result<Option<NameLookup>>;
 
-    async fn fetch_game_leaderboards(&self, edition: &PlatformEdition, game_id: &str) -> Result<GameLeaderboardData>;
+    async fn fetch_game_leaderboards(
+        &self,
+        edition: &PlatformEdition,
+        game_id: &str,
+    ) -> Result<GameLeaderboardData>;
 
     // History leaderboard methods
     async fn fetch_history_snapshots(

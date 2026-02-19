@@ -342,10 +342,7 @@ impl PlatformEdition {
         }
     }
 
-    pub const VARIANTS: [Self; 2] = [
-        Self::Java,
-        Self::Bedrock
-    ];
+    pub const VARIANTS: [Self; 2] = [Self::Java, Self::Bedrock];
 
     pub fn iter() -> std::slice::Iter<'static, Self> {
         Self::VARIANTS.iter()

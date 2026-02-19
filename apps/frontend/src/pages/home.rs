@@ -13,7 +13,7 @@ pub fn home() -> Html {
                 <Link<Route> to={Route::Landing {edition: PlatformEdition::Java}} classes="p-10 bg-green-600 rounded-lg shadow-xl hover:bg-green-500 transition transform hover:scale-105">
                     <h2 class="text-3xl font-bold">{ "Java Edition" }</h2>
                 </Link<Route>>
-        
+
                 <Link<Route> to={Route::Landing {edition: PlatformEdition::Bedrock}} classes="p-10 bg-green-600 rounded-lg shadow-xl hover:bg-green-500 transition transform hover:scale-105">
                     <h2 class="text-3xl font-bold">{ "Bedrock Edition" }</h2>
                 </Link<Route>>

@@ -1,6 +1,6 @@
 use crate::Route;
-use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::DataProviderWrapper;
+use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -18,24 +18,27 @@ pub fn java_landing(props: &JavaLandingProps) -> Html {
     {
         let games = games.clone();
 
-        use_effect_with((context, props.edition.clone()), move |(ctx, current_edition)| {
-            if let Some(provider) = ctx {
-                let provider = provider.0.clone();
-                let edition_to_fetch = current_edition.clone();
+        use_effect_with(
+            (context, props.edition.clone()),
+            move |(ctx, current_edition)| {
+                if let Some(provider) = ctx {
+                    let provider = provider.0.clone();
+                    let edition_to_fetch = current_edition.clone();
 
-                // Clear games
-                games.set(vec![]);
+                    // Clear games
+                    games.set(vec![]);
 
-                spawn_local(async move {
-                    if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
-                        games.set(meta.games);
-                    } else {
-                        games.set(vec![]);
-                    }
-                });
-            }
-            || ()
-        });
+                    spawn_local(async move {
+                        if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
+                            games.set(meta.games);
+                        } else {
+                            games.set(vec![]);
+                        }
+                    });
+                }
+                || ()
+            },
+        );
     }
 
     html! {

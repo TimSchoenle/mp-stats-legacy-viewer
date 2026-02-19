@@ -1,7 +1,7 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
-use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
 use mp_stats_common::formats::FILE_META;
+use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
 use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
 use rayon::prelude::*;
 use smol_str::SmolStr;
@@ -151,7 +151,12 @@ fn process_binary_chunks(
         for i in 0..count {
             let offset = i * LEADERBOARD_SIZE;
             if offset + LEADERBOARD_SIZE > chunk_data.len() {
-                eprintln!("Invalid chunk data: offset {} + size {} > chunk size {}", offset, LEADERBOARD_SIZE, chunk_data.len());
+                eprintln!(
+                    "Invalid chunk data: offset {} + size {} > chunk size {}",
+                    offset,
+                    LEADERBOARD_SIZE,
+                    chunk_data.len()
+                );
                 break;
             }
 
@@ -211,7 +216,11 @@ fn process_binary_chunks(
         }
     }
 
-    println!("Processed {} chunks with {} total entries", chunks.len(), total_entries_written);
+    println!(
+        "Processed {} chunks with {} total entries",
+        chunks.len(),
+        total_entries_written
+    );
 
     Ok((output_index, total_entries_written))
 }
