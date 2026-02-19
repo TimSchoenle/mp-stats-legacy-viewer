@@ -16,7 +16,7 @@ smol_str = { workspace = true }
 anyhow = { workspace = true }
 walkdir = { workspace = true }
 rayon = { workspace = true }
-binary-layout = {workspace = true}
-lzma-rs = { workspace = true }
-tar = {workspace = true}
-dashmap = {workspace = true}
+binary-layout = { workspace = true }
+lzma-rust2 = { workspace = true }
+tar = { workspace = true }
+dashmap = { workspace = true }

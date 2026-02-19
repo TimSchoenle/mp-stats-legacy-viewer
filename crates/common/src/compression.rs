@@ -1,5 +1,7 @@
 use crate::error::{DataError, Result};
+use lzma_rust2::{XzOptions, XzReader, XzWriter};
 use std::fs::File;
+use std::io;
 use std::io::{BufReader, BufWriter, Cursor, Read, Write};
 use std::path::Path;
 
@@ -11,13 +13,15 @@ pub fn write_lzma_bin<T: serde::Serialize>(path: &Path, data: &T) -> Result<()> 
 
 /// Write raw bytes with LZMA compression
 pub fn write_lzma_raw(path: &Path, data: &[u8]) -> Result<()> {
+    let mut reader = Cursor::new(data);
+
     let file = File::create(path).map_err(|e| DataError::Io(e))?;
-    let mut writer = BufWriter::new(file);
+    let writer = BufWriter::new(file);
 
-    lzma_rs::xz_compress(&mut Cursor::new(data), &mut writer)
-        .map_err(|e| DataError::Compression(format!("LZMA compression failed: {}", e)))?;
-
-    writer.flush().map_err(|e| DataError::Io(e))?;
+    // TODO: SHOULD PROBABLY RUN in with_preset(9) mode for prod release
+    let mut writer = XzWriter::new(writer, XzOptions::default())?;
+    io::copy(&mut reader, &mut writer).map_err(|e| DataError::Io(e))?;
+    writer.finish().map_err(|e| DataError::Io(e))?;
 
     Ok(())
 }
@@ -34,41 +38,23 @@ pub fn read_lzma_raw(path: &Path) -> Result<Vec<u8>> {
     let file = File::open(path)
         .map_err(|e| DataError::FileNotFound(format!("{}: {}", path.display(), e)))?;
 
-    let mut reader = BufReader::new(file);
+    let reader = BufReader::new(file);
+
+    uncompress_lzma(reader)
+}
+
+pub fn uncompress_lzma(reader: impl Read) -> Result<(Vec<u8>)> {
     let mut decompressed = Vec::new();
 
-    lzma_rs::xz_decompress(&mut reader, &mut decompressed)
-        .map_err(|e| DataError::Decompression(format!("LZMA decompression failed: {}", e)))?;
+    let mut reader = XzReader::new(reader, true);
+    io::copy(&mut reader, &mut decompressed)?;
 
     Ok(decompressed)
 }
 
 /// Attempt to read and decompress file with multiple formats
 pub fn decompress_file_auto(path: &Path) -> Result<Vec<u8>> {
-    let file = File::open(path)
-        .map_err(|e| DataError::FileNotFound(format!("{}: {}", path.display(), e)))?;
-
-    let mut reader = BufReader::new(file);
-    let mut decompressed = Vec::new();
-
-    // Try LZMA first
-    if lzma_rs::xz_decompress(&mut reader, &mut decompressed).is_ok() {
-        return Ok(decompressed);
-    }
-
-    // Fallback to Zlib
-    decompressed.clear();
-    let file = File::open(path)?;
-    let mut decoder = flate2::read::ZlibDecoder::new(file);
-    decoder.read_to_end(&mut decompressed).map_err(|e| {
-        DataError::Decompression(format!(
-            "Auto-decompression of {} failed: {}",
-            path.display(),
-            e
-        ))
-    })?;
-
-    Ok(decompressed)
+    read_lzma_raw(path)
 }
 
 #[cfg(test)]

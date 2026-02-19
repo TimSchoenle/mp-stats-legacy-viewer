@@ -1,13 +1,12 @@
 use gloo_net::http::Request;
+use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
-    BedrockLeaderboardChunk, BedrockPlayerProfile, GameLeaderboardData, IdMap,
-    JavaLeaderboardChunk, JavaLeaderboardPage, JavaMeta, JavaPlayerProfile, JavaPlayerProfileDirty,
-    LeaderboardEntry, NameLookup,
+    BedrockLeaderboardChunk, BedrockPlayerProfile, GameLeaderboardData, IdMap, JavaLeaderboardPage,
+    JavaMeta, JavaPlayerProfile, LeaderboardEntry, NameLookup,
 };
 use mp_stats_core::routes;
 use smol_str::SmolStr;
 use std::collections::HashMap;
-use std::io::Read;
 
 // Helper to fetch and decode binary data (LZMA or Zlib -> Postcard)
 async fn fetch_bin<T: serde::de::DeserializeOwned>(url: &str) -> Option<T> {
@@ -21,23 +20,8 @@ async fn fetch_bin<T: serde::de::DeserializeOwned>(url: &str) -> Option<T> {
                 }
             };
 
-            let mut cursor = std::io::Cursor::new(bytes);
-            let mut decompressed = Vec::new();
-
-            // Try LZMA
-            let is_lzma = lzma_rs::xz_decompress(&mut cursor, &mut decompressed).is_ok();
-
-            if !is_lzma {
-                // Reset cursor
-                cursor.set_position(0);
-                // Fallback Zlib
-                let mut decoder = flate2::read::ZlibDecoder::new(cursor);
-                decompressed.clear();
-                if let Err(e) = decoder.read_to_end(&mut decompressed) {
-                    gloo_console::warn!(format!("Decompression failed for {}: {}", url, e));
-                    return None;
-                }
-            }
+            let cursor = std::io::Cursor::new(bytes);
+            let decompressed = uncompress_lzma(cursor).unwrap();
 
             match postcard::from_bytes(&decompressed) {
                 Ok(data) => Some(data),
@@ -59,13 +43,9 @@ async fn fetch_raw_lzma(url: &str) -> Option<Vec<u8>> {
     match Request::get(url).send().await {
         Ok(resp) if resp.ok() => {
             let bytes = resp.binary().await.ok()?;
-            let mut cursor = std::io::Cursor::new(bytes);
-            let mut decompressed = Vec::new();
-            if lzma_rs::xz_decompress(&mut cursor, &mut decompressed).is_ok() {
-                Some(decompressed)
-            } else {
-                None
-            }
+            let cursor = std::io::Cursor::new(bytes);
+
+            uncompress_lzma(cursor).ok()
         }
         _ => None,
     }
