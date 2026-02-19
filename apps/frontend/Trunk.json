@@ -1,0 +1,18 @@
+{
+  "$schema": "./schema.json",
+  "build": {
+    "target": "index.html",
+    "minify": "on_release",
+    "dist": "dist",
+    "public_url": "/"
+  },
+  "tools": {
+    "tailwindcss": "4.2.0"
+  },
+  "proxy": [
+    {
+      "rewrite": "/data/",
+      "backend": "http://127.0.0.1:8081/data/"
+    }
+  ]
+}

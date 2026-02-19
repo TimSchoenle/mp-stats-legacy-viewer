@@ -1,18 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "../node_modules/tailwindcss";
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/fonts/Inter-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('/fonts/Inter-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@theme {
+    --color-dark-850: #1a1a1a;
+    --color-dark-950: #0a0a0a;
+    --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
 
 @layer base {
     body {
         @apply bg-dark-950 text-gray-200 font-sans antialiased;
     }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
+    h1, h2, h3, h4, h5, h6 {
         @apply font-bold tracking-tight text-white;
     }
 }
@@ -28,10 +43,10 @@
 
     .nav-link {
         @apply px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors;
-    }
 
-    .nav-link.active {
-        @apply text-white bg-gray-800 font-semibold;
+        &.active {
+            @apply text-white bg-gray-800 font-semibold;
+        }
     }
 
     .stat-row {

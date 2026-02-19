@@ -12,25 +12,13 @@ RUN apt-get update && apt-get install -y \
 FROM base AS frontend
 WORKDIR /app
 
-# Install Node.js 20.x (for Tailwind CSS)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
 # Install Trunk for WASM builds
-RUN wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.4/trunk-x86_64-unknown-linux-gnu.tar.gz \
-    | tar -xzf- -C /usr/local/bin/
+RUN cargo install --locked trunk
 
 # Add WASM build target
 RUN rustup target add wasm32-unknown-unknown
 
 COPY . .
-
-# Install npm dependencies
-RUN cd apps/frontend && npm install
-
-# Build Tailwind CSS
-RUN cd apps/frontend && npm run build:css
 
 # Build WASM/SPA frontend via Trunk
 RUN cd apps/frontend && trunk build --release
