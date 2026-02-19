@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.0...v0.3.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* trunk tailwind setup ([fb311a5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fb311a5be743552554a3b1d1536feb434f4f7329))
+
+
+### Miscellaneous
+
+* update lock ([4e72dbb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4e72dbbe23e153d4648cb60d9e9a129db1f06dbf))
+
 ## [0.3.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.2.1...v0.3.0) (2026-02-19)
 
 
