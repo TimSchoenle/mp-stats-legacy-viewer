@@ -1,4 +1,5 @@
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -36,15 +37,16 @@ pub fn search_bar() -> Html {
             wasm_bindgen_futures::spawn_local(async move {
                 // Heuristic: if length is 32 or 36, assume UUID
                 if q.len() == 32 || q.len() == 36 {
-                    navigator.push(&Route::JavaPlayer { uuid: q });
+                    navigator.push(&Route::Player { edition: PlatformEdition::Java, uuid: q });
                 } else {
                     // Try to resolve name to UUID (Java) - only available in WASM
                     #[cfg(target_arch = "wasm32")]
                     {
                         if let Ok(Some(lookup)) =
-                            mp_stats_data_client::api::find_player_uuid(&q).await
+                            mp_stats_data_client::api::find_player_uuid(&PlatformEdition::Java, &q).await
                         {
-                            navigator.push(&Route::JavaPlayer {
+                            navigator.push(&Route::Player {
+                                edition: PlatformEdition::Java,
                                 uuid: lookup.uuid.to_string(),
                             });
                         }

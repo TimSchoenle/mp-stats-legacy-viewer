@@ -6,6 +6,7 @@ use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::{DataProviderWrapper, ENTRIES_PER_PAGE_F64};
 use yew::platform::spawn_local;
 use yew::{
@@ -16,6 +17,7 @@ const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
+    pub edition: PlatformEdition,
     pub game: String,
     pub board: String,
     pub stat: String,
@@ -65,6 +67,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let error = error.clone();
         let context = context.clone();
         let game_id = props.game.clone();
+        let edition = props.edition.clone();
 
         use_effect_with((game_id, context.clone()), move |(game, ctx)| {
             // Reset error
@@ -75,7 +78,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 let provider = provider.0.clone();
                 loading.set(true);
                 spawn_local(async move {
-                    match provider.fetch_game_leaderboards(&game).await {
+                    match provider.fetch_game_leaderboards(&edition, &game).await {
                         Ok(data) => {
                             game_data.set(Some(data));
                             // Loading is NOT set to false here, we wait for entries
@@ -99,6 +102,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let board = props.board.clone();
         let game = props.game.clone();
         let stat = props.stat.clone();
+        let edition = props.edition.clone();
 
         use_effect_with(
             (board.clone(), game.clone(), stat.clone(), context.clone()),
@@ -111,7 +115,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
                     snapshots_loading.set(true);
                     spawn_local(async move {
-                        match provider.fetch_history_snapshots(&board, &game, &stat).await {
+                        match provider.fetch_history_snapshots(&edition, &board, &game, &stat).await {
                             Ok(mut data) => {
                                 // Sort by timestamp descending (newest first)
                                 data.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
@@ -190,11 +194,12 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                         spawn_local(async move {
                             let result = if snapshot == "latest" {
                                 provider
-                                    .fetch_java_leaderboard(&board, &game, &stat, page_idx)
+                                    .fetch_leaderboard(&props.edition, &board, &game, &stat, page_idx)
                                     .await
                             } else {
                                 provider
                                     .fetch_history_leaderboard(
+                                        &props.edition,
                                         &board, &game, &stat, &snapshot, page_idx,
                                     )
                                     .await
@@ -233,7 +238,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let query = query.clone();
         move |new_page: u32| {
             if query.snapshot.clone() == "latest" {
-                navigator.push(&Route::JavaLeaderboard {
+                navigator.push(&Route::Leaderboard {
+                    edition: props.edition.clone(),
                     game: props.game.clone(),
                     board: props.board.clone(),
                     stat: props.stat.clone(),
@@ -242,7 +248,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             } else {
                 navigator
                     .push_with_query(
-                        &Route::JavaLeaderboard {
+                        &Route::Leaderboard {
+                            edition: props.edition.clone(),
                             game: props.game.clone(),
                             board: props.board.clone(),
                             stat: props.stat.clone(),
@@ -266,7 +273,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let props = props.clone();
         move |new_snapshot: String| {
             if new_snapshot == "latest" {
-                navigator.push(&Route::JavaLeaderboard {
+                navigator.push(&Route::Leaderboard {
+                    edition: props.edition.clone(),
                     game: props.game.clone(),
                     board: props.board.clone(),
                     stat: props.stat.clone(),
@@ -275,7 +283,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             } else {
                 navigator
                     .push_with_query(
-                        &Route::JavaLeaderboard {
+                        &Route::Leaderboard {
+                            edition: props.edition.clone(),
                             game: props.game.clone(),
                             board: props.board.clone(),
                             stat: props.stat.clone(),
@@ -299,7 +308,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     html! {
         <div class="container mx-auto px-4 py-8 text-white relative">
             <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <LeaderboardHeader game={props.game.clone()} stat={props.stat.clone()} />
+                <LeaderboardHeader edition={props.edition.clone()} game={props.game.clone()} stat={props.stat.clone()} />
 
                 // Snapshot Selector & Go to Bottom Button
                 <div class="flex items-center gap-3">
@@ -359,7 +368,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                     };
 
 
-                    let route = Route::JavaLeaderboard {
+                    let route = Route::Leaderboard {
+                                            edition: props.edition.clone(),
                             game: props.game.clone(),
                             board: board.to_string(),
                             stat: props.stat.clone(),
@@ -408,7 +418,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                                             { format!("#{}", row.rank) }
                                         </td>
                                         <td class="p-4">
-                                             <Link<Route> to={Route::JavaPlayer { uuid: row.uuid.to_string() }} classes="flex items-center gap-3 group/link">
+                                             <Link<Route> to={Route::Player { edition: props.edition.clone(), uuid: row.uuid.to_string() }} classes="flex items-center gap-3 group/link">
                                                 <img
                                                     src={format!("https://mc-heads.net/avatar/{}/32", row.uuid)}
                                                     class="w-8 h-8 rounded bg-gray-900 shadow-sm"

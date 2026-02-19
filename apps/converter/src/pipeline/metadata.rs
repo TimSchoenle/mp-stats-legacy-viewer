@@ -79,6 +79,8 @@ pub fn process_dictionary_and_names(
             },
         )?;
 
+    println!("Found {} names.", names_map.len());
+
     build_names_archive(java_out, names_map)?;
 
     Ok(global_id_map)

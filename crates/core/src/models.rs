@@ -54,6 +54,9 @@ pub struct GameLeaderboardData {
 }
 
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMap {
@@ -277,4 +280,74 @@ pub struct HistoricalSnapshot {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct HistoryMetadata {
     pub snapshots: Vec<HistoricalSnapshot>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub enum PlatformEdition {
+    Java,
+    Bedrock,
+}
+
+impl Display for PlatformEdition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.directory_name())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PlatformEditionParseError {
+    input: String,
+}
+
+impl Display for PlatformEditionParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "invalid platform edition '{}'; expected '{}' or '{}'",
+            self.input,
+            PlatformEdition::Java.directory_name(),
+            PlatformEdition::Bedrock.directory_name()
+        )
+    }
+}
+
+impl Error for PlatformEditionParseError {}
+impl FromStr for PlatformEdition {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let normalized = s.trim().to_ascii_lowercase();
+
+        PlatformEdition::iter()
+            .find(|edition| normalized == edition.directory_name().to_ascii_lowercase())
+            .map(|edition| edition.clone())
+            .ok_or(Box::from(PlatformEditionParseError {
+                input: s.trim().to_string(),
+            }))
+    }
+}
+
+impl PlatformEdition {
+    pub fn directory_name(&self) -> &'static str {
+        match self {
+            PlatformEdition::Java => "java",
+            PlatformEdition::Bedrock => "bedrock",
+        }
+    }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            PlatformEdition::Java => "Java",
+            PlatformEdition::Bedrock => "Bedrock",
+        }
+    }
+
+    pub const VARIANTS: [Self; 2] = [
+        Self::Java,
+        Self::Bedrock
+    ];
+
+    pub fn iter() -> std::slice::Iter<'static, Self> {
+        Self::VARIANTS.iter()
+    }
 }

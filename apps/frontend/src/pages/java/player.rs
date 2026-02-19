@@ -1,11 +1,13 @@
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::DataProviderWrapper;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-#[derive(Properties, PartialEq)]
+#[derive(Properties, PartialEq, Clone)]
 pub struct PlayerProps {
+    pub edition: PlatformEdition,
     pub uuid: String,
 }
 
@@ -21,20 +23,22 @@ pub fn player_view(props: &PlayerProps) -> Html {
         let profile = profile.clone();
         let id_map = id_map.clone();
         let error = error.clone();
+        let edition = props.edition.clone();
+
         use_effect_with((uuid, context), move |(id, ctx)| {
             let id = id.clone();
             if let Some(provider) = ctx {
                 let provider = provider.0.clone();
                 spawn_local(async move {
                     // Fetch profile first
-                    let p_res = provider.fetch_java_player(&id).await;
+                    let p_res = provider.fetch_player(&edition, &id).await;
                     match p_res {
                         Ok(p) => profile.set(Some(p)),
                         Err(e) => error.set(Some(format!("Failed to load profile: {}", e))),
                     }
 
                     // Then fetch map
-                    if let Ok(m) = provider.fetch_id_map().await {
+                    if let Ok(m) = provider.fetch_id_map(&edition).await {
                         id_map.set(Some(m));
                     }
                 });
@@ -46,10 +50,10 @@ pub fn player_view(props: &PlayerProps) -> Html {
     html! {
         <div class="container mx-auto px-4 py-8 text-white">
             // Breadcrumb Navigation
-            <div class="mb-6 flex items-center text-sm text-gray-400 space-x-2">
+            <div class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
                 <Link<Route> to={Route::Home} classes="hover:text-white transition">{"Home"}</Link<Route>>
                 <span>{"/"}</span>
-                <Link<Route> to={Route::JavaLanding} classes="hover:text-white transition">{"Java"}</Link<Route>>
+                <Link<Route> to={Route::Landing { edition: props.edition.clone() }} classes="hover:text-white transition">{props.edition.display_name()}</Link<Route>>
                 <span>{"/"}</span>
                 <span class="text-white">{"Player"}</span>
             </div>
