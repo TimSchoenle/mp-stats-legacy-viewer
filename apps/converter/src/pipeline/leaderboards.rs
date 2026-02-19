@@ -1,5 +1,4 @@
 use anyhow::Result;
-use binary_layout::prelude::*;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
 use mp_stats_common::formats::FILE_META;
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
@@ -12,12 +11,9 @@ use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-binary_layout!(leaderboard, BigEndian, {
-   player_id: u64,
-    score: u64
-});
+use crate::models::leaderboard::binary_leaderboard;
 
-const LEADERBOARD_SIZE: usize = leaderboard::SIZE.unwrap();
+const LEADERBOARD_SIZE: usize = crate::models::leaderboard::BINARY_LEADERBOARD_SIZE;
 
 /// Process all Java leaderboards
 pub fn process_java_leaderboards(
@@ -158,7 +154,7 @@ fn process_binary_chunks(
                 break;
             }
 
-            let view = leaderboard::View::new(&chunk_data[offset..offset + LEADERBOARD_SIZE]);
+            let view = binary_leaderboard::View::new(&chunk_data[offset..offset + LEADERBOARD_SIZE]);
             let pid = view.player_id().read();
             let score = view.score().read();
 

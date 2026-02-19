@@ -28,26 +28,6 @@ pub fn player_id_chunk(player_id: i32) -> i32 {
     player_id / raw::DICTIONARY_CHUNK_SIZE
 }
 
-/// Validate shard key format
-pub fn validate_shard(shard: &str) -> Result<()> {
-    if shard.len() != raw::MIN_PREFIX_LENGTH {
-        return Err(DataError::Validation(format!(
-            "Invalid shard length: '{}' (expected {} characters)",
-            shard,
-            raw::MIN_PREFIX_LENGTH
-        )));
-    }
-
-    if !shard.chars().all(|c| c.is_alphanumeric()) {
-        return Err(DataError::Validation(format!(
-            "Invalid shard format: '{}' (must be alphanumeric)",
-            shard
-        )));
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

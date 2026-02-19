@@ -3,14 +3,6 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Cursor, Read, Write};
 use std::path::Path;
 
-/// Compression format enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompressionFormat {
-    Lzma,
-    Zlib,
-    None,
-}
-
 /// Write data as LZMA-compressed Postcard binary
 pub fn write_lzma_bin<T: serde::Serialize>(path: &Path, data: &T) -> Result<()> {
     let bytes = postcard::to_stdvec(data)?;
@@ -51,24 +43,6 @@ pub fn read_lzma_raw(path: &Path) -> Result<Vec<u8>> {
     Ok(decompressed)
 }
 
-/// Attempt to decompress with multiple formats (LZMA, then Zlib fallback)
-pub fn decompress_auto(data: &[u8]) -> Result<Vec<u8>> {
-    // Try LZMA first
-    let mut decompressed = Vec::new();
-    if lzma_rs::xz_decompress(&mut Cursor::new(data), &mut decompressed).is_ok() {
-        return Ok(decompressed);
-    }
-
-    // Fallback to Zlib
-    decompressed.clear();
-    let mut decoder = flate2::read::ZlibDecoder::new(Cursor::new(data));
-    decoder
-        .read_to_end(&mut decompressed)
-        .map_err(|e| DataError::Decompression(format!("Auto-decompression failed: {}", e)))?;
-
-    Ok(decompressed)
-}
-
 /// Attempt to read and decompress file with multiple formats
 pub fn decompress_file_auto(path: &Path) -> Result<Vec<u8>> {
     let file = File::open(path)
@@ -95,25 +69,6 @@ pub fn decompress_file_auto(path: &Path) -> Result<Vec<u8>> {
     })?;
 
     Ok(decompressed)
-}
-
-/// Validate that data is properly formatted (basic sanity checks)
-pub fn validate_compressed_data(data: &[u8], min_size: usize) -> Result<()> {
-    if data.is_empty() {
-        return Err(DataError::Validation(
-            "Compressed data is empty".to_string(),
-        ));
-    }
-
-    if data.len() < min_size {
-        return Err(DataError::Validation(format!(
-            "Compressed data too small: {} bytes (minimum: {})",
-            data.len(),
-            min_size
-        )));
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]
