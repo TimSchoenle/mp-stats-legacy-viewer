@@ -2,13 +2,14 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::Route;
+use crate::components::leaderboards::header::LeaderboardHeader;
+use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
+use crate::Route;
 use mp_stats_core::{DataProviderWrapper, ENTRIES_PER_PAGE_F64};
-use web_sys::SubmitEvent;
 use yew::platform::spawn_local;
 use yew::{
-    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
+    function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties,
 };
 
 const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
@@ -40,8 +41,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let error = use_state(|| None::<String>);
 
     let entries = use_state(|| Vec::<LeaderboardEntry>::new());
-    // We use props.page now, no local state for page needed for data fetching
-    // But we might want a local state for the "Go to page" input
     let input_page = use_state(|| props.page.to_string());
 
     let total_entries = use_state(|| 0u32);
@@ -68,6 +67,9 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let game_id = props.game.clone();
 
         use_effect_with((game_id, context.clone()), move |(game, ctx)| {
+            // Reset error
+            error.set(None);
+
             let game = game.clone();
             if let Some(provider) = ctx {
                 let provider = provider.0.clone();
@@ -151,6 +153,9 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 game_data.is_some(),
             ),
             move |(game, board, stat, snapshot, page_captured, data_loaded)| {
+                // Reset error state
+                error.set(None);
+
                 if *data_loaded {
                     // Update total entries from metadata or snapshot
                     let is_latest = snapshot == "latest";
@@ -221,7 +226,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let current_entries = entries.clone();
     let max_page = (*total_entries as f64 / ENTRIES_PER_PAGE_F64).ceil() as u32;
     let max_page = if max_page == 0 { 1 } else { max_page };
-    let current_page = props.page;
 
     let change_page = {
         let navigator = navigator.clone();
@@ -286,20 +290,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         }
     };
 
-    let on_submit_page = {
-        let input_page = input_page.clone();
-        let change_page = change_page.clone();
-        let max_page = max_page;
-        move |e: SubmitEvent| {
-            e.prevent_default();
-            if let Ok(p) = input_page.parse::<u32>() {
-                if p >= 1 && p <= max_page {
-                    change_page(p);
-                }
-            }
-        }
-    };
-
     let scroll_to_bottom = Callback::from(|_| {
         if let Some(window) = web_sys::window() {
             window.scroll_to_with_x_and_y(0.0, 100000.0); // Simple hack to scroll to bottom
@@ -309,22 +299,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     html! {
         <div class="container mx-auto px-4 py-8 text-white relative">
             <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
-                            <Link<Route> to={Route::Home} classes="hover:text-white transition">{"Home"}</Link<Route>>
-                            <span>{"/"}</span>
-                            <Link<Route> to={Route::JavaLanding} classes="hover:text-white transition">{"Java"}</Link<Route>>
-                            <span>{"/"}</span>
-                            <Link<Route> to={Route::JavaGame { game: props.game.clone() }} classes="hover:text-white transition">{ &props.game }</Link<Route>>
-                            <span>{"/"}</span>
-                            <span class="text-white">{ &props.stat }</span>
-                    </div>
-                    <h1 class="text-3xl font-bold flex items-center gap-3">
-                            <span class="text-emerald-400">{ &props.game }</span>
-                            <span class="text-gray-600">{"/"}</span>
-                            <span class="text-blue-400 capitalize">{ props.stat.replace("_", " ") }</span>
-                    </h1>
-                </div>
+                <LeaderboardHeader game={props.game.clone()} stat={props.stat.clone()} />
 
                 // Snapshot Selector & Go to Bottom Button
                 <div class="flex items-center gap-3">
@@ -455,91 +430,11 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                     </div>
 
                     // Pagination
-                    <div class="p-4 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center bg-gray-800 gap-4">
-                         // Controls Left
-                         <div class="flex items-center gap-2">
-                             // First Page
-                             <button
-                                onclick={
-                                    let change_page = change_page.clone();
-                                    move |_| change_page(1)
-                                }
-                                disabled={current_page <= 1}
-                                class="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                title="First Page"
-                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                             </button>
-
-                             // Previous
-                             <button
-                                onclick={
-                                    let change_page = change_page.clone();
-                                    move |_| change_page(current_page - 1)
-                                }
-                                disabled={current_page <= 1}
-                                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-bold text-white transition-colors"
-                             >
-                                {"Previous"}
-                             </button>
-                         </div>
-
-                         // Middle / Input
-                         <div class="flex items-center gap-2">
-                            <span class="text-gray-400 text-sm">{"Page"}</span>
-                            <form
-                                onsubmit={on_submit_page}
-                                class="flex items-center"
-                            >
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max={max_page.to_string()}
-                                    value={(*input_page).clone()}
-                                    oninput={Callback::from(move |e: InputEvent| {
-                                        let target: web_sys::HtmlInputElement = e.target_unchecked_into();
-                                        input_page.set(target.value());
-                                    })}
-                                    class="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-center text-white text-sm focus:border-emerald-500 outline-none"
-                                />
-                            </form>
-                            <span class="text-gray-400 text-sm">
-                                { format!("of {}", max_page) }
-                            </span>
-                         </div>
-
-                         // Controls Right
-                         <div class="flex items-center gap-2">
-                             // Next
-                             <button
-                                onclick={
-                                    let change_page = change_page.clone();
-                                    move |_| change_page(current_page + 1)
-                                }
-                                disabled={current_page >= max_page}
-                                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-bold text-white transition-colors"
-                             >
-                                {"Next"}
-                             </button>
-
-                             // Last Page
-                             <button
-                                onclick={
-                                    let change_page = change_page.clone();
-                                    move |_| change_page(max_page)
-                                }
-                                disabled={current_page >= max_page}
-                                class="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white transition-colors"
-                                title="Last Page"
-                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                             </button>
-                         </div>
-                    </div>
+                    <PaginationControls
+                        current_page={props.page}
+                        max_page={max_page}
+                        on_change={Callback::from(move |p| change_page(p))}
+                    />
 
                     if current_entries.is_empty() && !*loading {
                         <div class="p-12 text-center text-gray-500">
