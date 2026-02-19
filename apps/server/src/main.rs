@@ -1,7 +1,7 @@
 use axum::Router;
 use clap::Parser;
-use std::path::PathBuf;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Parser, Debug)]
@@ -28,8 +28,8 @@ async fn async_main() {
     let opt = Opt::parse();
 
     let dist_dir = opt.dir.clone();
-    let spa_service = ServeDir::new(&dist_dir)
-        .not_found_service(ServeFile::new(dist_dir.join("index.html")));
+    let spa_service =
+        ServeDir::new(&dist_dir).not_found_service(ServeFile::new(dist_dir.join("index.html")));
 
     let app = Router::new()
         .nest_service("/data", ServeDir::new(opt.data_dir))

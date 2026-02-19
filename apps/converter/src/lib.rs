@@ -1,6 +1,6 @@
 pub mod io;
-pub mod pipeline;
 pub mod models;
+pub mod pipeline;
 
 use anyhow::Result;
 use mp_stats_core::models::IdMap;
