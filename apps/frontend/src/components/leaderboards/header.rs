@@ -1,9 +1,11 @@
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct HeaderProps {
+    pub edition: PlatformEdition,
     pub game: String,
     pub stat: String,
 }
@@ -15,9 +17,9 @@ pub fn leaderboard_header(props: &HeaderProps) -> Html {
             <div class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
                 <Link<Route> to={Route::Home} classes="hover:text-white transition">{"Home"}</Link<Route>>
                 <span>{"/"}</span>
-                <Link<Route> to={Route::JavaLanding} classes="hover:text-white transition">{"Java"}</Link<Route>>
+                <Link<Route> to={Route::Landing { edition: props.edition.clone()}} classes="hover:text-white transition">{props.edition.display_name()}</Link<Route>>
                 <span>{"/"}</span>
-                <Link<Route> to={Route::JavaGame { game: props.game.clone() }} classes="hover:text-white transition">{ &props.game }</Link<Route>>
+                <Link<Route> to={Route::Game {edition: props.edition.clone(), game: props.game.clone() }} classes="hover:text-white transition">{ &props.game }</Link<Route>>
                 <span>{"/"}</span>
                 <span class="text-white">{ &props.stat }</span>
             </div>

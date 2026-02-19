@@ -1,12 +1,12 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
-use mp_stats_common::formats::FILE_META;
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
+use mp_stats_common::formats::FILE_META;
 use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::{self};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -151,6 +151,7 @@ fn process_binary_chunks(
         for i in 0..count {
             let offset = i * LEADERBOARD_SIZE;
             if offset + LEADERBOARD_SIZE > chunk_data.len() {
+                eprintln!("Invalid chunk data: offset {} + size {} > chunk size {}", offset, LEADERBOARD_SIZE, chunk_data.len());
                 break;
             }
 
@@ -159,37 +160,42 @@ fn process_binary_chunks(
             let pid = view.player_id().read();
             let score = view.score().read();
 
-            if pid > 0 {
-                // Resolve Name/UUID
-                let pid_str = pid.to_string();
-                if let Some((uuid, name)) = lookup_map.get(&pid_str) {
-                    // Add to current page (columnar format)
-                    current_page.ranks.push(global_rank);
-                    current_page.uuids.push(SmolStr::new(uuid));
-                    current_page.names.push(SmolStr::new(name));
-                    current_page.scores.push(score);
+            if pid <= 0 {
+                eprintln!("Invalid player ID: {}", pid);
+                continue;
+            }
 
-                    global_rank += 1;
-                    total_entries_written += 1;
+            // Resolve Name/UUID
+            let pid_str = pid.to_string();
+            if let Some((uuid, name)) = lookup_map.get(&pid_str) {
+                // Add to current page (columnar format)
+                current_page.ranks.push(global_rank);
+                current_page.uuids.push(SmolStr::new(uuid));
+                current_page.names.push(SmolStr::new(name));
+                current_page.scores.push(score);
 
-                    // If page full, write it
-                    if current_page.ranks.len() >= ENTRIES_PER_PAGE {
-                        let dest_name = format!("chunk_{:04}.bin.xz", output_index);
-                        let dest_path = output_dir.join(dest_name);
-                        if let Err(e) = write_lzma_bin(&dest_path, &current_page) {
-                            eprintln!("Failed to write page {:?}: {}", dest_path, e);
-                        } else {
-                            output_index += 1;
-                        }
-                        // Reset page
-                        current_page = JavaLeaderboardPage {
-                            ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
-                            uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
-                            names: Vec::with_capacity(ENTRIES_PER_PAGE),
-                            scores: Vec::with_capacity(ENTRIES_PER_PAGE),
-                        };
+                global_rank += 1;
+                total_entries_written += 1;
+
+                // If page full, write it
+                if current_page.ranks.len() >= ENTRIES_PER_PAGE {
+                    let dest_name = format!("chunk_{:04}.bin.xz", output_index);
+                    let dest_path = output_dir.join(dest_name);
+                    if let Err(e) = write_lzma_bin(&dest_path, &current_page) {
+                        eprintln!("Failed to write page {:?}: {}", dest_path, e);
+                    } else {
+                        output_index += 1;
                     }
+                    // Reset page
+                    current_page = JavaLeaderboardPage {
+                        ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
+                        uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
+                        names: Vec::with_capacity(ENTRIES_PER_PAGE),
+                        scores: Vec::with_capacity(ENTRIES_PER_PAGE),
+                    };
                 }
+            } else {
+                eprintln!("Failed to resolve player ID: {}", pid_str);
             }
         }
     }
@@ -204,6 +210,8 @@ fn process_binary_chunks(
             output_index += 1;
         }
     }
+
+    println!("Processed {} chunks with {} total entries", chunks.len(), total_entries_written);
 
     Ok((output_index, total_entries_written))
 }

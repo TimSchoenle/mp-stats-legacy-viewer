@@ -1,21 +1,33 @@
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::DataProviderWrapper;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+#[derive(Properties, PartialEq, Clone)]
+pub struct JavaLandingProps {
+    pub edition: PlatformEdition,
+}
+
 #[function_component(JavaLanding)]
-pub fn java_landing() -> Html {
+pub fn java_landing(props: &JavaLandingProps) -> Html {
     let games = use_state(|| vec![]);
     let context = use_context::<DataProviderWrapper>();
 
     {
         let games = games.clone();
-        use_effect_with(context, move |ctx| {
+
+        use_effect_with((context, props.edition.clone()), move |(ctx, current_edition)| {
             if let Some(provider) = ctx {
                 let provider = provider.0.clone();
+                let edition_to_fetch = current_edition.clone();
+
+                // Clear games
+                games.set(vec![]);
+
                 spawn_local(async move {
-                    if let Ok(meta) = provider.fetch_java_meta().await {
+                    if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
                         games.set(meta.games);
                     } else {
                         games.set(vec![]);
@@ -31,7 +43,7 @@ pub fn java_landing() -> Html {
             // Hero
             <div class="text-center mb-12 py-8">
                 <h1 class="text-4xl font-bold mb-3 tracking-tight text-white">
-                    { "Java Edition Stats" }
+                    { format!("{} Edition Stats", props.edition.display_name()) }
                 </h1>
                 <p class="text-lg text-gray-400 max-w-2xl mx-auto">
                     { "Explore detailed statistics and leaderboards for " }
@@ -51,7 +63,7 @@ pub fn java_landing() -> Html {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     { for games.iter().map(|game| html! {
                         <Link<Route>
-                            to={Route::JavaGame { game: game.id.to_string() }}
+                            to={Route::Game { edition: props.edition.clone(), game: game.id.to_string() }}
                             classes="group card p-5 hover:border-emerald-600 transition-all flex flex-col"
                         >
                             <h2 class="text-lg font-bold mb-1 group-hover:text-emerald-400 transition-colors">{ &*game.name.as_str() }</h2>

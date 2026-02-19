@@ -10,7 +10,6 @@ publish = false
 members = [
     "crates/core",
     "crates/common",
-    "crates/data-server",
     "crates/data-client",
     "apps/frontend",
     "apps/server",

@@ -1,5 +1,6 @@
-use crate::Route;
 use crate::components::search_bar::SearchBar;
+use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -19,7 +20,8 @@ pub fn header() -> Html {
                     // Navigation Links (Desktop)
                     <nav class="hidden md:flex items-center gap-1">
                         <Link<Route> to={Route::Home} classes="nav-link">{"Home"}</Link<Route>>
-                        <Link<Route> to={Route::JavaLanding} classes="nav-link">{"Java"}</Link<Route>>
+                        <Link<Route> to={Route::Landing { edition: PlatformEdition::Java }} classes="nav-link">{"Java"}</Link<Route>>
+                        <Link<Route> to={Route::Landing { edition: PlatformEdition::Bedrock }} classes="nav-link">{"Bedrock"}</Link<Route>>
                     </nav>
                 </div>
 
