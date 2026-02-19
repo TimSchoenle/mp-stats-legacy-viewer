@@ -1,4 +1,5 @@
 use crate::Route;
+use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::DataProviderWrapper;
 use yew::platform::spawn_local;
 use yew::prelude::*;
@@ -6,6 +7,7 @@ use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct GameProps {
+    pub edition: PlatformEdition,
     pub game: String,
 }
 
@@ -21,6 +23,8 @@ pub fn game_view(props: &GameProps) -> Html {
         let stats = stats.clone();
         let loading = loading.clone();
         let error = error.clone();
+        let edition = props.edition.clone();
+
         use_effect_with((game.clone(), context), move |(game_id, ctx)| {
             let game_id = game_id.clone();
             if let Some(provider) = ctx {
@@ -28,7 +32,7 @@ pub fn game_view(props: &GameProps) -> Html {
                 loading.set(true);
                 error.set(None);
                 spawn_local(async move {
-                    match provider.fetch_game_leaderboards(&game_id).await {
+                    match provider.fetch_game_leaderboards(&edition, &game_id).await {
                         Ok(data) => {
                             let mut stat_list: Vec<String> =
                                 data.stats.keys().map(|k| k.to_string()).collect();
@@ -53,7 +57,7 @@ pub fn game_view(props: &GameProps) -> Html {
             <div class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
                 <Link<Route> to={Route::Home} classes="hover:text-white transition">{"Home"}</Link<Route>>
                 <span>{"/"}</span>
-                <Link<Route> to={Route::JavaLanding} classes="hover:text-white transition">{"Java"}</Link<Route>>
+                <Link<Route> to={Route::Landing { edition: props.edition.clone() }} classes="hover:text-white transition">{props.edition.display_name()}</Link<Route>>
                 <span>{"/"}</span>
                 <span class="text-white">{ &props.game }</span>
             </div>
@@ -94,7 +98,7 @@ pub fn game_view(props: &GameProps) -> Html {
                         let stat = stat_name.clone();
                         html! {
                             <Link<Route>
-                                to={Route::JavaLeaderboard { game, board: "All".to_string(), stat: stat.clone(), page: 1 }}
+                                to={Route::Leaderboard { edition: props.edition.clone(), game, board: "All".to_string(), stat: stat.clone(), page: 1 }}
                                 classes="group card p-4 hover:border-emerald-600 transition-all"
                             >
                                 <h3 class="font-bold text-sm group-hover:text-emerald-400 transition-colors capitalize">

@@ -20,20 +20,21 @@ pub fn app() -> Html {
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Home /> },
-        Route::JavaLanding => html! { <pages::java::JavaLanding /> },
-        Route::JavaGame { game } => html! {
-            <pages::java::GameView game={game} />
+        Route::Landing { edition } => html! { <pages::java::JavaLanding edition={edition} /> },
+        Route::Game { edition, game } => html! {
+            <pages::java::GameView edition={edition} game={game} />
         },
-        Route::JavaLeaderboard {
+        Route::Leaderboard {
+            edition,
             game,
             board,
             stat,
             page,
         } => html! {
-            <pages::java::LeaderboardView game={game} board={board} stat={stat} page={page}  />
+            <pages::java::LeaderboardView edition={edition} game={game} board={board} stat={stat} page={page}  />
         },
-        Route::JavaPlayer { uuid } => html! {
-            <pages::java::PlayerView uuid={uuid} />
+        Route::Player { edition, uuid } => html! {
+            <pages::java::PlayerView edition={edition} uuid={uuid} />
         },
         Route::NotFound => html! { <NotFound /> },
     }

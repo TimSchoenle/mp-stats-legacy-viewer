@@ -1082,18 +1082,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mp-stats-data-server"
-version = "0.2.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "mp-stats-common",
- "mp-stats-core",
- "serde_json",
- "smol_str",
-]
-
-[[package]]
 name = "mp-stats-frontend"
 version = "0.2.1"
 dependencies = [

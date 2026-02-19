@@ -1,3 +1,5 @@
+use crate::models::PlatformEdition;
+
 /// Centralized data path definitions shared between frontend client and backend server.
 /// All functions return **relative** paths (no leading slash).
 /// - The WASM client prefixes with `/data/`
@@ -8,99 +10,32 @@ fn chunk_filename(index: u32) -> String {
     format!("chunk_{:04}.bin.xz", index)
 }
 
-// ─── Java: Meta ─────────────────────────────────────────────
-
-pub fn java_meta_map_bin() -> &'static str {
-    "java/meta/map.bin"
+pub fn meta_map_bin(edition: &PlatformEdition) -> String {
+    format!("{}/meta/map.bin", edition.directory_name())
 }
 
-pub fn java_meta_map_json() -> &'static str {
-    "java/meta/map.json"
+pub fn game_bin(edition: &PlatformEdition, game_id: &str) -> String {
+    format!("{}/games/{game_id}.bin", edition.directory_name())
 }
 
-// ─── Java: Games ────────────────────────────────────────────
-
-pub fn java_game_bin(game_id: &str) -> String {
-    format!("java/games/{game_id}.bin")
-}
-
-// ─── Java: Leaderboards ─────────────────────────────────────
-
-pub fn java_leaderboard_chunk_bin(board: &str, game: &str, stat: &str, chunk: u32) -> String {
-    // internal `latest` folder and `.xz` extension
+pub fn leaderboard_chunk_bin(edition: &PlatformEdition, board: &str, game: &str, stat: &str, chunk: u32) -> String {
     let filename = chunk_filename(chunk);
-    format!("java/leaderboards/{board}/{game}/{stat}/latest/{filename}")
+    format!("{}/leaderboards/{board}/{game}/{stat}/latest/{filename}", edition.directory_name())
 }
 
-pub fn java_leaderboard_chunk_csv(board: &str, game: &str, stat: &str, chunk: u32) -> String {
-    format!("java/leaderboards/{board}/{game}/{stat}/chunk_{chunk:04}.csv")
-}
-
-// ─── Java: History Leaderboards ─────────────────────────────────
-
-pub fn java_history_leaderboard_chunk_bin(
-    board: &str,
-    game: &str,
-    stat: &str,
-    snapshot_id: &str,
-    chunk: u32,
-) -> String {
+pub fn history_leaderboard_chunk_bin(edition: &PlatformEdition, board: &str, game: &str, stat: &str, snapshot_id: &str, chunk: u32) -> String {
     let filename = chunk_filename(chunk);
-    format!("java/leaderboards/{board}/{game}/{stat}/history/{snapshot_id}/{filename}")
+    format!("{}/leaderboards/{board}/{game}/{stat}/history/{snapshot_id}/{filename}", edition.directory_name())
 }
 
-pub fn java_history_snapshots_meta(board: &str, game: &str, stat: &str) -> String {
-    format!("java/leaderboards/{board}/{game}/{stat}/history/_snapshots.json")
+pub fn history_snapshots_meta(edition: &PlatformEdition, board: &str, game: &str, stat: &str) -> String {
+    format!("{}/leaderboards/{board}/{game}/{stat}/history/_snapshots.json", edition.directory_name())
 }
 
-// ─── Java: Players ──────────────────────────────────────────
-
-pub fn java_player_shard_bin(shard: &str) -> String {
-    format!("java/players/{shard}.bin")
+pub fn player_shard_bin(edition: &PlatformEdition, shard: &str) -> String {
+    format!("{}/players/{shard}.bin", edition.directory_name())
 }
 
-pub fn java_player_shard_json(shard: &str) -> String {
-    format!("java/players/{shard}.json")
-}
-
-// ─── Java: Name Lookup ──────────────────────────────────────
-
-pub fn java_names_index_bin(prefix: &str) -> String {
-    format!("java/names_index/{prefix}.bin")
-}
-
-pub fn java_name_lookup_csv(prefix: &str, name: &str) -> String {
-    format!("java/names/{prefix}/{name}.csv")
-}
-
-// ─── Bedrock: Meta ──────────────────────────────────────────
-
-pub fn bedrock_meta_bin() -> &'static str {
-    "bedrock/meta/meta.bin"
-}
-
-// ─── Bedrock: Games ─────────────────────────────────────────
-
-pub fn bedrock_game_bin(game_id: &str) -> String {
-    format!("bedrock/games/{game_id}.bin")
-}
-
-// ─── Bedrock: Leaderboards ──────────────────────────────────
-
-pub fn bedrock_leaderboard_chunk_bin(board: &str, game: &str, stat: &str, chunk: u32) -> String {
-    format!("bedrock/leaderboards/{board}/{game}/{stat}/chunk_{chunk:04}.bin")
-}
-
-pub fn bedrock_leaderboard_chunk_csv(board: &str, game: &str, stat: &str, chunk: u32) -> String {
-    format!("bedrock/leaderboards/{board}/{game}/{stat}/chunk_{chunk:04}.csv")
-}
-
-// ─── Bedrock: Players ───────────────────────────────────────
-
-pub fn bedrock_player_bin(prefix: &str, name: &str) -> String {
-    format!("bedrock/players/{prefix}/{name}.bin")
-}
-
-pub fn bedrock_player_json(prefix: &str, name: &str) -> String {
-    format!("bedrock/players/{prefix}/{name}.json")
+pub fn names_index_bin(edition: &PlatformEdition, prefix: &str) -> String {
+    format!("{}/names_index/{prefix}.bin", edition.directory_name())
 }
