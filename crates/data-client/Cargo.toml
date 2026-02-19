@@ -5,11 +5,11 @@ edition.workspace = true
 
 [dependencies]
 mp-stats-core = { workspace = true }
+mp-stats-common = { workspace = true }
 serde = { workspace = true }
 smol_str = { workspace = true }
 postcard = { workspace = true }
-flate2 = { workspace = true }
-lzma-rs = { workspace = true }
+lzma-rust2 = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 csv = { workspace = true }
