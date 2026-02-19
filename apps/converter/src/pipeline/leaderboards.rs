@@ -154,7 +154,8 @@ fn process_binary_chunks(
                 break;
             }
 
-            let view = binary_leaderboard::View::new(&chunk_data[offset..offset + LEADERBOARD_SIZE]);
+            let view =
+                binary_leaderboard::View::new(&chunk_data[offset..offset + LEADERBOARD_SIZE]);
             let pid = view.player_id().read();
             let score = view.score().read();
 
