@@ -1,6 +1,6 @@
 use crate::Route;
-use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::DataProviderWrapper;
+use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
