@@ -1,4 +1,4 @@
-FROM rust:1.85-slim AS base
+FROM rust:1.85-slim@sha256:9f841bbe9e7d8e37ceb96ed907265a3a0df7f44e3737d0b100e7907a679acb36 AS base
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -52,7 +52,7 @@ COPY . .
 # Build the server (default glibc target)
 RUN cargo build --release -p mp-stats-server
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:98f4b71de414932439ac6ac690d7060df1f27161073c5036a7553723881bffbe
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
