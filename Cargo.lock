@@ -1097,6 +1097,7 @@ dependencies = [
 name = "mp-stats-frontend"
 version = "0.2.1"
 dependencies = [
+ "log",
  "mp-stats-core",
  "mp-stats-data-client",
  "serde",
