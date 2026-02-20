@@ -18,7 +18,8 @@ pub fn write_lzma_raw(path: &Path, data: &[u8]) -> Result<()> {
     let file = File::create(path).map_err(|e| DataError::Io(e))?;
     let writer = BufWriter::new(file);
 
-    let mut writer = XzWriter::new(writer, XzOptions::with_preset(9))?;
+    // TODO: SHOULD PROBABLY RUN in with_preset(9) mode for prod release
+    let mut writer = XzWriter::new(writer, XzOptions::default())?;
     io::copy(&mut reader, &mut writer).map_err(|e| DataError::Io(e))?;
     writer.finish().map_err(|e| DataError::Io(e))?;
 
