@@ -1,5 +1,4 @@
-use crate::Route;
-use mp_stats_core::DataProviderWrapper;
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
@@ -14,7 +13,7 @@ pub struct GameProps {
 #[function_component(GameView)]
 pub fn game_view(props: &GameProps) -> Html {
     let stats = use_state(|| Vec::<String>::new());
-    let context = use_context::<DataProviderWrapper>();
+    let api_ctx = use_context::<Api>().expect("no api found found");;
     let game = props.game.clone();
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);
@@ -25,28 +24,26 @@ pub fn game_view(props: &GameProps) -> Html {
         let error = error.clone();
         let edition = props.edition.clone();
 
-        use_effect_with((game.clone(), context), move |(game_id, ctx)| {
+        use_effect_with((game.clone(), api_ctx), move |(game_id, ctx)| {
             let game_id = game_id.clone();
-            if let Some(provider) = ctx {
-                let provider = provider.0.clone();
-                loading.set(true);
-                error.set(None);
-                spawn_local(async move {
-                    match provider.fetch_game_leaderboards(&edition, &game_id).await {
-                        Ok(data) => {
-                            let mut stat_list: Vec<String> =
-                                data.stats.keys().map(|k| k.to_string()).collect();
-                            stat_list.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
-                            stats.set(stat_list);
-                            loading.set(false);
-                        }
-                        Err(e) => {
-                            error.set(Some(format!("Failed to load game data: {}", e)));
-                            loading.set(false);
-                        }
+            let provider = ctx.clone();
+            loading.set(true);
+            error.set(None);
+            spawn_local(async move {
+                match provider.fetch_game_leaderboards(&edition, &game_id).await {
+                    Ok(data) => {
+                        let mut stat_list: Vec<String> =
+                            data.stats.keys().map(|k| k.to_string()).collect();
+                        stat_list.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+                        stats.set(stat_list);
+                        loading.set(false);
                     }
-                });
-            }
+                    Err(e) => {
+                        error.set(Some(format!("Failed to load game data: {}", e)));
+                        loading.set(false);
+                    }
+                }
+            });
             || ()
         });
     }
