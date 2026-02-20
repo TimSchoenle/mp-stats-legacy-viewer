@@ -1,5 +1,4 @@
-use crate::Route;
-use mp_stats_core::DataProviderWrapper;
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
@@ -13,29 +12,27 @@ pub struct JavaLandingProps {
 #[function_component(JavaLanding)]
 pub fn java_landing(props: &JavaLandingProps) -> Html {
     let games = use_state(|| vec![]);
-    let context = use_context::<DataProviderWrapper>();
+    let api_ctx = use_context::<Api>().expect("no api found found");
 
     {
         let games = games.clone();
 
         use_effect_with(
-            (context, props.edition.clone()),
+            (api_ctx, props.edition.clone()),
             move |(ctx, current_edition)| {
-                if let Some(provider) = ctx {
-                    let provider = provider.0.clone();
-                    let edition_to_fetch = current_edition.clone();
+                let provider = ctx.clone();
+                let edition_to_fetch = current_edition.clone();
 
-                    // Clear games
-                    games.set(vec![]);
+                // Clear games
+                games.set(vec![]);
 
-                    spawn_local(async move {
-                        if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
-                            games.set(meta.games);
-                        } else {
-                            games.set(vec![]);
-                        }
-                    });
-                }
+                spawn_local(async move {
+                    if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
+                        games.set(meta.games);
+                    } else {
+                        games.set(vec![]);
+                    }
+                });
                 || ()
             },
         );
