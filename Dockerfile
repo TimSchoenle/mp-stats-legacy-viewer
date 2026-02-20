@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     upx \
     && rm -rf /var/lib/apt/lists/*
 
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
 # Add rust targets
 RUN rustup target add x86_64-unknown-linux-musl
 RUN rustup target add wasm32-unknown-unknown
@@ -48,7 +50,7 @@ RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
 
 FROM chef AS frontend_base
 RUN apt-get update && apt-get install -y nodejs npm
-RUN cargo install trunk
+RUN cargo binstall trunk
 
 FROM frontend_base AS frontend
 COPY --from=planner /app/recipe.json recipe.json
