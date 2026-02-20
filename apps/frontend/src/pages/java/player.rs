@@ -1,5 +1,4 @@
-use crate::Route;
-use mp_stats_core::DataProviderWrapper;
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
@@ -17,7 +16,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
     let id_map = use_state(|| None);
     let error = use_state(|| None::<String>);
     let uuid = props.uuid.clone();
-    let context = use_context::<DataProviderWrapper>();
+    let api_ctx = use_context::<Api>().expect("no api found found");;
 
     {
         let profile = profile.clone();
@@ -25,10 +24,9 @@ pub fn player_view(props: &PlayerProps) -> Html {
         let error = error.clone();
         let edition = props.edition.clone();
 
-        use_effect_with((uuid, context), move |(id, ctx)| {
+        use_effect_with((uuid, api_ctx), move |(id, ctx)| {
             let id = id.clone();
-            if let Some(provider) = ctx {
-                let provider = provider.0.clone();
+            let provider = ctx.clone();
                 spawn_local(async move {
                     // Fetch profile first
                     let p_res = provider.fetch_player(&edition, &id).await;
@@ -42,7 +40,6 @@ pub fn player_view(props: &PlayerProps) -> Html {
                         id_map.set(Some(m));
                     }
                 });
-            }
             || ()
         });
     }
