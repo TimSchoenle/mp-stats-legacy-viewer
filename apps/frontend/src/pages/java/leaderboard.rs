@@ -6,11 +6,11 @@ use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
 use crate::{Api, Route};
-use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::ENTRIES_PER_PAGE_F64;
+use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::{
-    function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties,
+    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
 };
 
 const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
@@ -36,7 +36,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     });
 
     let game_data = use_state(|| None::<GameLeaderboardData>);
-    let api_ctx = use_context::<Api>().expect("no api found found");;
+    let api_ctx = use_context::<Api>().expect("no api found found");
     let navigator = use_navigator().unwrap();
 
     let loading = use_state(|| true);
@@ -75,19 +75,19 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
             let game = game.clone();
             let provider = ctx.clone();
-                loading.set(true);
-                spawn_local(async move {
-                    match provider.fetch_game_leaderboards(&edition, &game).await {
-                        Ok(data) => {
-                            game_data.set(Some(data));
-                            // Loading is NOT set to false here, we wait for entries
-                        }
-                        Err(e) => {
-                            loading.set(false);
-                            error.set(Some(format!("Failed to load game data: {}", e)));
-                        }
+            loading.set(true);
+            spawn_local(async move {
+                match provider.fetch_game_leaderboards(&edition, &game).await {
+                    Ok(data) => {
+                        game_data.set(Some(data));
+                        // Loading is NOT set to false here, we wait for entries
                     }
-                });
+                    Err(e) => {
+                        loading.set(false);
+                        error.set(Some(format!("Failed to load game data: {}", e)));
+                    }
+                }
+            });
 
             || ()
         });
@@ -107,29 +107,29 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             (board.clone(), game.clone(), stat.clone(), context.clone()),
             move |(board, game, stat, ctx)| {
                 let provider = ctx.clone();
-                    let board = board.clone();
-                    let game = game.clone();
-                    let stat = stat.clone();
+                let board = board.clone();
+                let game = game.clone();
+                let stat = stat.clone();
 
-                    snapshots_loading.set(true);
-                    spawn_local(async move {
-                        match provider
-                            .fetch_history_snapshots(&edition, &board, &game, &stat)
-                            .await
-                        {
-                            Ok(mut data) => {
-                                // Sort by timestamp descending (newest first)
-                                data.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-                                snapshots.set(data);
-                                snapshots_loading.set(false);
-                            }
-                            Err(_) => {
-                                // No snapshots available, that's fine
-                                snapshots.set(vec![]);
-                                snapshots_loading.set(false);
-                            }
+                snapshots_loading.set(true);
+                spawn_local(async move {
+                    match provider
+                        .fetch_history_snapshots(&edition, &board, &game, &stat)
+                        .await
+                    {
+                        Ok(mut data) => {
+                            // Sort by timestamp descending (newest first)
+                            data.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+                            snapshots.set(data);
+                            snapshots_loading.set(false);
                         }
-                    });
+                        Err(_) => {
+                            // No snapshots available, that's fine
+                            snapshots.set(vec![]);
+                            snapshots_loading.set(false);
+                        }
+                    }
+                });
 
                 || ()
             },
@@ -185,52 +185,46 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
                     let page_idx = *page_captured - 1; // 0-based chunk
                     let provider = context.clone();
-                        let board = board.clone();
-                        let game = game.clone();
-                        let stat = stat.clone();
-                        let snapshot = snapshot.clone();
+                    let board = board.clone();
+                    let game = game.clone();
+                    let stat = stat.clone();
+                    let snapshot = snapshot.clone();
 
-                        loading.set(true);
-                        spawn_local(async move {
-                            let result = if snapshot == "latest" {
-                                provider
-                                    .fetch_leaderboard(
-                                        &props.edition,
-                                        &board,
-                                        &game,
-                                        &stat,
-                                        page_idx,
-                                    )
-                                    .await
-                            } else {
-                                provider
-                                    .fetch_history_leaderboard(
-                                        &props.edition,
-                                        &board,
-                                        &game,
-                                        &stat,
-                                        &snapshot,
-                                        page_idx,
-                                    )
-                                    .await
-                            };
+                    loading.set(true);
+                    spawn_local(async move {
+                        let result = if snapshot == "latest" {
+                            provider
+                                .fetch_leaderboard(&props.edition, &board, &game, &stat, page_idx)
+                                .await
+                        } else {
+                            provider
+                                .fetch_history_leaderboard(
+                                    &props.edition,
+                                    &board,
+                                    &game,
+                                    &stat,
+                                    &snapshot,
+                                    page_idx,
+                                )
+                                .await
+                        };
 
-                            match result {
-                                Ok(data) => {
-                                    entries.set(data);
-                                    loading.set(false);
-                                }
-                                Err(e) => {
-                                    loading.set(false);
-                                    // If it's a 404 on a chunk, passing empty list might be better than error if metadata says 0
-                                    if e.to_string().contains("404") {
-                                        entries.set(vec![]);
-                                    } else {
-                                        error.set(Some(format!("Failed to fetch chunk: {}", e)));
-                                    }
+                        match result {
+                            Ok(data) => {
+                                entries.set(data);
+                                loading.set(false);
+                            }
+                            Err(e) => {
+                                loading.set(false);
+                                // If it's a 404 on a chunk, passing empty list might be better than error if metadata says 0
+                                if e.to_string().contains("404") {
+                                    entries.set(vec![]);
+                                } else {
+                                    error.set(Some(format!("Failed to fetch chunk: {}", e)));
                                 }
                             }
-                        });
+                        }
+                    });
                 }
                 || ()
             },

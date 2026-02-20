@@ -1,5 +1,5 @@
-use mp_stats_frontend::app::App;
 use mp_stats_frontend::Api;
+use mp_stats_frontend::app::App;
 use yew::prelude::*;
 use yew_router::prelude::*;
 

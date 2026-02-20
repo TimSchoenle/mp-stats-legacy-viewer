@@ -47,9 +47,7 @@ pub fn search_bar() -> Html {
                     });
                 } else {
                     // Try to resolve name to UUID (Java)
-                    if let Ok(Some(lookup)) =
-                        ctx.find_player_uuid(&PlatformEdition::Java, &q)
-                            .await
+                    if let Ok(Some(lookup)) = ctx.find_player_uuid(&PlatformEdition::Java, &q).await
                     {
                         navigator.push(&Route::Player {
                             edition: PlatformEdition::Java,
