@@ -1,4 +1,4 @@
-use crate::Route;
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
@@ -9,6 +9,8 @@ pub fn search_bar() -> Html {
     let navigator = use_navigator().unwrap();
     let query = use_state(|| String::new());
     let loading = use_state(|| false);
+
+    let api_ctx = use_context::<Api>().expect("no api found found");
 
     let oninput = {
         let query = query.clone();
@@ -22,12 +24,14 @@ pub fn search_bar() -> Html {
         let query = query.clone();
         let navigator = navigator.clone();
         let loading = loading.clone();
+        let ctx = api_ctx.clone();
 
         Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             let q = query.to_string();
             let navigator = navigator.clone();
             let loading = loading.clone();
+            let ctx = ctx.clone();
 
             if q.is_empty() {
                 return;
@@ -42,18 +46,15 @@ pub fn search_bar() -> Html {
                         uuid: q,
                     });
                 } else {
-                    // Try to resolve name to UUID (Java) - only available in WASM
-                    #[cfg(target_arch = "wasm32")]
+                    // Try to resolve name to UUID (Java)
+                    if let Ok(Some(lookup)) =
+                        ctx.find_player_uuid(&PlatformEdition::Java, &q)
+                            .await
                     {
-                        if let Ok(Some(lookup)) =
-                            mp_stats_data_client::api::find_player_uuid(&PlatformEdition::Java, &q)
-                                .await
-                        {
-                            navigator.push(&Route::Player {
-                                edition: PlatformEdition::Java,
-                                uuid: lookup.uuid.to_string(),
-                            });
-                        }
+                        navigator.push(&Route::Player {
+                            edition: PlatformEdition::Java,
+                            uuid: lookup.uuid.to_string(),
+                        });
                     }
                 }
                 loading.set(false);
