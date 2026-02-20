@@ -12,7 +12,7 @@ pub struct JavaLandingProps {
 #[function_component(JavaLanding)]
 pub fn java_landing(props: &JavaLandingProps) -> Html {
     let games = use_state(|| vec![]);
-    let api_ctx = use_context::<Api>().expect("no api found found");;
+    let api_ctx = use_context::<Api>().expect("no api found found");
 
     {
         let games = games.clone();
@@ -21,18 +21,18 @@ pub fn java_landing(props: &JavaLandingProps) -> Html {
             (api_ctx, props.edition.clone()),
             move |(ctx, current_edition)| {
                 let provider = ctx.clone();
-                    let edition_to_fetch = current_edition.clone();
+                let edition_to_fetch = current_edition.clone();
 
-                    // Clear games
-                    games.set(vec![]);
+                // Clear games
+                games.set(vec![]);
 
-                    spawn_local(async move {
-                        if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
-                            games.set(meta.games);
-                        } else {
-                            games.set(vec![]);
-                        }
-                    });
+                spawn_local(async move {
+                    if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
+                        games.set(meta.games);
+                    } else {
+                        games.set(vec![]);
+                    }
+                });
                 || ()
             },
         );

@@ -7,6 +7,6 @@ pub mod components;
 pub mod pages;
 pub mod route;
 pub use route::Route;
-pub mod app;
 pub mod api;
+pub mod app;
 pub use api::Api;
