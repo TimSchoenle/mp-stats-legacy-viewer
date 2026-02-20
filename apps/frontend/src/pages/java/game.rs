@@ -13,7 +13,7 @@ pub struct GameProps {
 #[function_component(GameView)]
 pub fn game_view(props: &GameProps) -> Html {
     let stats = use_state(|| Vec::<String>::new());
-    let api_ctx = use_context::<Api>().expect("no api found found");;
+    let api_ctx = use_context::<Api>().expect("no api found found");
     let game = props.game.clone();
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);

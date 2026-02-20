@@ -16,7 +16,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
     let id_map = use_state(|| None);
     let error = use_state(|| None::<String>);
     let uuid = props.uuid.clone();
-    let api_ctx = use_context::<Api>().expect("no api found found");;
+    let api_ctx = use_context::<Api>().expect("no api found found");
 
     {
         let profile = profile.clone();
@@ -27,19 +27,19 @@ pub fn player_view(props: &PlayerProps) -> Html {
         use_effect_with((uuid, api_ctx), move |(id, ctx)| {
             let id = id.clone();
             let provider = ctx.clone();
-                spawn_local(async move {
-                    // Fetch profile first
-                    let p_res = provider.fetch_player(&edition, &id).await;
-                    match p_res {
-                        Ok(p) => profile.set(Some(p)),
-                        Err(e) => error.set(Some(format!("Failed to load profile: {}", e))),
-                    }
+            spawn_local(async move {
+                // Fetch profile first
+                let p_res = provider.fetch_player(&edition, &id).await;
+                match p_res {
+                    Ok(p) => profile.set(Some(p)),
+                    Err(e) => error.set(Some(format!("Failed to load profile: {}", e))),
+                }
 
-                    // Then fetch map
-                    if let Ok(m) = provider.fetch_id_map(&edition).await {
-                        id_map.set(Some(m));
-                    }
-                });
+                // Then fetch map
+                if let Ok(m) = provider.fetch_id_map(&edition).await {
+                    id_map.set(Some(m));
+                }
+            });
             || ()
         });
     }
