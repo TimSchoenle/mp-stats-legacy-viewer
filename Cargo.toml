@@ -3,7 +3,7 @@ edition = "2024"
 
 [package]
 name = "mp-stats-platform"
-version = "0.3.1"
+version = "0.3.2"
 publish = false
 
 [workspace]
