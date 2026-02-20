@@ -42,19 +42,6 @@ impl Api {
         }
     }
 
-    // Helper to fetch Raw LZMA data (Vec<u8>)
-    async fn fetch_raw_lzma(&self, url: &str) -> Option<Vec<u8>> {
-        match Request::get(url).send().await {
-            Ok(resp) if resp.ok() => {
-                let bytes = resp.binary().await.ok()?;
-                let cursor = std::io::Cursor::new(bytes);
-
-                uncompress_lzma(cursor).ok()
-            }
-            _ => None,
-        }
-    }
-
     pub async fn fetch_game_leaderboards(
         &self,
         edition: &PlatformEdition,
