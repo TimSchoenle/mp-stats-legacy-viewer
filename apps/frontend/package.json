@@ -1,0 +1,8 @@
+{
+  "name": "mp-stats-legacy-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "tailwindcss": "4.2.0"
+  }
+}
