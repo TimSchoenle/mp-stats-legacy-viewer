@@ -12,15 +12,16 @@ path = "src/main.rs"
 
 [dependencies]
 mp-stats-core = { workspace = true }
+mp-stats-common = { workspace = true }
 yew = { workspace = true }
 yew-router = { workspace = true }
 serde = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true }
-log = "0.4.29"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-mp-stats-data-client = { workspace = true }
+postcard = { workspace = true }
+gloo-net = { workspace = true }
+gloo-console = { workspace = true }
+smol_str = { workspace = true }
 
 [profile.release]
 # less code to include into binary
