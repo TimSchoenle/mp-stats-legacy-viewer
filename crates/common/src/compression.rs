@@ -2,7 +2,7 @@ use crate::error::{DataError, Result};
 use lzma_rust2::{XzOptions, XzReader, XzWriter};
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, BufWriter, Cursor, Read, Write};
+use std::io::{BufReader, BufWriter, Cursor, Read};
 use std::path::Path;
 
 /// Write data as LZMA-compressed Postcard binary
@@ -43,7 +43,7 @@ pub fn read_lzma_raw(path: &Path) -> Result<Vec<u8>> {
     uncompress_lzma(reader)
 }
 
-pub fn uncompress_lzma(reader: impl Read) -> Result<(Vec<u8>)> {
+pub fn uncompress_lzma(reader: impl Read) -> Result<Vec<u8>> {
     let mut decompressed = Vec::new();
 
     let mut reader = XzReader::new(reader, true);
