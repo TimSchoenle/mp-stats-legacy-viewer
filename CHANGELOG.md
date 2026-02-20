@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.4.0...v0.5.0) (2026-02-20)
+
+
+### Features
+
+* add propper liveness checks for server startup ([#26](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/26)) ([1cf7f16](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1cf7f164d7c55ea5da8b02a1f316090e797311e7))
+
+
+### Build System
+
+* update Dockerfile to scratch image with cargo cheff ([#28](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/28)) ([4d7853d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4d7853d93244ed01b0a2ba425cdb7fb751d54707))
+* update lock ([02b2515](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/02b25159b4ceeceda8ddbffa769d46d5adee62b4))
+
 ## [0.4.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.2...v0.4.0) (2026-02-20)
 
 
