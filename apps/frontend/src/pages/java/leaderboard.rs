@@ -2,15 +2,15 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::Route;
 use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
-use mp_stats_core::{DataProviderWrapper, ENTRIES_PER_PAGE_F64};
+use mp_stats_core::ENTRIES_PER_PAGE_F64;
 use yew::platform::spawn_local;
 use yew::{
-    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
+    function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties,
 };
 
 const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
@@ -36,7 +36,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     });
 
     let game_data = use_state(|| None::<GameLeaderboardData>);
-    let context = use_context::<DataProviderWrapper>();
+    let api_ctx = use_context::<Api>().expect("no api found found");;
     let navigator = use_navigator().unwrap();
 
     let loading = use_state(|| true);
@@ -65,7 +65,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let game_data = game_data.clone();
         let loading = loading.clone();
         let error = error.clone();
-        let context = context.clone();
+        let context = api_ctx.clone();
         let game_id = props.game.clone();
         let edition = props.edition.clone();
 
@@ -74,8 +74,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             error.set(None);
 
             let game = game.clone();
-            if let Some(provider) = ctx {
-                let provider = provider.0.clone();
+            let provider = ctx.clone();
                 loading.set(true);
                 spawn_local(async move {
                     match provider.fetch_game_leaderboards(&edition, &game).await {
@@ -89,7 +88,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                         }
                     }
                 });
-            }
+
             || ()
         });
     }
@@ -98,7 +97,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     {
         let snapshots = snapshots.clone();
         let snapshots_loading = snapshots_loading.clone();
-        let context = context.clone();
+        let context = api_ctx.clone();
         let board = props.board.clone();
         let game = props.game.clone();
         let stat = props.stat.clone();
@@ -107,8 +106,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         use_effect_with(
             (board.clone(), game.clone(), stat.clone(), context.clone()),
             move |(board, game, stat, ctx)| {
-                if let Some(provider) = ctx {
-                    let provider = provider.0.clone();
+                let provider = ctx.clone();
                     let board = board.clone();
                     let game = game.clone();
                     let stat = stat.clone();
@@ -132,7 +130,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                             }
                         }
                     });
-                }
+
                 || ()
             },
         );
@@ -147,7 +145,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let game_data = game_data.clone();
         let page = props.page;
         let props = props.clone();
-        let context = context.clone();
+        let context = api_ctx.clone();
         let snapshots = snapshots.clone();
 
         use_effect_with(
@@ -186,8 +184,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                     }
 
                     let page_idx = *page_captured - 1; // 0-based chunk
-                    if let Some(provider) = context {
-                        let provider = provider.0.clone();
+                    let provider = context.clone();
                         let board = board.clone();
                         let game = game.clone();
                         let stat = stat.clone();
@@ -234,7 +231,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                                 }
                             }
                         });
-                    }
                 }
                 || ()
             },
