@@ -31,9 +31,9 @@ impl Api {
                     Ok(data) => Some(data),
                     Err(e) => {
                         gloo_console::warn!(format!(
-                        "Postcard deserialization failed for {}: {}",
-                        url, e
-                    ));
+                            "Postcard deserialization failed for {}: {}",
+                            url, e
+                        ));
                         None
                     }
                 }
@@ -70,7 +70,8 @@ impl Api {
     }
 
     pub async fn fetch_meta(&self, edition: &PlatformEdition) -> Result<JavaMeta, gloo_net::Error> {
-        let id_map = self.fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
+        let id_map = self
+            .fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
             .await
             .ok_or(gloo_net::Error::GlooError(
                 "Failed to fetch id map".to_string(),
@@ -91,7 +92,9 @@ impl Api {
     }
 
     pub async fn fetch_id_map(&self, edition: &PlatformEdition) -> Result<IdMap, gloo_net::Error> {
-        if let Some(map) = self.fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition))).await
+        if let Some(map) = self
+            .fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
+            .await
         {
             return Ok(map);
         }
@@ -172,15 +175,18 @@ impl Api {
 
         // java/players/SHARD.bin (LZMA Postcard)
         let bin_path = format!("/data/{}", routes::player_shard_bin(edition, shard));
-        if let Some(mut shard_map) = self.fetch_bin::<HashMap<String, JavaPlayerProfile>>(&bin_path).await {
+        if let Some(mut shard_map) = self
+            .fetch_bin::<HashMap<String, JavaPlayerProfile>>(&bin_path)
+            .await
+        {
             if let Some(mut profile) = shard_map.remove(uuid) {
                 profile.uuid = uuid.into();
                 return Ok(profile);
             } else {
                 gloo_console::warn!(format!(
-                "Player {} not found in binary shard {}",
-                uuid, shard
-            ));
+                    "Player {} not found in binary shard {}",
+                    uuid, shard
+                ));
                 return Err(gloo_net::Error::GlooError(
                     "Player not found in shard".into(),
                 ));
