@@ -1,69 +1,99 @@
-FROM rust:1.93-slim@sha256:9663b80a1621253d30b146454f903de48f0af925c967be48c84745537cd35d8b AS base
+# syntax=docker/dockerfile:1.21@sha256:27f9262d43452075f3c410287a2c43f5ef1bf7ec2bb06e8c9eeb1b8d453087bc
 
-# Install build dependencies
+# Global Build Args
+ARG USER_ID=1001
+ARG GROUP_ID=1001
+
+FROM rust:1.93-slim@sha256:9663b80a1621253d30b146454f903de48f0af925c967be48c84745537cd35d8b AS base
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     wget \
     tar \
     curl \
+    musl-tools \
+    upx \
     && rm -rf /var/lib/apt/lists/*
 
-FROM base AS frontend_base
-WORKDIR /app
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
-RUN apt-get update && apt-get install -y nodejs npm
-
-# Install Trunk for WASM builds
-RUN cargo install --locked trunk
-
-# Add WASM build target
+# Add rust targets
+RUN rustup target add x86_64-unknown-linux-musl
 RUN rustup target add wasm32-unknown-unknown
 
-FROM frontend_base AS frontend
+WORKDIR /app
 
+FROM base AS chef
+RUN cargo install cargo-chef
+
+FROM chef AS planner
 COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Install npm dependencies
-RUN cd apps/frontend && npm install
+FROM chef AS backend_cacher
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
 
-# Build WASM/SPA frontend via Trunk
-RUN cd apps/frontend && trunk build --release
+FROM backend_cacher AS backend_builder
+COPY . .
+RUN cargo build --release --target x86_64-unknown-linux-musl -p mp-stats-server
 
-FROM base AS data-optimizer
+RUN strip --strip-all /app/target/x86_64-unknown-linux-musl/release/server && \
+    upx --best --lzma /app/target/x86_64-unknown-linux-musl/release/server
 
+FROM backend_cacher AS data-optimizer
 ARG DATA_INPUT_DIRECTORY=data
-
-WORKDIR /app
-
 COPY . .
 
-# Convert data to optimized binary format (Postcard + Zlib)
 RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
-    cargo run --release -p mp-stats-converter -- /app/data /app/data-dist
+    cargo run --release --target x86_64-unknown-linux-musl -p mp-stats-converter -- /app/data /app/data-dist
 
-FROM base AS builder
-WORKDIR /app
+FROM chef AS frontend_base
+RUN apt-get update && apt-get install -y nodejs npm
+RUN cargo binstall trunk
+
+FROM frontend_base AS frontend
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --target wasm32-unknown-unknown --recipe-path recipe.json
 
 COPY . .
+WORKDIR /app/apps/frontend
+RUN npm install
+RUN trunk build --release
 
-# Build the server (default glibc target)
-RUN cargo build --release -p mp-stats-server
+FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659 AS env
+ARG USER_ID
 
-FROM debian:bookworm-slim@sha256:98f4b71de414932439ac6ac690d7060df1f27161073c5036a7553723881bffbe
+# mailcap is used for content type (MIME type) detection
+# tzdata is used for timezones info
+RUN apk add --no-cache \
+    ca-certificates \
+    mailcap \
+    tzdata && \
+    update-ca-certificates && \
+    adduser \
+        --disabled-password \
+        --gecos "" \
+        --home "/nonexistent" \
+        --shell "/sbin/nologin" \
+        --no-create-home \
+        --uid "${USER_ID}" \
+        "appuser"
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+FROM scratch AS runtime
 
-# Copy the server binary
-COPY --from=builder /app/target/release/server /server
+ARG USER_ID
+ARG GROUP_ID
 
-# Copy static frontend assets
+COPY --from=env /etc/passwd /etc/passwd
+COPY --from=env /etc/group /etc/group
+COPY --from=env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=env /usr/share/zoneinfo /usr/share/zoneinfo
+
+COPY --from=backend_builder /app/target/x86_64-unknown-linux-musl/release/server /server
 COPY --from=frontend /app/apps/frontend/dist /dist
-
-# Copy optimized data
 COPY --from=data-optimizer /app/data-dist /dist/data
 
 EXPOSE 8080
+USER ${USER_ID}:${GROUP_ID}
 ENTRYPOINT ["/server", "--dir", "/dist", "--data-dir", "/dist/data"]
