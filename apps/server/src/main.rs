@@ -1,7 +1,7 @@
+use axum::Router;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::get;
-use axum::Router;
 use clap::Parser;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -45,12 +45,9 @@ async fn async_main() {
         )
     });
 
-    let spa_service =
-        ServeDir::new(&dist_dir).not_found_service(ServeFile::new(&index_path));
+    let spa_service = ServeDir::new(&dist_dir).not_found_service(ServeFile::new(&index_path));
 
-    let state = Arc::new(AppState {
-        index_path,
-    });
+    let state = Arc::new(AppState { index_path });
 
     let app = Router::new()
         .route("/health/startup", get(startup_probe))
@@ -75,7 +72,10 @@ async fn liveness_probe(State(state): State<Arc<AppState>>) -> StatusCode {
     match tokio::fs::metadata(&state.index_path).await {
         Ok(_) => StatusCode::OK,
         Err(e) => {
-            eprintln!("Liveness probe failed to read {:?}: {}", state.index_path, e);
+            eprintln!(
+                "Liveness probe failed to read {:?}: {}",
+                state.index_path, e
+            );
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
