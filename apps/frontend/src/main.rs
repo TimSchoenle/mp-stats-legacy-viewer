@@ -1,20 +1,18 @@
-use mp_stats_core::DataProviderWrapper;
-use mp_stats_data_client::ClientDataProvider;
+use mp_stats_frontend::Api;
 use mp_stats_frontend::app::App;
-use std::rc::Rc;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 #[function_component(Root)]
 fn root() -> Html {
-    let provider = DataProviderWrapper(Rc::new(ClientDataProvider));
+    let api_context = Api;
 
     html! {
-        <ContextProvider<DataProviderWrapper> context={provider}>
+        <ContextProvider<Api> context={api_context}>
             <BrowserRouter>
                 <App />
             </BrowserRouter>
-        </ContextProvider<DataProviderWrapper>>
+        </ContextProvider<Api>>
     }
 }
 
