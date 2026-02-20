@@ -31,12 +31,15 @@ RUN cd apps/frontend && npm install
 RUN cd apps/frontend && trunk build --release
 
 FROM base AS data-optimizer
+
+ARG DATA_INPUT_DIRECTORY=data
+
 WORKDIR /app
 
 COPY . .
 
 # Convert data to optimized binary format (Postcard + Zlib)
-RUN --mount=type=bind,source=data,target=/app/data \
+RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
     cargo run --release -p mp-stats-converter -- /app/data /app/data-dist
 
 FROM base AS builder
