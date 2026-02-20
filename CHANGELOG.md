@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.2...v0.4.0) (2026-02-20)
+
+
+### Features
+
+* increase data compression preset to 9 ([1dc341e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1dc341e95944bc1bb55063ecc8ad1b4ffa530aba))
+
+
+### Build System
+
+* add propper docker build test ([270a9f1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/270a9f157b88bf45ab50fb0261a3506cc31500a4))
+* **Data:** add data-test sub set of the global data for testing purpose ([1a3e7f6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1a3e7f637b013951e71f804370e9552852698177))
+* **Data:** use higher compression levels ([25452a6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/25452a6fcff2c35e93025510cac8a0855de8810e))
+* **Docker:** add DATA_INPUT_DIRECTORY to select data input directory ([dbd9855](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dbd98550044f80ae5dab16238234b9bb862e0938))
+* update lock ([13ec6bd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/13ec6bdfa0a072f23bc4cd93afadfcb3528fad9f))
+
 ## [0.3.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.1...v0.3.2) (2026-02-20)
 
 
