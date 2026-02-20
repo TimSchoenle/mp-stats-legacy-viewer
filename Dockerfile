@@ -13,7 +13,6 @@ FROM base AS frontend_base
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y nodejs npm
-RUN cd apps/frontend & npm init -y && npm install tailwindcss @tailwindcss/cli
 
 # Install Trunk for WASM builds
 RUN cargo install --locked trunk
@@ -24,6 +23,9 @@ RUN rustup target add wasm32-unknown-unknown
 FROM frontend_base AS frontend
 
 COPY . .
+
+# Install npm dependencies
+RUN cd apps/frontend && npm install
 
 # Build WASM/SPA frontend via Trunk
 RUN cd apps/frontend && trunk build --release
