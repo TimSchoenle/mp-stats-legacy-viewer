@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.1...v0.3.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* restore npm dependencies for trunk ([1c7f5cd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1c7f5cd17298688e0d0c1e41132c6f1cfc8849d3))
+
 ## [0.3.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.3.0...v0.3.1) (2026-02-19)
 
 
