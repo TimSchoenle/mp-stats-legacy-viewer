@@ -1025,7 +1025,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-common"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "lzma-rust2",
  "postcard",
@@ -1036,7 +1036,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-converter"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "binary-layout",
@@ -1054,7 +1054,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1066,7 +1066,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-data-client"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1083,7 +1083,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-frontend"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "log",
  "mp-stats-core",
@@ -1101,7 +1101,7 @@ version = "0.5.0"
 
 [[package]]
 name = "mp-stats-server"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "axum",
  "clap",
