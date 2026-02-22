@@ -4,10 +4,18 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+#[derive(Properties, PartialEq)]
+pub struct SearchBarProps {
+    #[prop_or(Classes::from("max-w-md"))]
+    pub class: Classes,
+    #[prop_or(Classes::from("py-2 pl-4 pr-12 text-sm"))]
+    pub input_classes: Classes,
+}
+
 #[function_component(SearchBar)]
-pub fn search_bar() -> Html {
+pub fn search_bar(props: &SearchBarProps) -> Html {
     let navigator = use_navigator().unwrap();
-    let query = use_state(|| String::new());
+    let query = use_state(String::new);
     let loading = use_state(|| false);
 
     let api_ctx = use_context::<Api>().expect("no api found found");
@@ -61,12 +69,12 @@ pub fn search_bar() -> Html {
     };
 
     html! {
-        <form onsubmit={onsubmit} class="relative w-full max-w-md">
+        <form onsubmit={onsubmit} class={classes!("relative", "w-full", props.class.clone())}>
             <div class="relative flex items-center">
                 <input
                     type="text"
                     placeholder="Search player (Name/UUID)..."
-                    class="w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 rounded-full py-2 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white/10 transition-all backdrop-blur-sm"
+                    class={classes!("w-full", "bg-white/5", "border", "border-white/10", "text-white", "placeholder-gray-400", "rounded-full", "focus:outline-none", "focus:ring-2", "focus:ring-emerald-500", "focus:bg-white/10", "transition-all", "backdrop-blur-sm", props.input_classes.clone())}
                     value={(*query).clone()}
                     {oninput}
                     disabled={*loading}
