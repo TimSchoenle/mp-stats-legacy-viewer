@@ -11,11 +11,11 @@ fn chunk_filename(index: u32) -> String {
 }
 
 pub fn meta_map_bin(edition: &PlatformEdition) -> String {
-    format!("{}/meta/map.bin", edition.directory_name())
+    format!("{}/meta/map.bin.xz", edition.directory_name())
 }
 
 pub fn game_bin(edition: &PlatformEdition, game_id: &str) -> String {
-    format!("{}/games/{game_id}.bin", edition.directory_name())
+    format!("{}/games/{game_id}.bin.xz", edition.directory_name())
 }
 
 pub fn leaderboard_chunk_bin(
@@ -48,9 +48,9 @@ pub fn history_leaderboard_chunk_bin(
 }
 
 pub fn player_shard_bin(edition: &PlatformEdition, shard: &str) -> String {
-    format!("{}/players/{shard}.bin", edition.directory_name())
+    format!("{}/players/{shard}.bin.xz", edition.directory_name())
 }
 
 pub fn names_index_bin(edition: &PlatformEdition, prefix: &str) -> String {
-    format!("{}/names_index/{prefix}.bin", edition.directory_name())
+    format!("{}/names_index/{prefix}.bin.xz", edition.directory_name())
 }
