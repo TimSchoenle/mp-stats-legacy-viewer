@@ -1,19 +1,57 @@
 use anyhow::Result;
-use mp_stats_common::compression::write_lzma_bin;
-use mp_stats_core::models::{GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile};
+use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
+use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition};
+use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
 
+fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
+    // Decompress the .xz file first
+    let decompressed_tar = read_lzma_raw(&*history_in)?;
+
+    // Now extract the tar archive
+    let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
+
+    let mut snapshots = Vec::new();
+
+    // Extract all files and group by snapshot
+    for entry_result in archive.entries()? {
+        let entry = entry_result?;
+        let path = entry.path()?;
+        let path_str = path.to_string_lossy().to_string();
+
+        if let Some(slash_pos) = path_str.find('/') {
+            let snapshot_name = path_str[..slash_pos].to_string();
+            let file_name = path_str[slash_pos + 1..].to_string();
+
+            if file_name == "_meta.json" {
+                if let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(entry)) {
+                    snapshots.push(HistoricalSnapshot {
+                        snapshot_id: SmolStr::new(&snapshot_name),
+                        timestamp: meta.save_time_unix,
+                        total_pages: meta.total_pages,
+                        total_entries: meta.total_entries,
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(snapshots)
+}
+
 /// Process and aggregate game metadata from leaderboards
-pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -> Result<()> {
-    let lb_in = java_in.join("leaderboards");
-    let games_out = java_out.join("games");
-    fs::create_dir_all(&games_out)?;
+pub fn process_game_metadata(
+    platform: &PlatformEdition,
+    in_path: &Path,
+    base_out: &Path,
+) -> Result<()> {
+    let lb_in = in_path.join("leaderboards");
 
     // Group by Game using WalkDir
     let mut game_dirs: HashMap<String, Vec<(String, String, std::path::PathBuf)>> = HashMap::new();
@@ -42,20 +80,38 @@ pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -
 
         for (board, stat, stat_path) in stats {
             // Check latest folder for count
-            let latest = stat_path.join("latest");
-            let mut count = 0;
-            if latest.exists() {
-                if let Ok(file) = File::open(latest.join("_meta.json")) {
+            let latest_meta = stat_path.join("latest");
+            let mut latest = None;
+            if latest_meta.exists() {
+                if let Ok(file) = File::open(latest_meta.join("_meta.json")) {
                     if let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file)) {
-                        count = meta.total_entries;
+                        latest = Some(HistoricalSnapshot {
+                            snapshot_id: SmolStr::new("latest"),
+                            timestamp: meta.save_time_unix,
+                            total_pages: meta.total_pages,
+                            total_entries: meta.total_entries,
+                        });
                     }
                 }
+            }
+
+            let history_in = stat_path.join("history.tar.xz");
+            let snapshots = read_history_data(&history_in).unwrap_or_default();
+
+            if !snapshots.is_empty() {
+                println!(
+                    "Found {} snapshots for {}/{}/{}",
+                    snapshots.len(),
+                    platform,
+                    game_id,
+                    stat
+                );
             }
 
             meta_stats
                 .entry(SmolStr::new(stat))
                 .or_default()
-                .insert(SmolStr::new(board), LeaderboardMeta { count });
+                .insert(SmolStr::new(board), LeaderboardMeta { snapshots, latest });
         }
 
         let game_data = GameLeaderboardData {
@@ -64,8 +120,13 @@ pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -
             stats: meta_stats,
         };
 
-        let out_path = games_out.join(format!("{}.bin", game_id));
+        let relative_out_path = routes::game_bin(platform, game_id);
+        let out_path = base_out.join(relative_out_path);
         let _ = write_lzma_bin(&out_path, &game_data);
+
+        // Write debug json
+        let debug_out_path = out_path.with_extension("json");
+        let _ = serde_json::to_writer_pretty(File::create(debug_out_path).unwrap(), &game_data);
     });
 
     Ok(())

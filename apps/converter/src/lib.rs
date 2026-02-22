@@ -10,6 +10,7 @@ pub use io::{
     copy_dir_all, finalize_output, read_json, setup_staging_directory, validate_different_paths,
     validate_directory,
 };
+use mp_stats_core::routes;
 pub use pipeline::{
     process_dictionary_and_names, process_game_metadata, process_java_leaderboards,
     process_java_players,
@@ -51,28 +52,27 @@ impl Converter {
 
             // Setup directories
             let directory_in = self.input_dir.join(edition.directory_name());
-            let directory_out = self.staging_dir.join(edition.directory_name());
-            std::fs::create_dir_all(&directory_out)?;
 
             // Step 1: Process Metadata & Build ID Maps
             println!("Step 1: Processing Metadata...");
-            let id_map = self.process_metadata(&directory_in, &directory_out)?;
+            self.process_metadata(edition, &directory_in, &self.staging_dir)?;
 
             // Step 2: Dictionary & Names Index
             println!("Step 2: Processing Dictionary & Names...");
-            let lookup_map = process_dictionary_and_names(&directory_in, &directory_out)?;
+            let lookup_map =
+                process_dictionary_and_names(edition, &directory_in, &self.staging_dir)?;
 
             // Step 3: Process Leaderboards
             println!("Step 3: Processing Leaderboards...");
-            process_java_leaderboards(&directory_in, &directory_out, &id_map, &lookup_map)?;
+            process_java_leaderboards(edition, &directory_in, &self.staging_dir, &lookup_map)?;
 
             // Step 3b: Process Game Metadata
             println!("Step 3b: Processing Game Metadata...");
-            process_game_metadata(&directory_in, &directory_out, &id_map)?;
+            process_game_metadata(edition, &directory_in, &self.staging_dir)?;
 
             // Step 3c: Process Java Players
             println!("Step 3c: Processing Players...");
-            process_java_players(&directory_in, &directory_out, &lookup_map)?;
+            process_java_players(edition, &directory_in, &self.staging_dir, &lookup_map)?;
         }
 
         // Step 5: Finalize
@@ -83,7 +83,12 @@ impl Converter {
         Ok(())
     }
 
-    fn process_metadata(&self, java_in: &Path, java_out: &Path) -> Result<IdMap> {
+    fn process_metadata(
+        &self,
+        platform: &PlatformEdition,
+        java_in: &Path,
+        output_dir: &Path,
+    ) -> Result<IdMap> {
         let map_path = java_in.join("meta/map.json");
         if !map_path.exists() {
             anyhow::bail!("map.json not found at {:?}", map_path);
@@ -92,10 +97,8 @@ impl Converter {
         let id_map: IdMap = read_json(&map_path)?;
 
         // Serialize map to bin (LZMA)
-        let map_out = java_out.join("meta/map.bin");
-        if let Some(p) = map_out.parent() {
-            std::fs::create_dir_all(p)?;
-        }
+        let relative_path = routes::meta_map_bin(platform);
+        let map_out = output_dir.join(relative_path);
         mp_stats_common::compression::write_lzma_bin(&map_out, &id_map)?;
 
         Ok(id_map)
