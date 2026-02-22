@@ -1,6 +1,7 @@
-use crate::{Api, Route};
+use crate::Route;
+use crate::components::error_message::ErrorMessage;
+use crate::hooks::use_game_leaderboards;
 use mp_stats_core::models::PlatformEdition;
-use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -12,41 +13,14 @@ pub struct GameProps {
 
 #[function_component(GameView)]
 pub fn game_view(props: &GameProps) -> Html {
-    let stats = use_state(|| Vec::<String>::new());
-    let api_ctx = use_context::<Api>().expect("no api found found");
-    let game = props.game.clone();
-    let loading = use_state(|| true);
-    let error = use_state(|| None::<String>);
+    let game_req = use_game_leaderboards(props.edition.clone(), props.game.clone());
 
-    {
-        let stats = stats.clone();
-        let loading = loading.clone();
-        let error = error.clone();
-        let edition = props.edition.clone();
-
-        use_effect_with((game.clone(), api_ctx), move |(game_id, ctx)| {
-            let game_id = game_id.clone();
-            let provider = ctx.clone();
-            loading.set(true);
-            error.set(None);
-            spawn_local(async move {
-                match provider.fetch_game_leaderboards(&edition, &game_id).await {
-                    Ok(data) => {
-                        let mut stat_list: Vec<String> =
-                            data.stats.keys().map(|k| k.to_string()).collect();
-                        stat_list.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
-                        stats.set(stat_list);
-                        loading.set(false);
-                    }
-                    Err(e) => {
-                        error.set(Some(format!("Failed to load game data: {}", e)));
-                        loading.set(false);
-                    }
-                }
-            });
-            || ()
-        });
-    }
+    let mut stats = if let Some(data) = &game_req.data {
+        data.stats.keys().map(|k| k.to_string()).collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+    stats.sort_by_key(|a| a.to_lowercase());
 
     html! {
         <div class="container mx-auto px-4 py-8 text-white">
@@ -70,15 +44,9 @@ pub fn game_view(props: &GameProps) -> Html {
                 </p>
             </div>
 
-            if let Some(err) = &*error {
-                <div class="card p-8 text-center text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="font-medium">{"Error loading game data"}</p>
-                    <p class="text-sm mt-1 text-gray-600">{ err }</p>
-                </div>
-            } else if *loading {
+            if let Some(err) = &game_req.error {
+                <ErrorMessage title="Error loading game data" message={err.clone()} />
+            } else if game_req.loading {
                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
                     { for (0..8).map(|_| html! {
                         <div class="h-20 bg-gray-800 rounded-lg"></div>
