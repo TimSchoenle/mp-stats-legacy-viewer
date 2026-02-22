@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::components::leaderboards::board_type_selector::BoardTypeSelector;
 use crate::components::leaderboards::header::LeaderboardHeader;
@@ -9,9 +10,8 @@ use crate::components::leaderboards::leaderboard_table::LeaderboardTable;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::components::leaderboards::snapshot_selector::SnapshotSelector;
 use crate::hooks::{use_game_leaderboards, use_leaderboard_entries};
-use crate::Route;
-use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::ENTRIES_PER_PAGE_F64;
+use mp_stats_core::models::PlatformEdition;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
