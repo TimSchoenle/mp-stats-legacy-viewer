@@ -1,7 +1,7 @@
 use anyhow::Result;
 use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition};
-use mp_stats_core::{HistoricalSnapshot, routes};
+use mp_stats_core::{routes, HistoricalSnapshot};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -123,10 +123,6 @@ pub fn process_game_metadata(
         let relative_out_path = routes::game_bin(platform, game_id);
         let out_path = base_out.join(relative_out_path);
         let _ = write_lzma_bin(&out_path, &game_data);
-
-        // Write debug json
-        let debug_out_path = out_path.with_extension("json");
-        let _ = serde_json::to_writer_pretty(File::create(debug_out_path).unwrap(), &game_data);
     });
 
     Ok(())
