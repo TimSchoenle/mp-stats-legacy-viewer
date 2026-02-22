@@ -47,18 +47,6 @@ pub fn history_leaderboard_chunk_bin(
     )
 }
 
-pub fn history_snapshots_meta(
-    edition: &PlatformEdition,
-    board: &str,
-    game: &str,
-    stat: &str,
-) -> String {
-    format!(
-        "{}/leaderboards/{board}/{game}/{stat}/history/_snapshots.json",
-        edition.directory_name()
-    )
-}
-
 pub fn player_shard_bin(edition: &PlatformEdition, shard: &str) -> String {
     format!("{}/players/{shard}.bin", edition.directory_name())
 }
