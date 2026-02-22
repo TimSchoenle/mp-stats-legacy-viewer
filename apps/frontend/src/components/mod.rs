@@ -1,3 +1,4 @@
+pub mod error_message;
 pub mod footer;
 pub mod header;
 pub mod leaderboard;
