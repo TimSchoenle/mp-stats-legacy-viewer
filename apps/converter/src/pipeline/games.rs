@@ -1,7 +1,7 @@
 use anyhow::Result;
 use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition};
-use mp_stats_core::{routes, HistoricalSnapshot};
+use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -46,7 +46,11 @@ fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
 }
 
 /// Process and aggregate game metadata from leaderboards
-pub fn process_game_metadata(platform: &PlatformEdition, in_path: &Path, base_out: &Path) -> Result<()> {
+pub fn process_game_metadata(
+    platform: &PlatformEdition,
+    in_path: &Path,
+    base_out: &Path,
+) -> Result<()> {
     let lb_in = in_path.join("leaderboards");
 
     // Group by Game using WalkDir
@@ -95,16 +99,19 @@ pub fn process_game_metadata(platform: &PlatformEdition, in_path: &Path, base_ou
             let snapshots = read_history_data(&history_in).unwrap_or_default();
 
             if !snapshots.is_empty() {
-                println!("Found {} snapshots for {}/{}/{}", snapshots.len(), platform, game_id, stat);
+                println!(
+                    "Found {} snapshots for {}/{}/{}",
+                    snapshots.len(),
+                    platform,
+                    game_id,
+                    stat
+                );
             }
 
             meta_stats
                 .entry(SmolStr::new(stat))
                 .or_default()
-                .insert(SmolStr::new(board), LeaderboardMeta {
-                    snapshots,
-                    latest,
-                });
+                .insert(SmolStr::new(board), LeaderboardMeta { snapshots, latest });
         }
 
         let game_data = GameLeaderboardData {
