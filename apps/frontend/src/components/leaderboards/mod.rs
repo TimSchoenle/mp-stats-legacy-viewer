@@ -1,3 +1,5 @@
+pub mod board_type_selector;
 pub mod header;
+pub mod leaderboard_table;
 pub mod pagination_controls;
-mod snapshot_selector;
+pub mod snapshot_selector;
