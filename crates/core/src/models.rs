@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
-
-// --- Java Edition Models ---
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Game {
     pub id: SmolStr,
     pub name: SmolStr,
-    // Add other fields as necessary, e.g., available boards/stats
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -16,7 +17,7 @@ pub struct JavaMeta {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct JavaLeaderboardChunk {
+pub struct LeaderboardChunk {
     pub rank: u32,
     pub uuid: SmolStr,
     pub name: SmolStr,
@@ -26,7 +27,7 @@ pub struct JavaLeaderboardChunk {
 /// Structure-of-Arrays (SoA) format for leaderboard pages
 /// Stores 1,000 entries per page in columnar layout for better compression
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct JavaLeaderboardPage {
+pub struct LeaderboardPage {
     pub ranks: Vec<u32>,
     pub uuids: Vec<SmolStr>,
     pub names: Vec<SmolStr>,
@@ -43,7 +44,8 @@ pub struct LeaderboardEntry {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardMeta {
-    pub count: u32,
+    pub latest: Option<HistoricalSnapshot>,
+    pub snapshots: Vec<HistoricalSnapshot>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -52,11 +54,6 @@ pub struct GameLeaderboardData {
     pub game_name: SmolStr,
     pub stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>>,
 }
-
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::Display;
-use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMap {
@@ -226,33 +223,6 @@ impl Serialize for JavaPlayerProfile {
     }
 }
 
-// --- Bedrock Edition Models ---
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockMeta {
-    pub games: Vec<Game>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockGameData {
-    pub id: SmolStr,
-    pub name: SmolStr,
-    pub stats: Vec<SmolStr>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockLeaderboardChunk {
-    pub rank: u32,
-    pub player_name: SmolStr,
-    pub score: f64,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockPlayerProfile {
-    pub name: SmolStr,
-    pub stats: serde_json::Value,
-}
-
 // --- Shared / Lookup Models ---
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -264,7 +234,11 @@ pub struct NameLookup {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct MetaFile {
+    pub save_time: String,
+    pub save_time_unix: u64,
+    pub save_id: u32,
     pub total_entries: u32,
+    pub total_pages: u32,
 }
 
 // --- Historical Leaderboard Models ---
@@ -275,11 +249,6 @@ pub struct HistoricalSnapshot {
     pub timestamp: u64,
     pub total_pages: u32,
     pub total_entries: u32,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct HistoryMetadata {
-    pub snapshots: Vec<HistoricalSnapshot>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]

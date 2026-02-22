@@ -1,21 +1,20 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
-use mp_stats_core::models::{JavaPlayerProfile, StatRaw};
+use mp_stats_core::models::{JavaPlayerProfile, PlatformEdition, StatRaw};
+use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
 
 pub fn process_java_players(
+    platform: &PlatformEdition,
     java_in: &Path,
-    java_out: &Path,
+    output_directory: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     let players_in = java_in.join("players");
-    let players_out = java_out.join("players");
-    fs::create_dir_all(&players_out)?;
 
     if !players_in.exists() {
         return Ok(());
@@ -58,7 +57,9 @@ pub fn process_java_players(
         .iter()
         .par_bridge()
         .for_each(|(prefix, profile_map)| {
-            let out_path = players_out.join(format!("{}.bin", prefix));
+            let relative_path = routes::player_shard_bin(platform, prefix);
+            let out_path = output_directory.join(relative_path);
+
             let _ = write_lzma_bin(&out_path, profile_map);
         });
 
@@ -103,7 +104,6 @@ fn process_player_shard(
             let board_id = stride_data[offset].as_u64().unwrap_or(0) as u32;
             let game_id = stride_data[offset + 1].as_u64().unwrap_or(0) as u32;
             let stat_id = stride_data[offset + 2].as_u64().unwrap_or(0) as u32;
-            // Score can be float or int
             let score = stride_data[offset + 4].as_u64().unwrap_or(0);
             let rank = stride_data[offset + 5].as_u64().unwrap_or(0) as u32;
             let save_time = stride_data[offset + 6].as_u64().unwrap_or(0);
