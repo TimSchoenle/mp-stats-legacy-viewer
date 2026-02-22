@@ -1,9 +1,9 @@
 use crate::error::{DataError, Result};
 use lzma_rust2::{XzOptions, XzReader, XzWriter};
 use std::fs::File;
-use std::io;
 use std::io::{BufReader, BufWriter, Cursor, Read};
 use std::path::Path;
+use std::{fs, io};
 
 /// Write data as LZMA-compressed Postcard binary
 pub fn write_lzma_bin<T: serde::Serialize>(path: &Path, data: &T) -> Result<()> {
@@ -14,6 +14,10 @@ pub fn write_lzma_bin<T: serde::Serialize>(path: &Path, data: &T) -> Result<()> 
 /// Write raw bytes with LZMA compression
 pub fn write_lzma_raw(path: &Path, data: &[u8]) -> Result<()> {
     let mut reader = Cursor::new(data);
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
 
     let file = File::create(path).map_err(|e| DataError::Io(e))?;
     let writer = BufWriter::new(file);

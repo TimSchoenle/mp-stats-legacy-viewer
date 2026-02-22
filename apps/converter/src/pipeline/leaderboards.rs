@@ -1,8 +1,10 @@
+use crate::models::leaderboard::binary_leaderboard;
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
-use mp_stats_common::formats::FILE_META;
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
-use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
+use mp_stats_common::formats::FILE_META;
+use mp_stats_core::models::{HistoryMetadata, JavaLeaderboardPage, PlatformEdition};
+use mp_stats_core::HistoricalSnapshot;
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -11,19 +13,16 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::models::leaderboard::binary_leaderboard;
-
 const LEADERBOARD_SIZE: usize = crate::models::leaderboard::BINARY_LEADERBOARD_SIZE;
 
 /// Process all Java leaderboards
 pub fn process_java_leaderboards(
+    platform: &PlatformEdition,
     java_in: &Path,
-    java_out: &Path,
-    _id_map: &IdMap,
+    output_dir: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     let lb_in = java_in.join("leaderboards");
-    let lb_out = java_out.join("leaderboards");
 
     let walker = WalkDir::new(&lb_in).into_iter();
     // Filter for .../latest directories
@@ -39,7 +38,7 @@ pub fn process_java_leaderboards(
     );
 
     latest_dirs.par_iter().for_each(|latest_dir| {
-        let _ = process_single_leaderboard(latest_dir, &lb_in, &lb_out, lookup_map);
+        let _ = process_single_leaderboard(platform, latest_dir, &output_dir, lookup_map);
     });
 
     Ok(())
@@ -47,9 +46,9 @@ pub fn process_java_leaderboards(
 
 /// Process a single leaderboard directory
 fn process_single_leaderboard(
+    platform: &PlatformEdition,
     latest_in: &Path,
-    _root_in: &Path,
-    root_out: &Path,
+    output_dir: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     // Structure: .../[board]/[game]/[stat]/latest
@@ -62,9 +61,11 @@ fn process_single_leaderboard(
     let board_name = board_dir.file_name().unwrap();
 
     // Output Paths
-    let out_stat_dir = root_out.join(board_name).join(game_name).join(stat_name);
+    // TODO: Correctly migrate to routes
+    let out_stat_dir = output_dir.join(platform.directory_name()).join("leaderboards").join(board_name).join(game_name).join(stat_name);
+    std::fs::create_dir_all(&out_stat_dir)?;
     let out_latest = out_stat_dir.join("latest");
-    fs::create_dir_all(&out_latest)?;
+    std::fs::create_dir_all(&out_latest)?;
 
     // Process Latest Chunks
     process_latest_chunks(latest_in, &out_latest, lookup_map)?;
@@ -363,12 +364,12 @@ fn process_history(
             }
 
             // Add snapshot metadata
-            let snapshot_info = serde_json::json!({
-                "snapshot_id": snapshot_name,
-                "timestamp": timestamp,
-                "total_pages": output_index,
-                "total_entries": total_entries_written,
-            });
+            let snapshot_info = HistoricalSnapshot {
+                snapshot_id: SmolStr::new(&snapshot_name),
+                timestamp: timestamp.clone(),
+                total_pages: output_index,
+                total_entries: total_entries_written,
+            };
 
             if let Ok(mut snapshots_vec) = snapshots.lock() {
                 snapshots_vec.push(snapshot_info);
@@ -376,12 +377,13 @@ fn process_history(
         });
 
     let snapshots = snapshots.into_inner()?;
+    let snapshots_length = snapshots.len();
 
     // Generate _snapshots.json metadata file
     if !snapshots.is_empty() {
-        let snapshots_metadata = serde_json::json!({
-            "snapshots": snapshots
-        });
+        let snapshots_metadata = HistoryMetadata {
+            snapshots,
+        };
 
         let snapshots_path = history_out.join("_snapshots.json");
         if let Ok(json_str) = serde_json::to_string_pretty(&snapshots_metadata) {
@@ -390,7 +392,7 @@ fn process_history(
             } else {
                 println!(
                     "Generated _snapshots.json with {} snapshots",
-                    snapshots.len()
+                    snapshots_length
                 );
             }
         }

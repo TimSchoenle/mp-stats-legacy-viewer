@@ -1,19 +1,18 @@
 use anyhow::Result;
 use mp_stats_common::compression::write_lzma_bin;
-use mp_stats_core::models::{GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile};
+use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition};
+use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
 
 /// Process and aggregate game metadata from leaderboards
-pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -> Result<()> {
-    let lb_in = java_in.join("leaderboards");
-    let games_out = java_out.join("games");
-    fs::create_dir_all(&games_out)?;
+pub fn process_game_metadata(platform: &PlatformEdition, in_path: &Path, base_out: &Path) -> Result<()> {
+    let lb_in = in_path.join("leaderboards");
 
     // Group by Game using WalkDir
     let mut game_dirs: HashMap<String, Vec<(String, String, std::path::PathBuf)>> = HashMap::new();
@@ -64,7 +63,8 @@ pub fn process_game_metadata(java_in: &Path, java_out: &Path, _id_map: &IdMap) -
             stats: meta_stats,
         };
 
-        let out_path = games_out.join(format!("{}.bin", game_id));
+        let relative_out_path = routes::game_bin(platform, game_id);
+        let out_path = base_out.join(relative_out_path);
         let _ = write_lzma_bin(&out_path, &game_data);
     });
 
