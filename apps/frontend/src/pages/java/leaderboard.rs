@@ -7,10 +7,10 @@ use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, LeaderboardEntry};
 use crate::{Api, Route};
 use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
-use mp_stats_core::{ENTRIES_PER_PAGE_F64, HistoricalSnapshot};
+use mp_stats_core::{HistoricalSnapshot, ENTRIES_PER_PAGE_F64};
 use yew::platform::spawn_local;
 use yew::{
-    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
+    function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties,
 };
 
 #[derive(Properties, PartialEq, Clone)]
@@ -119,16 +119,11 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         use_effect_with(
             (game_data.clone(), props.board.clone(), props.stat.clone()),
             move |(game_data, board, stat)| {
-                if let Some(data) = game_data.as_ref() {
-                    if let Some(stat_map) = data.stats.get(stat.as_str()) {
-                        if let Some(meta) = stat_map.get(board.as_str()) {
-                            current_meta.set(Some(meta.clone()));
-                            return;
-                        }
-                    }
+                if let Some(data) = game_data.as_ref() && let Some(stat_map) = data.stats.get(stat.as_str()) && let Some(meta) = stat_map.get(board.as_str()) {
+                    current_meta.set(Some(meta.clone()));
+                } else {
+                    current_meta.set(None);
                 }
-
-                current_meta.set(None);
             },
         )
     }
@@ -137,7 +132,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     {
         let current_snapshot_meta = current_snapshot_meta.clone();
         let current_meta = current_meta.clone();
-        let props = props.clone();
 
         use_effect_with(
             (current_meta.clone(), query.snapshot.clone()),
