@@ -115,8 +115,7 @@ fn process_latest_chunks(
         .collect();
 
     // Process chunks using shared logic
-    let (output_index, total_entries_written) =
-        process_binary_chunks(&decompressed_chunks, out_latest, lookup_map)?;
+    process_binary_chunks(&decompressed_chunks, out_latest, lookup_map)?;
 
     Ok(())
 }

@@ -24,6 +24,29 @@ pub struct LeaderboardProps {
 pub struct SnapshotQuery {
     pub snapshot: String,
 }
+
+fn sorted_board_types(mut boards: Vec<String>) -> Vec<String> {
+    fn get_rank(board: &str) -> u8 {
+        match board.to_lowercase().as_str() {
+            "all" => 0,
+            "yearly" => 1,
+            "monthly" => 2,
+            "weekly" => 3,
+            "daily" => 4,
+            _ => 5,
+        }
+    }
+
+    boards.sort_by(|a, b| {
+        let rank_a = get_rank(a);
+        let rank_b = get_rank(b);
+
+        rank_a.cmp(&rank_b).then_with(|| a.cmp(b))
+    });
+
+    boards
+}
+
 #[function_component(LeaderboardView)]
 pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let location = use_location().unwrap();
@@ -346,7 +369,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             // Board Type Selector Tabs
             <div class="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 w-fit">
                 if let Some(game_data) = game_data.as_ref() && let Some(stat_data) = game_data.stats.get(props.stat.as_str()) {
-                            { for stat_data.keys().map(|board| {
+                            { for sorted_board_types(stat_data.keys().map(|s| s.to_string()).collect()).iter().map(|board| {
                     let is_active = *board == props.board;
                     let classes = if is_active {
                         "px-4 py-2 rounded-md text-sm font-bold bg-emerald-600 text-white transition-all"
