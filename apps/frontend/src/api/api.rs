@@ -216,33 +216,6 @@ impl Api {
         ))
     }
 
-    pub async fn fetch_history_snapshots(
-        &self,
-        edition: &PlatformEdition,
-        board: &str,
-        game: &str,
-        stat: &str,
-    ) -> Result<Vec<mp_stats_core::HistoricalSnapshot>, gloo_net::Error> {
-        let url = format!(
-            "/data/{}",
-            routes::history_snapshots_meta(edition, board, game, stat)
-        );
-
-        match Request::get(&url).send().await {
-            Ok(resp) if resp.ok() => {
-                let metadata = resp
-                    .json::<mp_stats_core::models::HistoryMetadata>()
-                    .await?;
-                Ok(metadata.snapshots)
-            }
-            Ok(resp) if resp.status() == 404 => {
-                // No history available for this leaderboard
-                Ok(Vec::new())
-            }
-            _ => Ok(Vec::new()),
-        }
-    }
-
     pub async fn fetch_history_leaderboard(
         &self,
         edition: &PlatformEdition,
