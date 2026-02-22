@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.5.0...v0.6.0) (2026-02-22)
+
+
+### Features
+
+* **Frontend:** simplify api ([#30](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/30)) ([0750213](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0750213c8023053b3a9193921e045b4303ab18c9))
+
+
+### Code Refactoring
+
+* cleanup models ([#31](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/31)) ([d28789e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d28789e1fe30e530643675fe462011c94adef77e))
+
+
+### Build System
+
+* cleanup unused dependencies and update existing ones ([7c59897](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7c598978a403b517d485ea1f8a689fba16506722))
+* never cancel release please action ([1414dc6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1414dc6146422da89f9c02f4596eae22dbac723d))
+* update lock ([bf6a411](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/bf6a4116361a68ef8c52e7a970a438956a4bc5d7))
+
+
+### Miscellaneous
+
+* **deps:** update github/codeql-action action to v4.32.4 ([#25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/25)) ([81afbae](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/81afbae7f0fb75a83f1a7c800d83993d1173f21d))
+* **deps:** update rust crate anyhow to v1.0.102 ([#22](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/22)) ([0f2ee3a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0f2ee3aac6490b36c39b6fe4a2eef1540d48b09f))
+* **deps:** update rust crate clap to v4.5.60 ([#21](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/21)) ([2d1f77f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2d1f77f834a1f41490d2440f8da2a7ad69edeef1))
+* fix test failure ([552a90c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/552a90c1ace40f099898fb6dcaab3feb983d59b0))
+
 ## [0.5.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.4.0...v0.5.0) (2026-02-20)
 
 
