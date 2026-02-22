@@ -1,6 +1,7 @@
-use crate::{Api, Route};
+use crate::Route;
+use crate::components::error_message::ErrorMessage;
+use crate::hooks::use_player_profile;
 use mp_stats_core::models::PlatformEdition;
-use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -12,37 +13,7 @@ pub struct PlayerProps {
 
 #[function_component(PlayerView)]
 pub fn player_view(props: &PlayerProps) -> Html {
-    let profile = use_state(|| None);
-    let id_map = use_state(|| None);
-    let error = use_state(|| None::<String>);
-    let uuid = props.uuid.clone();
-    let api_ctx = use_context::<Api>().expect("no api found found");
-
-    {
-        let profile = profile.clone();
-        let id_map = id_map.clone();
-        let error = error.clone();
-        let edition = props.edition.clone();
-
-        use_effect_with((uuid, api_ctx), move |(id, ctx)| {
-            let id = id.clone();
-            let provider = ctx.clone();
-            spawn_local(async move {
-                // Fetch profile first
-                let p_res = provider.fetch_player(&edition, &id).await;
-                match p_res {
-                    Ok(p) => profile.set(Some(p)),
-                    Err(e) => error.set(Some(format!("Failed to load profile: {}", e))),
-                }
-
-                // Then fetch map
-                if let Ok(m) = provider.fetch_id_map(&edition).await {
-                    id_map.set(Some(m));
-                }
-            });
-            || ()
-        });
-    }
+    let profile_req = use_player_profile(props.edition.clone(), props.uuid.clone());
 
     html! {
         <div class="container mx-auto px-4 py-8 text-white">
@@ -56,17 +27,11 @@ pub fn player_view(props: &PlayerProps) -> Html {
             </div>
 
             // Error Message
-            if let Some(err) = &*error {
-                <div class="bg-red-900 border border-red-700 text-red-200 p-4 rounded-lg mb-6">
-                    <h3 class="font-bold flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                        { "Error Loading Profile" }
-                    </h3>
-                    <p class="mt-1 opacity-90">{ err }</p>
-                </div>
+            if let Some(err) = &profile_req.error {
+                <ErrorMessage title="Error Loading Profile" message={err.clone()} is_banner={true} />
             }
 
-            if let Some(p) = &*profile {
+            if let Some(p) = &profile_req.profile {
                 // --- Profile Header ---
                 <div class="card p-6 mb-6 flex flex-col md:flex-row items-center gap-6">
                     // Avatar
@@ -89,13 +54,13 @@ pub fn player_view(props: &PlayerProps) -> Html {
                             </span>
                         </div>
                         <p class="font-mono text-gray-400 bg-gray-900 px-3 py-1 rounded inline-block text-sm border border-gray-700 select-all">
-                            { &*p.uuid.as_str() }
+                            { p.uuid.as_str() }
                         </p>
                     </div>
                 </div>
 
                 // --- Stats Grid ---
-                if let Some(map) = &*id_map {
+                if let Some(map) = &profile_req.id_map {
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {
                             // Group stats by game
@@ -144,7 +109,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                             }
                         }
                     </div>
-                } else {
+                } else if profile_req.loading {
                     // Loading State
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
                         <div class="h-64 bg-gray-800 rounded-lg"></div>
@@ -152,7 +117,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                         <div class="h-64 bg-gray-800 rounded-lg"></div>
                     </div>
                 }
-            } else {
+            } else if profile_req.loading {
                 <div class="flex items-center justify-center p-20">
                     <div class="flex flex-col items-center gap-4 text-gray-500">
                         <div class="animate-spin h-8 w-8 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
