@@ -1,8 +1,8 @@
+use crate::models::leaderboard::binary_leaderboard;
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
-use mp_stats_common::formats::FILE_META;
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
-use mp_stats_core::models::{IdMap, JavaLeaderboardPage};
+use mp_stats_core::models::{LeaderboardPage, PlatformEdition};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -11,19 +11,16 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::models::leaderboard::binary_leaderboard;
-
 const LEADERBOARD_SIZE: usize = crate::models::leaderboard::BINARY_LEADERBOARD_SIZE;
 
 /// Process all Java leaderboards
 pub fn process_java_leaderboards(
+    platform: &PlatformEdition,
     java_in: &Path,
-    java_out: &Path,
-    _id_map: &IdMap,
+    output_dir: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     let lb_in = java_in.join("leaderboards");
-    let lb_out = java_out.join("leaderboards");
 
     let walker = WalkDir::new(&lb_in).into_iter();
     // Filter for .../latest directories
@@ -39,7 +36,7 @@ pub fn process_java_leaderboards(
     );
 
     latest_dirs.par_iter().for_each(|latest_dir| {
-        let _ = process_single_leaderboard(latest_dir, &lb_in, &lb_out, lookup_map);
+        let _ = process_single_leaderboard(platform, latest_dir, &output_dir, lookup_map);
     });
 
     Ok(())
@@ -47,9 +44,9 @@ pub fn process_java_leaderboards(
 
 /// Process a single leaderboard directory
 fn process_single_leaderboard(
+    platform: &PlatformEdition,
     latest_in: &Path,
-    _root_in: &Path,
-    root_out: &Path,
+    output_dir: &Path,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     // Structure: .../[board]/[game]/[stat]/latest
@@ -62,9 +59,16 @@ fn process_single_leaderboard(
     let board_name = board_dir.file_name().unwrap();
 
     // Output Paths
-    let out_stat_dir = root_out.join(board_name).join(game_name).join(stat_name);
+    // TODO: Correctly migrate to routes
+    let out_stat_dir = output_dir
+        .join(platform.directory_name())
+        .join("leaderboards")
+        .join(board_name)
+        .join(game_name)
+        .join(stat_name);
+    std::fs::create_dir_all(&out_stat_dir)?;
     let out_latest = out_stat_dir.join("latest");
-    fs::create_dir_all(&out_latest)?;
+    std::fs::create_dir_all(&out_latest)?;
 
     // Process Latest Chunks
     process_latest_chunks(latest_in, &out_latest, lookup_map)?;
@@ -116,15 +120,7 @@ fn process_latest_chunks(
         .collect();
 
     // Process chunks using shared logic
-    let (output_index, total_entries_written) =
-        process_binary_chunks(&decompressed_chunks, out_latest, lookup_map)?;
-
-    // Update metadata with correct page count
-    update_metadata(
-        &out_latest.join(FILE_META),
-        total_entries_written,
-        output_index,
-    )?;
+    process_binary_chunks(&decompressed_chunks, out_latest, lookup_map)?;
 
     Ok(())
 }
@@ -136,7 +132,7 @@ fn process_binary_chunks(
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<(u32, u32)> {
     let mut output_index = 0;
-    let mut current_page = JavaLeaderboardPage {
+    let mut current_page = LeaderboardPage {
         ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
         uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
         names: Vec::with_capacity(ENTRIES_PER_PAGE),
@@ -192,7 +188,7 @@ fn process_binary_chunks(
                         output_index += 1;
                     }
                     // Reset page
-                    current_page = JavaLeaderboardPage {
+                    current_page = LeaderboardPage {
                         ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
                         uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
                         names: Vec::with_capacity(ENTRIES_PER_PAGE),
@@ -225,35 +221,6 @@ fn process_binary_chunks(
     Ok((output_index, total_entries_written))
 }
 
-/// Update metadata file with new page count and entry count
-fn update_metadata(meta_path: &Path, total_entries: u32, total_pages: u32) -> Result<()> {
-    if meta_path.exists() {
-        if let Ok(meta_str) = fs::read_to_string(meta_path) {
-            if let Ok(mut meta_json) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-                meta_json["total_entries"] = serde_json::json!(total_entries);
-                meta_json["total_pages"] = serde_json::json!(total_pages);
-
-                if let Ok(updated_meta) = serde_json::to_string(&meta_json) {
-                    let _ = fs::write(meta_path, updated_meta);
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Extract timestamp from metadata file
-fn extract_timestamp(meta_path: &Path) -> u64 {
-    if meta_path.exists() {
-        if let Ok(meta_str) = fs::read_to_string(meta_path) {
-            if let Ok(meta_json) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-                return meta_json["save_time_unix"].as_u64().unwrap_or(0);
-            }
-        }
-    }
-    0
-}
-
 /// Process historical leaderboard data using rich format (same as latest)
 fn process_history(
     stat_dir: &Path,
@@ -277,7 +244,7 @@ fn process_history(
     // Now extract the tar archive
     let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
 
-    let mut snapshot_data: HashMap<String, (Vec<u8>, Vec<Vec<u8>>)> = HashMap::new();
+    let mut snapshot_data: HashMap<String, Vec<Vec<u8>>> = HashMap::new();
 
     // Extract all files and group by snapshot
     for entry_result in archive.entries()? {
@@ -289,22 +256,13 @@ fn process_history(
             let snapshot_name = path_str[..slash_pos].to_string();
             let file_name = path_str[slash_pos + 1..].to_string();
 
-            if file_name == "_meta.json" {
-                // Read metadata
-                let mut contents = Vec::new();
-                entry.read_to_end(&mut contents)?;
-                snapshot_data
-                    .entry(snapshot_name)
-                    .or_insert_with(|| (Vec::new(), Vec::new()))
-                    .0 = contents;
-            } else if file_name.starts_with("chunk_") && file_name.ends_with(".bin") {
+            if file_name.starts_with("chunk_") && file_name.ends_with(".bin") {
                 // Read chunk data (uncompressed in the tar)
                 let mut contents = Vec::new();
                 entry.read_to_end(&mut contents)?;
                 snapshot_data
                     .entry(snapshot_name)
-                    .or_insert_with(|| (Vec::new(), Vec::new()))
-                    .1
+                    .or_insert_with(|| Vec::new())
                     .push(contents);
             }
         }
@@ -315,13 +273,9 @@ fn process_history(
         snapshot_data.len()
     );
 
-    // Process each snapshot concurrently using rayon
-    use std::sync::Mutex;
-    let snapshots = Mutex::new(Vec::new());
-
     snapshot_data
         .par_iter()
-        .for_each(|(snapshot_name, (meta_contents, chunks))| {
+        .for_each(|(snapshot_name, chunks)| {
             let snapshot_out = history_out.join(snapshot_name);
             if let Err(e) = fs::create_dir_all(&snapshot_out) {
                 eprintln!("Failed to create directory {:?}: {}", snapshot_out, e);
@@ -329,14 +283,6 @@ fn process_history(
             }
 
             println!("Processing history snapshot: {}", snapshot_name);
-
-            // Write metadata
-            if !meta_contents.is_empty() {
-                if let Err(e) = fs::write(snapshot_out.join("_meta.json"), meta_contents) {
-                    eprintln!("Failed to write metadata for {}: {}", snapshot_name, e);
-                    return;
-                }
-            }
 
             // Process chunks using shared logic
             let (output_index, total_entries_written) =
@@ -352,49 +298,7 @@ fn process_history(
                 "  {} - Wrote {} pages with {} total entries",
                 snapshot_name, output_index, total_entries_written
             );
-
-            // Extract timestamp from _meta.json if available
-            let meta_path = snapshot_out.join(FILE_META);
-            let timestamp = extract_timestamp(&meta_path);
-
-            // Update metadata with correct page count
-            if let Err(e) = update_metadata(&meta_path, total_entries_written, output_index) {
-                eprintln!("Failed to update metadata for {}: {}", snapshot_name, e);
-            }
-
-            // Add snapshot metadata
-            let snapshot_info = serde_json::json!({
-                "snapshot_id": snapshot_name,
-                "timestamp": timestamp,
-                "total_pages": output_index,
-                "total_entries": total_entries_written,
-            });
-
-            if let Ok(mut snapshots_vec) = snapshots.lock() {
-                snapshots_vec.push(snapshot_info);
-            }
         });
-
-    let snapshots = snapshots.into_inner()?;
-
-    // Generate _snapshots.json metadata file
-    if !snapshots.is_empty() {
-        let snapshots_metadata = serde_json::json!({
-            "snapshots": snapshots
-        });
-
-        let snapshots_path = history_out.join("_snapshots.json");
-        if let Ok(json_str) = serde_json::to_string_pretty(&snapshots_metadata) {
-            if let Err(e) = fs::write(&snapshots_path, json_str) {
-                eprintln!("Failed to write _snapshots.json: {}", e);
-            } else {
-                println!(
-                    "Generated _snapshots.json with {} snapshots",
-                    snapshots.len()
-                );
-            }
-        }
-    }
 
     Ok(())
 }
