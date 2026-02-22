@@ -1,9 +1,11 @@
 use anyhow::Result;
 use mp_stats_common::compression::write_lzma_bin;
 use mp_stats_common::formats::raw;
+use mp_stats_core::models::PlatformEdition;
+use mp_stats_core::routes;
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -11,8 +13,9 @@ use walkdir::WalkDir;
 /// Process dictionary and generate names index
 /// Returns a map of player_id -> (uuid, name) for lookups
 pub fn process_dictionary_and_names(
+    platform: &PlatformEdition,
     java_in: &Path,
-    java_out: &Path,
+    output_dir: &Path,
 ) -> Result<HashMap<String, (String, String)>> {
     let dict_in = java_in.join("dictionary/ids");
 
@@ -81,19 +84,17 @@ pub fn process_dictionary_and_names(
 
     println!("Found {} names.", names_map.len());
 
-    build_names_archive(java_out, names_map)?;
+    build_names_archive(platform, output_dir, names_map)?;
 
     Ok(global_id_map)
 }
 
 /// Build names archive and index
 fn build_names_archive(
-    java_out: &Path,
+    platform: &PlatformEdition,
+    output_dir: &Path,
     names_map: HashMap<String, Vec<(String, String)>>,
 ) -> Result<()> {
-    let index_out = java_out.join("names_index");
-    fs::create_dir_all(&index_out)?;
-
     for (prefix, entries) in names_map {
         // Write Index Bin (Name -> UUID)
         let mut index_map: HashMap<String, String> = HashMap::with_capacity(entries.len());
@@ -103,7 +104,8 @@ fn build_names_archive(
         }
 
         // Save Index Bin (LZMA)
-        let index_path = index_out.join(format!("{}.bin", prefix));
+        let relative_path = routes::names_index_bin(platform, &prefix);
+        let index_path = output_dir.join(relative_path);
         write_lzma_bin(&index_path, &index_map)?;
     }
 
