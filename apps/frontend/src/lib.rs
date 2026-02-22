@@ -4,6 +4,7 @@ pub use mp_stats_core as data;
 pub use mp_stats_core::models;
 
 pub mod components;
+pub mod hooks;
 pub mod pages;
 pub mod route;
 pub use route::Route;
