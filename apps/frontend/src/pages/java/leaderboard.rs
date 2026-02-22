@@ -7,9 +7,11 @@ use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::models::{GameLeaderboardData, LeaderboardEntry};
 use crate::{Api, Route};
 use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
-use mp_stats_core::{HistoricalSnapshot, ENTRIES_PER_PAGE_F64};
+use mp_stats_core::{ENTRIES_PER_PAGE_F64, HistoricalSnapshot};
 use yew::platform::spawn_local;
-use yew::{function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties};
+use yew::{
+    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
+};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
@@ -115,23 +117,19 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let props = props.clone();
 
         use_effect_with(
-            (
-                game_data.clone(),
-                props.board.clone(),
-                props.stat.clone(),
-            ),
+            (game_data.clone(), props.board.clone(), props.stat.clone()),
             move |(game_data, board, stat)| {
                 if let Some(data) = game_data.as_ref() {
                     if let Some(stat_map) = data.stats.get(stat.as_str()) {
                         if let Some(meta) = stat_map.get(board.as_str()) {
                             current_meta.set(Some(meta.clone()));
-                            return
+                            return;
                         }
                     }
                 }
 
                 current_meta.set(None);
-            }
+            },
         )
     }
 
@@ -153,10 +151,12 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 if let Some(data) = current_meta.as_ref() {
                     if is_latest {
                         current_snapshot_meta.set(data.latest.clone());
-                        return
-                    } else if let Some(snap) = data.snapshots.iter().find(|s| s.snapshot_id == *snapshot) {
+                        return;
+                    } else if let Some(snap) =
+                        data.snapshots.iter().find(|s| s.snapshot_id == *snapshot)
+                    {
                         current_snapshot_meta.set(Some(snap.clone()));
-                        return
+                        return;
                     }
                 }
 
@@ -176,10 +176,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         let context = api_ctx.clone();
 
         use_effect_with(
-            (
-                current_snapshot_meta.clone(),
-                page.clone(),
-            ),
+            (current_snapshot_meta.clone(), page.clone()),
             move |(snapshot, page_captured)| {
                 // Reset error state
                 error.set(None);
@@ -195,13 +192,21 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                     spawn_local(async move {
                         let result = if snapshot_data.snapshot_id == "latest" {
                             provider
-                                .fetch_leaderboard(&props.edition, &props.board, &props.game, &props.stat, page_idx)
+                                .fetch_leaderboard(
+                                    &props.edition,
+                                    &props.board,
+                                    &props.game,
+                                    &props.stat,
+                                    page_idx,
+                                )
                                 .await
                         } else {
                             provider
                                 .fetch_history_leaderboard(
                                     &props.edition,
-                                    &props.board, &props.game, &props.stat,
+                                    &props.board,
+                                    &props.game,
+                                    &props.stat,
                                     &snapshot_data.snapshot_id,
                                     page_idx,
                                 )
@@ -230,9 +235,11 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         );
     }
 
-
     let current_entries = entries.clone();
-    let max_page = current_snapshot_meta.as_ref().map(|meta| meta.total_pages).unwrap_or(1);
+    let max_page = current_snapshot_meta
+        .as_ref()
+        .map(|meta| meta.total_pages)
+        .unwrap_or(1);
     let max_page = (max_page as f64 / ENTRIES_PER_PAGE_F64).ceil() as u32;
     let max_page = if max_page == 0 { 1 } else { max_page };
 
