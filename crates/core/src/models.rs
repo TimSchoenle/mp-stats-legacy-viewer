@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Game {
@@ -40,7 +44,8 @@ pub struct LeaderboardEntry {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardMeta {
-    pub count: u32,
+    pub latest: Option<HistoricalSnapshot>,
+    pub snapshots: Vec<HistoricalSnapshot>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -49,11 +54,6 @@ pub struct GameLeaderboardData {
     pub game_name: SmolStr,
     pub stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>>,
 }
-
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::Display;
-use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMap {
@@ -234,7 +234,11 @@ pub struct NameLookup {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct MetaFile {
+    pub save_time: String,
+    pub save_time_unix: u64,
+    pub save_id: u32,
     pub total_entries: u32,
+    pub total_pages: u32,
 }
 
 // --- Historical Leaderboard Models ---
@@ -245,11 +249,6 @@ pub struct HistoricalSnapshot {
     pub timestamp: u64,
     pub total_pages: u32,
     pub total_entries: u32,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct HistoryMetadata {
-    pub snapshots: Vec<HistoricalSnapshot>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]

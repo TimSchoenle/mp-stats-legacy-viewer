@@ -4,16 +4,12 @@ use yew_router::prelude::*;
 
 use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
-use crate::models::{GameLeaderboardData, HistoricalSnapshot, LeaderboardEntry};
+use crate::models::{GameLeaderboardData, LeaderboardEntry};
 use crate::{Api, Route};
-use mp_stats_core::ENTRIES_PER_PAGE_F64;
-use mp_stats_core::models::PlatformEdition;
+use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
+use mp_stats_core::{HistoricalSnapshot, ENTRIES_PER_PAGE_F64};
 use yew::platform::spawn_local;
-use yew::{
-    Callback, Html, Properties, function_component, html, use_context, use_effect_with, use_state,
-};
-
-const BOARDS: &[&str] = &["All", "Daily", "Weekly", "Monthly", "Yearly"];
+use yew::{function_component, html, use_context, use_effect_with, use_state, Callback, Html, Properties};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
@@ -42,14 +38,10 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);
 
+    let current_meta = use_state(|| None::<LeaderboardMeta>);
+    let current_snapshot_meta = use_state(|| None::<HistoricalSnapshot>);
     let entries = use_state(|| Vec::<LeaderboardEntry>::new());
     let input_page = use_state(|| props.page.to_string());
-
-    let total_entries = use_state(|| 0u32);
-
-    // Historical snapshots state
-    let snapshots = use_state(|| Vec::<HistoricalSnapshot>::new());
-    let snapshots_loading = use_state(|| true);
 
     // Sync input value when props page changes
     {
@@ -93,117 +85,104 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         });
     }
 
-    // Fetch Historical Snapshots
+    // Update current game data
     {
-        let snapshots = snapshots.clone();
-        let snapshots_loading = snapshots_loading.clone();
-        let context = api_ctx.clone();
-        let board = props.board.clone();
-        let game = props.game.clone();
-        let stat = props.stat.clone();
-        let edition = props.edition.clone();
-
-        use_effect_with(
-            (board.clone(), game.clone(), stat.clone(), context.clone()),
-            move |(board, game, stat, ctx)| {
-                let provider = ctx.clone();
-                let board = board.clone();
-                let game = game.clone();
-                let stat = stat.clone();
-
-                snapshots_loading.set(true);
-                spawn_local(async move {
-                    match provider
-                        .fetch_history_snapshots(&edition, &board, &game, &stat)
-                        .await
-                    {
-                        Ok(mut data) => {
-                            // Sort by timestamp descending (newest first)
-                            data.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-                            snapshots.set(data);
-                            snapshots_loading.set(false);
-                        }
-                        Err(_) => {
-                            // No snapshots available, that's fine
-                            snapshots.set(vec![]);
-                            snapshots_loading.set(false);
-                        }
-                    }
-                });
-
-                || ()
-            },
-        );
-    }
-
-    // Fetch Entries (Chunk)
-    {
-        let entries = entries.clone();
-        let loading = loading.clone();
-        let error = error.clone();
-        let total_entries = total_entries.clone();
+        let current_meta = current_meta.clone();
         let game_data = game_data.clone();
-        let page = props.page;
         let props = props.clone();
-        let context = api_ctx.clone();
-        let snapshots = snapshots.clone();
 
         use_effect_with(
             (
+                game_data.clone(),
+                props.board.clone(),
+                props.stat.clone(),
+            ),
+            move |(game_data, board, stat)| {
+                if let Some(data) = game_data.as_ref() {
+                    if let Some(stat_map) = data.stats.get(stat.as_str()) {
+                        if let Some(meta) = stat_map.get(board.as_str()) {
+                            current_meta.set(Some(meta.clone()));
+                            return
+                        }
+                    }
+                }
+
+                current_meta.set(None);
+            }
+        )
+    }
+
+    // Update current snapshot meta
+    {
+        let current_snapshot_meta = current_snapshot_meta.clone();
+        let current_meta = current_meta.clone();
+        let props = props.clone();
+
+        use_effect_with(
+            (
+                current_meta.clone(),
                 props.game.clone(),
                 props.board.clone(),
                 props.stat.clone(),
                 query.snapshot.clone(),
-                page,
-                game_data.is_some(),
             ),
-            move |(game, board, stat, snapshot, page_captured, data_loaded)| {
+            move |(current_meta, _game, _board, stat, snapshot)| {
+                // Update total entries from metadata or snapshot
+                let is_latest = snapshot == "latest";
+
+                if let Some(data) = current_meta.as_ref() {
+                    if is_latest {
+                        current_snapshot_meta.set(data.latest.clone());
+                        return
+                    } else if let Some(snap) = data.snapshots.iter().find(|s| s.snapshot_id == *snapshot) {
+                        current_snapshot_meta.set(Some(snap.clone()));
+                        return
+                    }
+                }
+
+                current_snapshot_meta.set(None);
+            },
+        )
+    }
+
+    // Fetch Entries (Chunk)
+    {
+        let current_snapshot_meta = current_snapshot_meta.clone();
+        let entries = entries.clone();
+        let loading = loading.clone();
+        let error = error.clone();
+        let page = props.page;
+        let props = props.clone();
+        let context = api_ctx.clone();
+
+        use_effect_with(
+            (
+                current_snapshot_meta.clone(),
+                page.clone(),
+            ),
+            move |(snapshot, page_captured)| {
                 // Reset error state
                 error.set(None);
 
-                if *data_loaded {
+                if let Some(snapshot_data) = snapshot.as_ref() {
                     // Update total entries from metadata or snapshot
-                    let is_latest = snapshot == "latest";
-
-                    if is_latest {
-                        // Use metadata for latest
-                        if let Some(data) = &*game_data {
-                            if let Some(stat_map) = data.stats.get(stat.as_str()) {
-                                if let Some(meta) = stat_map.get(board.as_str()) {
-                                    total_entries.set(meta.count);
-                                } else {
-                                    total_entries.set(0);
-                                }
-                            }
-                        }
-                    } else {
-                        // Use snapshot metadata for historical
-                        if let Some(snap) = snapshots.iter().find(|s| s.snapshot_id == *snapshot) {
-                            total_entries.set(snap.total_entries);
-                        }
-                    }
 
                     let page_idx = *page_captured - 1; // 0-based chunk
                     let provider = context.clone();
-                    let board = board.clone();
-                    let game = game.clone();
-                    let stat = stat.clone();
-                    let snapshot = snapshot.clone();
+                    let snapshot_data = snapshot_data.clone();
 
                     loading.set(true);
                     spawn_local(async move {
-                        let result = if snapshot == "latest" {
+                        let result = if snapshot_data.snapshot_id == "latest" {
                             provider
-                                .fetch_leaderboard(&props.edition, &board, &game, &stat, page_idx)
+                                .fetch_leaderboard(&props.edition, &props.board, &props.game, &props.stat, page_idx)
                                 .await
                         } else {
                             provider
                                 .fetch_history_leaderboard(
                                     &props.edition,
-                                    &board,
-                                    &game,
-                                    &stat,
-                                    &snapshot,
+                                    &props.board, &props.game, &props.stat,
+                                    &snapshot_data.snapshot_id,
                                     page_idx,
                                 )
                                 .await
@@ -231,8 +210,10 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         );
     }
 
+
     let current_entries = entries.clone();
-    let max_page = (*total_entries as f64 / ENTRIES_PER_PAGE_F64).ceil() as u32;
+    let max_page = current_snapshot_meta.as_ref().map(|meta| meta.total_pages).unwrap_or(1);
+    let max_page = (max_page as f64 / ENTRIES_PER_PAGE_F64).ceil() as u32;
     let max_page = if max_page == 0 { 1 } else { max_page };
 
     let change_page = {
@@ -316,35 +297,37 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 // Snapshot Selector & Go to Bottom Button
                 <div class="flex items-center gap-3">
                     // Time Snapshot Selector
-                    if !*snapshots_loading && (!snapshots.is_empty() || query.snapshot != "latest") {
-                        <div class="flex flex-col gap-1">
-                            <label class="text-xs text-gray-400 font-medium">{"Snapshot:"}</label>
-                            <select
-                                value={query.snapshot.clone()}
-                                onchange={
-                                    let change_snapshot = change_snapshot.clone();
-                                    Callback::from(move |e: Event| {
-                                        let target: web_sys::HtmlSelectElement = e.target_unchecked_into();
-                                        change_snapshot(target.value());
-                                    })
-                                }
-                                class="px-3 py-2 bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg text-sm text-white cursor-pointer focus:outline-none focus:border-emerald-500 transition-colors"
-                            >
-                                <option value="latest" selected={query.snapshot == "latest"}>
-                                    {"Latest"}
-                                </option>
-                                {for snapshots.iter().map(|snap| {
-                                    html! {
-                                        <option
-                                            value={snap.snapshot_id.to_string()}
-                                            selected={query.snapshot == snap.snapshot_id.as_str()}
-                                        >
-                                            {snap.snapshot_id.to_string()}
-                                        </option>
+                    if let Some(current_meta) = current_meta.as_ref() {
+                        if !current_meta.snapshots.is_empty() {
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs text-gray-400 font-medium">{"Snapshot:"}</label>
+                                <select
+                                    value={query.snapshot.clone()}
+                                    onchange={
+                                        let change_snapshot = change_snapshot.clone();
+                                        Callback::from(move |e: Event| {
+                                            let target: web_sys::HtmlSelectElement = e.target_unchecked_into();
+                                            change_snapshot(target.value());
+                                        })
                                     }
-                                })}
-                            </select>
-                        </div>
+                                    class="px-3 py-2 bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg text-sm text-white cursor-pointer focus:outline-none focus:border-emerald-500 transition-colors"
+                                >
+                                    <option value="latest" selected={query.snapshot == "latest"}>
+                                        {"Latest"}
+                                    </option>
+                                    {for current_meta.snapshots.iter().map(|snap| {
+                                        html! {
+                                            <option
+                                                value={snap.snapshot_id.to_string()}
+                                                selected={query.snapshot == snap.snapshot_id.as_str()}
+                                            >
+                                                {snap.snapshot_id.to_string()}
+                                            </option>
+                                        }
+                                    })}
+                                </select>
+                            </div>
+                        }
                     }
 
                     // Go to Bottom Button
@@ -362,7 +345,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
             // Board Type Selector Tabs
             <div class="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 w-fit">
-                { for BOARDS.iter().map(|board| {
+                if let Some(game_data) = game_data.as_ref() && let Some(stat_data) = game_data.stats.get(props.stat.as_str()) {
+                            { for stat_data.keys().map(|board| {
                     let is_active = *board == props.board;
                     let classes = if is_active {
                         "px-4 py-2 rounded-md text-sm font-bold bg-emerald-600 text-white transition-all"
@@ -384,10 +368,12 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                             to={route}
                             classes={classes}
                         >
-                            { *board }
+                            { board.to_string() }
                         </Link<Route, SnapshotQuery>>
                     }
                 }) }
+                }
+
             </div>
 
             // Error message

@@ -2,9 +2,7 @@ use crate::models::leaderboard::binary_leaderboard;
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
-use mp_stats_common::formats::FILE_META;
-use mp_stats_core::models::{HistoryMetadata, LeaderboardPage, PlatformEdition};
-use mp_stats_core::HistoricalSnapshot;
+use mp_stats_core::models::{LeaderboardPage, PlatformEdition};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -120,13 +118,6 @@ fn process_latest_chunks(
     let (output_index, total_entries_written) =
         process_binary_chunks(&decompressed_chunks, out_latest, lookup_map)?;
 
-    // Update metadata with correct page count
-    update_metadata(
-        &out_latest.join(FILE_META),
-        total_entries_written,
-        output_index,
-    )?;
-
     Ok(())
 }
 
@@ -226,35 +217,6 @@ fn process_binary_chunks(
     Ok((output_index, total_entries_written))
 }
 
-/// Update metadata file with new page count and entry count
-fn update_metadata(meta_path: &Path, total_entries: u32, total_pages: u32) -> Result<()> {
-    if meta_path.exists() {
-        if let Ok(meta_str) = fs::read_to_string(meta_path) {
-            if let Ok(mut meta_json) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-                meta_json["total_entries"] = serde_json::json!(total_entries);
-                meta_json["total_pages"] = serde_json::json!(total_pages);
-
-                if let Ok(updated_meta) = serde_json::to_string(&meta_json) {
-                    let _ = fs::write(meta_path, updated_meta);
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Extract timestamp from metadata file
-fn extract_timestamp(meta_path: &Path) -> u64 {
-    if meta_path.exists() {
-        if let Ok(meta_str) = fs::read_to_string(meta_path) {
-            if let Ok(meta_json) = serde_json::from_str::<serde_json::Value>(&meta_str) {
-                return meta_json["save_time_unix"].as_u64().unwrap_or(0);
-            }
-        }
-    }
-    0
-}
-
 /// Process historical leaderboard data using rich format (same as latest)
 fn process_history(
     stat_dir: &Path,
@@ -278,7 +240,7 @@ fn process_history(
     // Now extract the tar archive
     let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
 
-    let mut snapshot_data: HashMap<String, (Vec<u8>, Vec<Vec<u8>>)> = HashMap::new();
+    let mut snapshot_data: HashMap<String, Vec<Vec<u8>>> = HashMap::new();
 
     // Extract all files and group by snapshot
     for entry_result in archive.entries()? {
@@ -290,22 +252,13 @@ fn process_history(
             let snapshot_name = path_str[..slash_pos].to_string();
             let file_name = path_str[slash_pos + 1..].to_string();
 
-            if file_name == "_meta.json" {
-                // Read metadata
-                let mut contents = Vec::new();
-                entry.read_to_end(&mut contents)?;
-                snapshot_data
-                    .entry(snapshot_name)
-                    .or_insert_with(|| (Vec::new(), Vec::new()))
-                    .0 = contents;
-            } else if file_name.starts_with("chunk_") && file_name.ends_with(".bin") {
+            if file_name.starts_with("chunk_") && file_name.ends_with(".bin") {
                 // Read chunk data (uncompressed in the tar)
                 let mut contents = Vec::new();
                 entry.read_to_end(&mut contents)?;
                 snapshot_data
                     .entry(snapshot_name)
-                    .or_insert_with(|| (Vec::new(), Vec::new()))
-                    .1
+                    .or_insert_with(|| Vec::new())
                     .push(contents);
             }
         }
@@ -316,13 +269,9 @@ fn process_history(
         snapshot_data.len()
     );
 
-    // Process each snapshot concurrently using rayon
-    use std::sync::Mutex;
-    let snapshots = Mutex::new(Vec::new());
-
     snapshot_data
         .par_iter()
-        .for_each(|(snapshot_name, (meta_contents, chunks))| {
+        .for_each(|(snapshot_name, chunks)| {
             let snapshot_out = history_out.join(snapshot_name);
             if let Err(e) = fs::create_dir_all(&snapshot_out) {
                 eprintln!("Failed to create directory {:?}: {}", snapshot_out, e);
@@ -330,14 +279,6 @@ fn process_history(
             }
 
             println!("Processing history snapshot: {}", snapshot_name);
-
-            // Write metadata
-            if !meta_contents.is_empty() {
-                if let Err(e) = fs::write(snapshot_out.join("_meta.json"), meta_contents) {
-                    eprintln!("Failed to write metadata for {}: {}", snapshot_name, e);
-                    return;
-                }
-            }
 
             // Process chunks using shared logic
             let (output_index, total_entries_written) =
@@ -353,50 +294,7 @@ fn process_history(
                 "  {} - Wrote {} pages with {} total entries",
                 snapshot_name, output_index, total_entries_written
             );
-
-            // Extract timestamp from _meta.json if available
-            let meta_path = snapshot_out.join(FILE_META);
-            let timestamp = extract_timestamp(&meta_path);
-
-            // Update metadata with correct page count
-            if let Err(e) = update_metadata(&meta_path, total_entries_written, output_index) {
-                eprintln!("Failed to update metadata for {}: {}", snapshot_name, e);
-            }
-
-            // Add snapshot metadata
-            let snapshot_info = HistoricalSnapshot {
-                snapshot_id: SmolStr::new(&snapshot_name),
-                timestamp: timestamp.clone(),
-                total_pages: output_index,
-                total_entries: total_entries_written,
-            };
-
-            if let Ok(mut snapshots_vec) = snapshots.lock() {
-                snapshots_vec.push(snapshot_info);
-            }
         });
-
-    let snapshots = snapshots.into_inner()?;
-    let snapshots_length = snapshots.len();
-
-    // Generate _snapshots.json metadata file
-    if !snapshots.is_empty() {
-        let snapshots_metadata = HistoryMetadata {
-            snapshots,
-        };
-
-        let snapshots_path = history_out.join("_snapshots.json");
-        if let Ok(json_str) = serde_json::to_string_pretty(&snapshots_metadata) {
-            if let Err(e) = fs::write(&snapshots_path, json_str) {
-                eprintln!("Failed to write _snapshots.json: {}", e);
-            } else {
-                println!(
-                    "Generated _snapshots.json with {} snapshots",
-                    snapshots_length
-                );
-            }
-        }
-    }
 
     Ok(())
 }
