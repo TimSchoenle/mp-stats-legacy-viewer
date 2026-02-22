@@ -59,7 +59,8 @@ impl Converter {
 
             // Step 2: Dictionary & Names Index
             println!("Step 2: Processing Dictionary & Names...");
-            let lookup_map = process_dictionary_and_names(edition, &directory_in, &self.staging_dir)?;
+            let lookup_map =
+                process_dictionary_and_names(edition, &directory_in, &self.staging_dir)?;
 
             // Step 3: Process Leaderboards
             println!("Step 3: Processing Leaderboards...");
@@ -82,7 +83,12 @@ impl Converter {
         Ok(())
     }
 
-    fn process_metadata(&self, platform: &PlatformEdition, java_in: &Path, output_dir: &Path) -> Result<IdMap> {
+    fn process_metadata(
+        &self,
+        platform: &PlatformEdition,
+        java_in: &Path,
+        output_dir: &Path,
+    ) -> Result<IdMap> {
         let map_path = java_in.join("meta/map.json");
         if !map_path.exists() {
             anyhow::bail!("map.json not found at {:?}", map_path);

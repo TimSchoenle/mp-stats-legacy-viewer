@@ -60,7 +60,12 @@ fn process_single_leaderboard(
 
     // Output Paths
     // TODO: Correctly migrate to routes
-    let out_stat_dir = output_dir.join(platform.directory_name()).join("leaderboards").join(board_name).join(game_name).join(stat_name);
+    let out_stat_dir = output_dir
+        .join(platform.directory_name())
+        .join("leaderboards")
+        .join(board_name)
+        .join(game_name)
+        .join(stat_name);
     std::fs::create_dir_all(&out_stat_dir)?;
     let out_latest = out_stat_dir.join("latest");
     std::fs::create_dir_all(&out_latest)?;
