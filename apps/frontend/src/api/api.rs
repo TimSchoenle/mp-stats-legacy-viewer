@@ -1,7 +1,7 @@
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
-    GameLeaderboardData, IdMap, JavaLeaderboardPage, JavaMeta, JavaPlayerProfile, LeaderboardEntry,
+    GameLeaderboardData, IdMap, JavaMeta, JavaPlayerProfile, LeaderboardEntry, LeaderboardPage,
     NameLookup, PlatformEdition,
 };
 use mp_stats_core::routes;
@@ -105,7 +105,7 @@ impl Api {
             routes::leaderboard_chunk_bin(edition, board, game, stat, chunk)
         );
 
-        if let Some(page) = self.fetch_bin::<JavaLeaderboardPage>(&bin_path).await {
+        if let Some(page) = self.fetch_bin::<LeaderboardPage>(&bin_path).await {
             // Convert columnar format (SoA) to row format (AoS)
             let entries = page
                 .ranks
@@ -257,7 +257,7 @@ impl Api {
             routes::history_leaderboard_chunk_bin(edition, board, game, stat, snapshot_id, chunk)
         );
 
-        if let Some(page) = self.fetch_bin::<JavaLeaderboardPage>(&bin_path).await {
+        if let Some(page) = self.fetch_bin::<LeaderboardPage>(&bin_path).await {
             // Convert columnar format (SoA) to row format (AoS)
             let entries = page
                 .ranks
