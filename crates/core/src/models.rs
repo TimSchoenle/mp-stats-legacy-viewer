@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
-// --- Java Edition Models ---
-
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Game {
     pub id: SmolStr,
     pub name: SmolStr,
-    // Add other fields as necessary, e.g., available boards/stats
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -16,7 +13,7 @@ pub struct JavaMeta {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct JavaLeaderboardChunk {
+pub struct LeaderboardChunk {
     pub rank: u32,
     pub uuid: SmolStr,
     pub name: SmolStr,
@@ -26,7 +23,7 @@ pub struct JavaLeaderboardChunk {
 /// Structure-of-Arrays (SoA) format for leaderboard pages
 /// Stores 1,000 entries per page in columnar layout for better compression
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct JavaLeaderboardPage {
+pub struct LeaderboardPage {
     pub ranks: Vec<u32>,
     pub uuids: Vec<SmolStr>,
     pub names: Vec<SmolStr>,
@@ -224,33 +221,6 @@ impl Serialize for JavaPlayerProfile {
         tup.serialize_element(&stats_vec)?;
         tup.end()
     }
-}
-
-// --- Bedrock Edition Models ---
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockMeta {
-    pub games: Vec<Game>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockGameData {
-    pub id: SmolStr,
-    pub name: SmolStr,
-    pub stats: Vec<SmolStr>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockLeaderboardChunk {
-    pub rank: u32,
-    pub player_name: SmolStr,
-    pub score: f64,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct BedrockPlayerProfile {
-    pub name: SmolStr,
-    pub stats: serde_json::Value,
 }
 
 // --- Shared / Lookup Models ---

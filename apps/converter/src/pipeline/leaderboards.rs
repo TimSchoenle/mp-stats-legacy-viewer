@@ -3,7 +3,7 @@ use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
 use mp_stats_common::formats::FILE_META;
-use mp_stats_core::models::{HistoryMetadata, JavaLeaderboardPage, PlatformEdition};
+use mp_stats_core::models::{HistoryMetadata, LeaderboardPage, PlatformEdition};
 use mp_stats_core::HistoricalSnapshot;
 use rayon::prelude::*;
 use smol_str::SmolStr;
@@ -137,7 +137,7 @@ fn process_binary_chunks(
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<(u32, u32)> {
     let mut output_index = 0;
-    let mut current_page = JavaLeaderboardPage {
+    let mut current_page = LeaderboardPage {
         ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
         uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
         names: Vec::with_capacity(ENTRIES_PER_PAGE),
@@ -193,7 +193,7 @@ fn process_binary_chunks(
                         output_index += 1;
                     }
                     // Reset page
-                    current_page = JavaLeaderboardPage {
+                    current_page = LeaderboardPage {
                         ranks: Vec::with_capacity(ENTRIES_PER_PAGE),
                         uuids: Vec::with_capacity(ENTRIES_PER_PAGE),
                         names: Vec::with_capacity(ENTRIES_PER_PAGE),
