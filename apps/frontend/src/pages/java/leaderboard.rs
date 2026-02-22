@@ -144,12 +144,9 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         use_effect_with(
             (
                 current_meta.clone(),
-                props.game.clone(),
-                props.board.clone(),
-                props.stat.clone(),
                 query.snapshot.clone(),
             ),
-            move |(current_meta, _game, _board, stat, snapshot)| {
+            move |(current_meta, snapshot)| {
                 // Update total entries from metadata or snapshot
                 let is_latest = snapshot == "latest";
 
