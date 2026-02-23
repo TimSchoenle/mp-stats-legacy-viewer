@@ -5,7 +5,7 @@ use yew_router::prelude::*;
 
 #[function_component(Root)]
 fn root() -> Html {
-    let api_context = Api;
+    let api_context = Api::default();
 
     html! {
         <ContextProvider<Api> context={api_context}>
