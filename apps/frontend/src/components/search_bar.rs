@@ -59,7 +59,7 @@ fn search_dropdown(props: &DropdownProps) -> Html {
             { for props.suggestions.iter().enumerate().map(|(index, suggestion)| {
                 let is_focused = props.focused_index == Some(index);
                 let bg_class = if is_focused { "bg-white/10" } else { "hover:bg-white/5" };
-                
+
                 let onmousedown = {
                     let on_navigate = props.on_navigate.clone();
                     let suggestion = suggestion.clone();
@@ -148,8 +148,11 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                 let query_ref = latest_query.clone();
 
                 wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(results) = ctx.search_players_by_name(&q).await && *query_ref.borrow() == q {
-                        let mapped: Vec<Suggestion> = results.into_iter()
+                    if let Ok(results) = ctx.search_players_by_name(&q).await
+                        && *query_ref.borrow() == q
+                    {
+                        let mapped: Vec<Suggestion> = results
+                            .into_iter()
                             .map(|(ed, name, uuid)| Suggestion::Player(ed, name, uuid))
                             .collect();
                         suggestions.set(mapped);
@@ -198,7 +201,13 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                 "ArrowDown" => {
                     e.prevent_default();
                     let next = match *focused_index {
-                        Some(i) => if i + 1 < len { i + 1 } else { 0 },
+                        Some(i) => {
+                            if i + 1 < len {
+                                i + 1
+                            } else {
+                                0
+                            }
+                        }
                         None => 0,
                     };
                     focused_index.set(Some(next));
@@ -206,7 +215,13 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                 "ArrowUp" => {
                     e.prevent_default();
                     let prev = match *focused_index {
-                        Some(i) => if i > 0 { i - 1 } else { len - 1 },
+                        Some(i) => {
+                            if i > 0 {
+                                i - 1
+                            } else {
+                                len - 1
+                            }
+                        }
                         None => len - 1,
                     };
                     focused_index.set(Some(prev));
@@ -242,7 +257,10 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
             } else {
                 let val_len = query.len();
                 if val_len == 32 || val_len == 36 {
-                    navigate_to.emit(Suggestion::UuidAction(PlatformEdition::Java, query.to_string()));
+                    navigate_to.emit(Suggestion::UuidAction(
+                        PlatformEdition::Java,
+                        query.to_string(),
+                    ));
                 }
             }
         })
@@ -256,7 +274,7 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
             gloo_timers::callback::Timeout::new(200, move || {
                 show_dropdown.set(false);
             })
-                .forget();
+            .forget();
         })
     };
 

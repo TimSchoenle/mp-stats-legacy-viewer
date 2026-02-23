@@ -68,7 +68,11 @@ impl Api {
         }
     }
 
-    async fn get_name_index(&self, edition: &PlatformEdition, prefix: &str) -> Option<HashMap<String, String>> {
+    async fn get_name_index(
+        &self,
+        edition: &PlatformEdition,
+        prefix: &str,
+    ) -> Option<HashMap<String, String>> {
         let key = (edition.clone(), prefix.to_string());
 
         // Check cache first
