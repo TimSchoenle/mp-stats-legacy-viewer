@@ -2,14 +2,34 @@ use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
     GameLeaderboardData, IdMap, JavaMeta, JavaPlayerProfile, LeaderboardEntry, LeaderboardPage,
-    NameLookup, PlatformEdition,
+    PlatformEdition,
 };
 use mp_stats_core::routes;
 use smol_str::SmolStr;
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Api;
+use dashmap::DashMap;
+use std::sync::Arc;
+
+#[derive(Clone, Debug)]
+pub struct Api {
+    // Cache for names_index: (Edition, Prefix) -> HashMap<Name, UUID>
+    name_index_cache: Arc<DashMap<(PlatformEdition, String), HashMap<String, String>>>,
+}
+
+impl PartialEq for Api {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
+impl Default for Api {
+    fn default() -> Self {
+        Self {
+            name_index_cache: Arc::new(DashMap::new()),
+        }
+    }
+}
 
 impl Api {
     // Helper to fetch and decode binary data (LZMA or Zlib -> Postcard)
@@ -25,7 +45,13 @@ impl Api {
                 };
 
                 let cursor = std::io::Cursor::new(bytes);
-                let decompressed = uncompress_lzma(cursor).unwrap();
+                let decompressed = match uncompress_lzma(cursor) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        gloo_console::warn!(format!("Failed to decompress {}: {:?}", url, e));
+                        return None;
+                    }
+                };
 
                 match postcard::from_bytes(&decompressed) {
                     Ok(data) => Some(data),
@@ -39,6 +65,25 @@ impl Api {
                 }
             }
             _ => None,
+        }
+    }
+
+    async fn get_name_index(&self, edition: &PlatformEdition, prefix: &str) -> Option<HashMap<String, String>> {
+        let key = (edition.clone(), prefix.to_string());
+
+        // Check cache first
+        if let Some(cached) = self.name_index_cache.get(&key) {
+            return Some(cached.clone());
+        }
+
+        // Fetch if not in cache
+        let url = format!("/data/{}", routes::names_index_bin(edition, prefix));
+        if let Some(map) = self.fetch_bin::<HashMap<String, String>>(&url).await {
+            self.name_index_cache.insert(key, map.clone());
+            Some(map)
+        } else {
+            self.name_index_cache.insert(key, HashMap::new());
+            None
         }
     }
 
@@ -185,35 +230,67 @@ impl Api {
         ))
     }
 
-    pub async fn find_player_uuid(
+    pub async fn search_players_by_name(
         &self,
-        edition: &PlatformEdition,
-        name: &str,
-    ) -> Result<Option<NameLookup>, gloo_net::Error> {
-        if name.len() < 3 {
-            return Ok(None);
+        query: &str,
+    ) -> Result<Vec<(PlatformEdition, String, String)>, gloo_net::Error> {
+        let name_lower = query.to_lowercase();
+        if name_lower.len() < 3 {
+            return Ok(Vec::new());
         }
-        let prefix = &name[..3].to_lowercase();
 
-        // Fetch names_index/{prefix}.bin
-        let url = format!(
-            "/data/{}/names_index/{}.bin",
-            edition.directory_name(),
-            prefix
-        );
+        let prefix = name_lower.chars().take(3).collect::<String>();
 
-        if let Some(map) = self.fetch_bin::<HashMap<String, String>>(&url).await {
-            if let Some(uuid) = map.get(name) {
-                return Ok(Some(NameLookup {
-                    uuid: SmolStr::new(uuid),
-                    shard_path: SmolStr::new(&uuid[..3].to_uppercase()),
-                }));
+        // Concurrent fetch mapping from cache
+        let java_future = self.get_name_index(&PlatformEdition::Java, &prefix);
+        let bedrock_future = self.get_name_index(&PlatformEdition::Bedrock, &prefix);
+
+        let (java_res, bedrock_res) = futures::future::join(java_future, bedrock_future).await;
+
+        let mut results = Vec::new();
+
+        if let Some(map) = java_res {
+            for (name, uuid) in map {
+                if name.to_lowercase().contains(&name_lower) {
+                    results.push((PlatformEdition::Java, name, uuid));
+                }
             }
         }
 
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch player".to_string(),
-        ))
+        if let Some(map) = bedrock_res {
+            for (name, uuid) in map {
+                if name.to_lowercase().contains(&name_lower) {
+                    results.push((PlatformEdition::Bedrock, name, uuid));
+                }
+            }
+        }
+
+        // Sort results: exact match first, then starts with, then contains
+        results.sort_by(|a, b| {
+            let a_name = a.1.to_lowercase();
+            let b_name = b.1.to_lowercase();
+
+            let a_exact = a_name == name_lower;
+            let b_exact = b_name == name_lower;
+
+            if a_exact != b_exact {
+                return b_exact.cmp(&a_exact);
+            }
+
+            let a_starts = a_name.starts_with(&name_lower);
+            let b_starts = b_name.starts_with(&name_lower);
+
+            if a_starts != b_starts {
+                return b_starts.cmp(&a_starts);
+            }
+
+            a_name.cmp(&b_name)
+        });
+
+        // Limit results to top 10
+        results.truncate(10);
+
+        Ok(results)
     }
 
     pub async fn fetch_history_leaderboard(
