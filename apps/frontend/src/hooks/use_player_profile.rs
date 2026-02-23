@@ -3,7 +3,7 @@ use mp_stats_core::models::{IdMap, JavaPlayerProfile, PlatformEdition};
 use yew::platform::spawn_local;
 use yew::prelude::*;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UsePlayerProfileResult {
     pub profile: Option<JavaPlayerProfile>,
     pub id_map: Option<IdMap>,
@@ -21,15 +21,19 @@ pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerPr
     let context = use_context::<Api>().expect("no api context found");
 
     {
+        let edition = edition.clone();
         let profile = profile.clone();
         let id_map = id_map.clone();
         let loading = loading.clone();
         let error = error.clone();
 
-        use_effect_with((uuid, context), move |(id, ctx)| {
+        use_effect_with((edition, uuid, context), move |(edition, id, ctx)| {
+            profile.set(None);
+            id_map.set(None);
             error.set(None);
             loading.set(true);
 
+            let edition = edition.clone();
             let id = id.clone();
             let provider = ctx.clone();
 
@@ -45,10 +49,10 @@ pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerPr
                 }
 
                 // If no error with profile, fetch map
-                if error.is_none() {
-                    if let Ok(m) = provider.fetch_id_map(&edition).await {
-                        id_map.set(Some(m));
-                    }
+                if error.is_none()
+                    && let Ok(m) = provider.fetch_id_map(&edition).await
+                {
+                    id_map.set(Some(m));
                 }
 
                 loading.set(false);
