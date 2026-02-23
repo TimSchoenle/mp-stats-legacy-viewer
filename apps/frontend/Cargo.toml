@@ -22,6 +22,9 @@ postcard = { workspace = true }
 gloo-net = { workspace = true }
 gloo-console = { workspace = true }
 smol_str = { workspace = true }
+futures = { workspace = true }
+gloo-timers = { workspace = true }
+dashmap = { workspace = true }
 
 [profile.release]
 panic = 'abort'

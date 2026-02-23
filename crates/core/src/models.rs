@@ -251,7 +251,7 @@ pub struct HistoricalSnapshot {
     pub total_entries: u32,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Hash)]
 pub enum PlatformEdition {
     Java,
     Bedrock,
