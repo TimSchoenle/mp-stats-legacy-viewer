@@ -185,10 +185,8 @@ impl Api {
     ) -> HashMap<SmolStr, SmolStr> {
         let mut resolved = HashMap::new();
         for uuid in uuids {
-            if let Ok(profile) = self.fetch_player(&edition, uuid).await {
-                if let Some(name) = profile.name {
+            if let Ok(profile) = self.fetch_player(edition, uuid).await && let Some(name) = profile.name {
                     resolved.insert(uuid.clone(), name);
-                }
             }
         }
         resolved
@@ -201,8 +199,10 @@ impl Api {
     ) -> Result<JavaPlayerProfile, gloo_net::Error> {
         let is_valid_len = uuid.len() == 32 || uuid.len() == 36;
         let is_hex = uuid.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
+        let is_bedrock = *edition == PlatformEdition::Bedrock;
 
-        if !is_valid_len || !is_hex {
+        // Bedrock UUIDs are not real UUIDs and more the names, since we do no know the bedrock ids or UUIDs
+        if !is_bedrock && (!is_valid_len || !is_hex) {
             gloo_console::error!(format!("Invalid UUID format: {}", uuid));
             return Err(gloo_net::Error::GlooError("Invalid UUID format".into()));
         }
