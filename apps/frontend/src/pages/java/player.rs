@@ -50,7 +50,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                 { p.name.as_ref().map(|s| s.as_str()).unwrap_or("Unknown") }
                             </h1>
                             <span class="px-2 py-0.5 rounded-full bg-emerald-900 text-emerald-400 text-xs font-mono border border-emerald-700">
-                                { "Java Edition" }
+                                { format!("{} Edition", props.edition.display_name()) }
                             </span>
                         </div>
                         <p class="font-mono text-gray-400 bg-gray-900 px-3 py-1 rounded inline-block text-sm border border-gray-700 select-all">
