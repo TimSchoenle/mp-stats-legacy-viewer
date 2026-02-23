@@ -185,8 +185,10 @@ impl Api {
     ) -> HashMap<SmolStr, SmolStr> {
         let mut resolved = HashMap::new();
         for uuid in uuids {
-            if let Ok(profile) = self.fetch_player(edition, uuid).await && let Some(name) = profile.name {
-                    resolved.insert(uuid.clone(), name);
+            if let Ok(profile) = self.fetch_player(edition, uuid).await
+                && let Some(name) = profile.name
+            {
+                resolved.insert(uuid.clone(), name);
             }
         }
         resolved

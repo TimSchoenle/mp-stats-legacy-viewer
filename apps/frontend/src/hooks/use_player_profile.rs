@@ -49,7 +49,9 @@ pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerPr
                 }
 
                 // If no error with profile, fetch map
-                if error.is_none() && let Ok(m) = provider.fetch_id_map(&edition).await {
+                if error.is_none()
+                    && let Ok(m) = provider.fetch_id_map(&edition).await
+                {
                     id_map.set(Some(m));
                 }
 
