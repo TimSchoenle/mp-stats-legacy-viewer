@@ -1,3 +1,4 @@
+use crate::hooks::use_theme;
 use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use std::cell::RefCell;
@@ -55,7 +56,7 @@ struct DropdownProps {
 #[function_component(SearchDropdown)]
 fn search_dropdown(props: &DropdownProps) -> Html {
     html! {
-        <div class="absolute mt-2 w-full bg-slate-900 border border-white/10 rounded-lg shadow-xl overflow-hidden z-50">
+        <div class="absolute mt-2 w-full glass-panel overflow-hidden z-50">
             { for props.suggestions.iter().enumerate().map(|(index, suggestion)| {
                 let is_focused = props.focused_index == Some(index);
                 let bg_class = if is_focused { "bg-white/10" } else { "hover:bg-white/5" };
@@ -106,6 +107,7 @@ fn search_dropdown(props: &DropdownProps) -> Html {
 pub fn search_bar(props: &SearchBarProps) -> Html {
     let navigator = use_navigator().unwrap();
     let api_ctx = use_context::<Api>().expect("no api found");
+    let theme_color = use_theme();
 
     let state = use_player_search();
 
@@ -297,7 +299,7 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                     ref={input_ref}
                     type="text"
                     placeholder="Search player (Name/UUID)..."
-                    class={classes!("w-full", "bg-white/5", "border", "border-white/10", "text-white", "placeholder-gray-400", "rounded-full", "focus:outline-none", "focus:ring-2", "focus:ring-emerald-500", "focus:bg-white/10", "transition-all", "backdrop-blur-sm", props.input_classes.clone())}
+                    class={classes!(theme_color, "input-text", "focus:ring-theme-500/50", "focus:border-theme-500/50", props.input_classes.clone())}
                     value={(*state.query).clone()}
                     {oninput}
                     {onkeydown}
@@ -307,7 +309,7 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                 />
                 <button
                     type="submit"
-                    class="absolute right-1 top-1 bottom-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full px-4 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    class={classes!(theme_color, "absolute", "right-2", "top-2", "bottom-2", "bg-theme-600", "hover:bg-theme-500", "text-white", "rounded-full", "px-4", "text-sm", "font-medium", "transition-colors", "disabled:opacity-50", "disabled:cursor-not-allowed", "shadow")}
                     disabled={state.query.is_empty()}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
