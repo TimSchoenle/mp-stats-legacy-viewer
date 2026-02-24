@@ -84,7 +84,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                 to={Route::Game { edition: props.edition.clone(), game: game_name.clone() }}
                                                 classes={classes!("text-xl", "font-bold", "mb-4", "pb-3", "border-b", "border-white/10", "text-theme-400", "hover:text-theme-300", "transition-colors", "flex", "items-center", "justify-between", "group/gamelink")}
                                             >
-                                                <span>{ game_name }</span>
+                                                <span>{ game_name.clone() }</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-0 group-hover/gamelink:opacity-100 transition-opacity transform group-hover/gamelink:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
@@ -104,7 +104,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
 
                                                     html! {
                                                         <div class="stat-row py-3">
-                                                            <Link<Route> to={Route::Leaderboard { edition: props.edition.clone(), game: s.game_id.to_string(), board: s.board_id.to_string(), stat: s.stat_id.to_string(), page: 1 }} classes="font-medium text-gray-300 group-hover:text-white transition-colors">{label}</Link<Route>>
+                                                            <Link<Route> to={Route::Leaderboard { edition: props.edition.clone(), game: game_name.clone(), board: board_name.to_string(), stat: stat_name.to_string(), page: 1 }} classes="font-medium text-gray-300 group-hover:text-white transition-colors">{label}</Link<Route>>
                                                             <div class="flex items-center gap-3">
                                                                 <div class="font-mono font-bold text-gray-200 bg-dark-900 px-2 py-0.5 rounded shadow-inner border border-white/5">{ s.score }</div>
                                                                 if s.rank > 0 {
