@@ -1005,7 +1005,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-common"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "lzma-rust2",
  "postcard",
@@ -1016,7 +1016,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-converter"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "binary-layout",
@@ -1033,7 +1033,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-core"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "mp-stats-common",
  "serde",
@@ -1043,7 +1043,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-frontend"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "dashmap",
  "futures",
@@ -1067,7 +1067,7 @@ version = "0.7.1"
 
 [[package]]
 name = "mp-stats-server"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "axum",
  "clap",
