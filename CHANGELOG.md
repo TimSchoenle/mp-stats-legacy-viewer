@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.1...v0.7.2) (2026-02-24)
+
+
+### Bug Fixes
+
+* model parser behaviour ([#42](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/42)) ([bf54a3e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/bf54a3ef4ac8cb29afaa6429ce93db66200827bd))
+
 ## [0.7.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.0...v0.7.1) (2026-02-24)
 
 
