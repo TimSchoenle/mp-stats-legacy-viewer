@@ -1,6 +1,6 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
-use mp_stats_core::models::{JavaPlayerProfile, PlatformEdition, StatRaw};
+use mp_stats_core::models::{PlatformEdition, PlayerProfile, StatRaw};
 use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
@@ -40,8 +40,7 @@ pub fn process_java_players(
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
     // Using DashMap for concurrent access
-    let shards: dashmap::DashMap<String, HashMap<String, JavaPlayerProfile>> =
-        dashmap::DashMap::new();
+    let shards: dashmap::DashMap<String, HashMap<String, PlayerProfile>> = dashmap::DashMap::new();
 
     files.par_iter().for_each(|path| {
         if let Err(e) = process_player_shard(path, &shards, lookup_map) {
@@ -69,7 +68,7 @@ pub fn process_java_players(
 /// Process a single player shard file
 fn process_player_shard(
     path: &Path,
-    shards: &dashmap::DashMap<String, HashMap<String, JavaPlayerProfile>>,
+    shards: &dashmap::DashMap<String, HashMap<String, PlayerProfile>>,
     lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     // Read & Decompress
@@ -118,7 +117,7 @@ fn process_player_shard(
             });
         }
 
-        let profile = JavaPlayerProfile {
+        let profile = PlayerProfile {
             uuid: uuid.clone(),
             name,
             stats,

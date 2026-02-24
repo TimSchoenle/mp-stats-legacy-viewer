@@ -1,11 +1,11 @@
 use crate::Api;
-use mp_stats_core::models::{IdMap, JavaPlayerProfile, PlatformEdition};
+use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile};
 use yew::platform::spawn_local;
 use yew::prelude::*;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct UsePlayerProfileResult {
-    pub profile: Option<JavaPlayerProfile>,
+    pub profile: Option<PlayerProfile>,
     pub id_map: Option<IdMap>,
     pub loading: bool,
     pub error: Option<String>,
@@ -13,7 +13,7 @@ pub struct UsePlayerProfileResult {
 
 #[hook]
 pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerProfileResult {
-    let profile = use_state(|| None::<JavaPlayerProfile>);
+    let profile = use_state(|| None::<PlayerProfile>);
     let id_map = use_state(|| None::<IdMap>);
     let loading = use_state(|| true);
     let error = use_state(|| None::<String>);

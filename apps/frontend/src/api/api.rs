@@ -1,8 +1,8 @@
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
-    GameLeaderboardData, IdMap, JavaMeta, JavaPlayerProfile, LeaderboardEntry, LeaderboardPage,
-    PlatformEdition,
+    GameLeaderboardData, IdMap, JavaMeta, LeaderboardEntry, LeaderboardPage, PlatformEdition,
+    PlayerProfile,
 };
 use mp_stats_core::routes;
 use smol_str::SmolStr;
@@ -200,7 +200,7 @@ impl Api {
         &self,
         edition: &PlatformEdition,
         uuid: &str,
-    ) -> Result<JavaPlayerProfile, gloo_net::Error> {
+    ) -> Result<PlayerProfile, gloo_net::Error> {
         let is_valid_len = uuid.len() == 32 || uuid.len() == 36;
         let is_hex = uuid.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
         let is_bedrock = *edition == PlatformEdition::Bedrock;
@@ -216,7 +216,7 @@ impl Api {
         // java/players/SHARD.bin (LZMA Postcard)
         let bin_path = format!("/data/{}", routes::player_shard_bin(edition, shard));
         if let Some(mut shard_map) = self
-            .fetch_bin::<HashMap<String, JavaPlayerProfile>>(&bin_path)
+            .fetch_bin::<HashMap<String, PlayerProfile>>(&bin_path)
             .await
         {
             if let Some(mut profile) = shard_map.remove(uuid) {
