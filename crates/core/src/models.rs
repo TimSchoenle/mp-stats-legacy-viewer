@@ -152,7 +152,8 @@ impl FromStr for PlatformEdition {
         let normalized = s.trim().to_ascii_lowercase();
 
         PlatformEdition::iter()
-            .find(|edition| normalized == edition.directory_name().to_ascii_lowercase()).cloned()
+            .find(|edition| normalized == edition.directory_name().to_ascii_lowercase())
+            .cloned()
             .ok_or(Box::from(PlatformEditionParseError {
                 input: s.trim().to_string(),
             }))

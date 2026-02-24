@@ -40,8 +40,7 @@ pub fn process_java_players(
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
     // Using DashMap for concurrent access
-    let shards: dashmap::DashMap<String, HashMap<String, PlayerProfile>> =
-        dashmap::DashMap::new();
+    let shards: dashmap::DashMap<String, HashMap<String, PlayerProfile>> = dashmap::DashMap::new();
 
     files.par_iter().for_each(|path| {
         if let Err(e) = process_player_shard(path, &shards, lookup_map) {
