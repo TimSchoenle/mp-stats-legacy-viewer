@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.0...v0.7.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* **Player:** invalid direct link to leaderboards page ([#40](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/40)) ([729a43f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/729a43ff27d74ead680b5ea928ca4224061aaa7d))
+
 ## [0.7.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.6.0...v0.7.0) (2026-02-24)
 
 
