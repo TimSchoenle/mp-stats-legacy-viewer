@@ -9,9 +9,7 @@ use std::str::FromStr;
 pub struct Game {
     pub id: SmolStr,
     pub name: SmolStr,
-    #[serde(default)]
     pub description: Option<SmolStr>,
-    #[serde(default)]
     pub icon: Option<SmolStr>,
 }
 
@@ -56,9 +54,7 @@ pub struct LeaderboardMeta {
 pub struct GameLeaderboardData {
     pub game_id: SmolStr,
     pub game_name: SmolStr,
-    #[serde(default)]
     pub description: Option<SmolStr>,
-    #[serde(default)]
     pub icon: Option<SmolStr>,
     pub stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>>,
 }
@@ -66,7 +62,6 @@ pub struct GameLeaderboardData {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMapValue {
     pub name: SmolStr,
-    #[serde(default)]
     pub description: Option<SmolStr>,
 }
 
@@ -90,7 +85,6 @@ pub struct StatRaw {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct PlayerProfile {
     pub uuid: SmolStr,
-    #[serde(default)]
     pub name: Option<SmolStr>,
     pub stats: Vec<StatRaw>,
 }
