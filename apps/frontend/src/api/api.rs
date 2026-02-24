@@ -114,11 +114,11 @@ impl Api {
             ))?;
 
         let mut games: Vec<mp_stats_core::models::Game> = id_map
-            .games
-            .values()
-            .map(|name| mp_stats_core::models::Game {
-                id: name.clone(),
-                name: name.clone(),
+            .games.into_values().map(|value| mp_stats_core::models::Game {
+            id: value.name.clone(),
+            name: value.name.clone(),
+            description: value.description.clone(),
+            icon: None,
             })
             .collect();
 

@@ -1,7 +1,10 @@
+use crate::hooks::use_theme;
+use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct PaginationProps {
+    pub edition: PlatformEdition,
     pub current_page: u32,
     pub max_page: u32,
     pub on_change: Callback<u32>,
@@ -9,6 +12,8 @@ pub struct PaginationProps {
 
 #[function_component(PaginationControls)]
 pub fn pagination_controls(props: &PaginationProps) -> Html {
+    let theme_color = use_theme();
+
     let input_value = use_state(|| props.current_page.to_string());
 
     let current_page = props.current_page;
@@ -27,10 +32,8 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
         let max_page = props.max_page;
         move |e: SubmitEvent| {
             e.prevent_default();
-            if let Ok(p) = input_value.parse::<u32>() {
-                if p >= 1 && p <= max_page {
+            if let Ok(p) = input_value.parse::<u32>() && (p >= 1 && p <= max_page) {
                     on_change.emit(p);
-                }
             }
         }
     };
@@ -41,14 +44,14 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
     };
 
     html! {
-        <div class="p-4 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center bg-gray-800 gap-4">
+        <div class="p-4 border-t border-white/10 flex flex-col md:flex-row justify-between items-center bg-dark-850 gap-4">
              // Controls Left
              <div class="flex items-center gap-2">
                  // First Page
                  <button
                     onclick={ emit_page(1) }
                     disabled={current_page <= 1}
-                    class="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white transition-colors"
+                    class="p-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors shadow-sm"
                     title="First Page"
                  >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -60,7 +63,7 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                 <button
                     onclick={emit_page(current_page - 1)}
                     disabled={current_page <= 1}
-                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-bold text-white transition-colors"
+                    class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold text-white transition-colors shadow-sm"
                 >
                     {"Previous"}
                 </button>
@@ -75,9 +78,9 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                         let target: web_sys::HtmlInputElement = e.target_unchecked_into();
                         input_value.set(target.value());
                     })}
-                    class="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-center text-white text-sm focus:border-emerald-500 outline-none"
+                    class={classes!(theme_color, "w-16", "px-2", "py-1", "bg-dark-950", "border", "border-white/10", "rounded-md", "text-center", "text-white", "text-sm", "focus:border-theme-500/50", "outline-none", "shadow-inner")}
                 />
-                <span class="text-gray-400 txt-sm">{ format!("of {}", props.max_page) }</span>
+                <span class="text-gray-400 txt-sm font-medium">{ format!("of {}", props.max_page) }</span>
             </form>
 
             // Controls Right
@@ -86,7 +89,7 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                 <button
                     onclick={emit_page(current_page + 1)}
                     disabled={current_page >= max_page}
-                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-bold text-white transition-colors"
+                    class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold text-white transition-colors shadow-sm"
                 >
                     {"Next"}
                 </button>
@@ -95,7 +98,7 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                  <button
                     onclick={emit_page(max_page)}
                     disabled={current_page >= max_page}
-                    class="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white transition-colors"
+                    class="p-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors shadow-sm"
                     title="Last Page"
                  >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

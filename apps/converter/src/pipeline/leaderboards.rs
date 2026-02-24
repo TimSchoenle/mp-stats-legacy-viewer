@@ -36,7 +36,7 @@ pub fn process_java_leaderboards(
     );
 
     latest_dirs.par_iter().for_each(|latest_dir| {
-        let _ = process_single_leaderboard(platform, latest_dir, &output_dir, lookup_map);
+        let _ = process_single_leaderboard(platform, latest_dir, output_dir, lookup_map);
     });
 
     Ok(())
@@ -90,7 +90,7 @@ fn process_latest_chunks(
     for entry in fs::read_dir(latest_in)? {
         let entry = entry?;
         let path = entry.path();
-        if path.extension().map_or(false, |e| e == "xz") {
+        if path.extension().is_some_and(|e| e == "xz") {
             chunk_files.push(path);
         } else if path.file_name().unwrap() == "_meta.json" {
             fs::copy(path, out_latest.join("_meta.json"))?;
@@ -161,7 +161,7 @@ fn process_binary_chunks(
             let pid = view.player_id().read();
             let score = view.score().read();
 
-            if pid <= 0 {
+            if pid == 0 {
                 eprintln!("Invalid player ID: {}", pid);
                 continue;
             }
