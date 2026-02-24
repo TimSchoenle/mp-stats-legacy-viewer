@@ -9,7 +9,7 @@ use crate::components::leaderboards::header::LeaderboardHeader;
 use crate::components::leaderboards::leaderboard_table::LeaderboardTable;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::components::leaderboards::snapshot_selector::SnapshotSelector;
-use crate::hooks::{use_game_leaderboards, use_leaderboard_entries};
+use crate::hooks::{use_game_leaderboards, use_leaderboard_entries, use_theme};
 use mp_stats_core::ENTRIES_PER_PAGE_F64;
 use mp_stats_core::models::PlatformEdition;
 
@@ -165,13 +165,30 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         .map(|boards_map| boards_map.keys().map(|k| k.to_string()).collect::<Vec<_>>())
         .unwrap_or_default();
 
+    let theme_color = use_theme();
+
     html! {
-        <div class="container mx-auto px-4 py-8 text-white relative">
-            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class={classes!(theme_color, "container", "mx-auto", "px-4", "py-8", "text-white", "relative")}>
+            <div class="mb-8">
                 <LeaderboardHeader edition={props.edition.clone()} game={props.game.clone()} stat={props.stat.clone()} />
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    if !boards.is_empty() {
+                        <BoardTypeSelector
+                            edition={props.edition.clone()}
+                            game={props.game.clone()}
+                            stat={props.stat.clone()}
+                            current_board={props.board.clone()}
+                            boards={boards}
+                        />
+                    }
+                </div>
 
                 <div class="flex items-center gap-3">
                     <SnapshotSelector
+                        edition={props.edition.clone()}
                         current_snapshot={query.snapshot.clone()}
                         meta={(*current_meta).clone()}
                         on_change={change_snapshot}
@@ -189,16 +206,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 </div>
             </div>
 
-            if !boards.is_empty() {
-                <BoardTypeSelector
-                    edition={props.edition.clone()}
-                    game={props.game.clone()}
-                    stat={props.stat.clone()}
-                    current_board={props.board.clone()}
-                    boards={boards}
-                />
-            }
-
             if let Some(err) = &error {
                 <ErrorMessage title="Error Loading Data" message={err.clone()} />
             }
@@ -210,6 +217,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                         edition={props.edition.clone()}
                     />
                     <PaginationControls
+                        edition={props.edition.clone()}
                         current_page={props.page}
                         max_page={max_page}
                         on_change={Callback::from(change_page)}
@@ -228,7 +236,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
 
             if loading {
                 <div class="card p-12 text-center text-gray-500">
-                    <div class="animate-spin h-6 w-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <div class={classes!("animate-spin", "h-6", "w-6", "border-2", "border-theme-500", "border-t-transparent", "rounded-full", "mx-auto", "mb-2")}></div>
                     {"Loading leaderboard..."}
                 </div>
             }

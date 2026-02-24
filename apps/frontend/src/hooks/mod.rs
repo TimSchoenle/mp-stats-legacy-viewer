@@ -6,3 +6,6 @@ pub use use_leaderboard_entries::use_leaderboard_entries;
 
 pub mod use_player_profile;
 pub use use_player_profile::use_player_profile;
+
+pub mod use_theme;
+pub use use_theme::use_theme;

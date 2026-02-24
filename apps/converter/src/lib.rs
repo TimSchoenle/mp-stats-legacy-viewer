@@ -55,7 +55,7 @@ impl Converter {
 
             // Step 1: Process Metadata & Build ID Maps
             println!("Step 1: Processing Metadata...");
-            self.process_metadata(edition, &directory_in, &self.staging_dir)?;
+            let id_map = self.process_metadata(edition, &directory_in, &self.staging_dir)?;
 
             // Step 2: Dictionary & Names Index
             println!("Step 2: Processing Dictionary & Names...");
@@ -68,7 +68,7 @@ impl Converter {
 
             // Step 3b: Process Game Metadata
             println!("Step 3b: Processing Game Metadata...");
-            process_game_metadata(edition, &directory_in, &self.staging_dir)?;
+            process_game_metadata(edition, &directory_in, &self.staging_dir, &id_map)?;
 
             // Step 3c: Process Java Players
             println!("Step 3c: Processing Players...");

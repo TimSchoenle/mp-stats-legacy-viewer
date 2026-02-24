@@ -1,8 +1,10 @@
-use mp_stats_core::models::LeaderboardMeta;
+use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
+use crate::hooks::use_theme;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct SnapshotSelectorProps {
+    pub edition: PlatformEdition,
     pub current_snapshot: String,
     pub meta: Option<LeaderboardMeta>,
     pub on_change: Callback<String>,
@@ -10,6 +12,8 @@ pub struct SnapshotSelectorProps {
 
 #[function_component(SnapshotSelector)]
 pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
+    let theme_color = use_theme();
+    
     let meta = match &props.meta {
         Some(m) => m,
         None => return html! {},
@@ -28,27 +32,32 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     };
 
     html! {
-        <div class="flex flex-col gap-1">
-            <label class="text-xs text-gray-400 font-medium">{"Snapshot:"}</label>
-            <select
-                value={props.current_snapshot.clone()}
-                {onchange}
-                class="px-3 py-2 bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg text-sm text-white cursor-pointer focus:outline-none focus:border-emerald-500 transition-colors"
-            >
-                <option value="latest" selected={props.current_snapshot == "latest"}>
-                    {"Latest"}
-                </option>
-                {for meta.snapshots.iter().map(|snap| {
-                    html! {
-                        <option
-                            value={snap.snapshot_id.to_string()}
-                            selected={props.current_snapshot == snap.snapshot_id.as_str()}
-                        >
-                            {snap.snapshot_id.to_string()}
-                        </option>
-                    }
-                })}
-            </select>
+        <div class="flex items-center gap-3">
+            <label class="text-xs text-gray-400 font-medium uppercase tracking-wider">{"Snapshot:"}</label>
+            <div class="relative">
+                <select
+                    value={props.current_snapshot.clone()}
+                    {onchange}
+                    class={classes!(theme_color, "appearance-none", "px-4", "py-2", "pr-10", "bg-dark-900", "border", "border-white/10", "hover:border-white/20", "rounded-lg", "text-sm", "text-white", "cursor-pointer", "focus:outline-none", "focus:border-theme-500/50", "focus:ring-1", "focus:ring-theme-500/50", "transition-all", "shadow-sm")}
+                >
+                    <option value="latest" selected={props.current_snapshot == "latest"}>
+                        {"Latest"}
+                    </option>
+                    {for meta.snapshots.iter().map(|snap| {
+                        html! {
+                            <option
+                                value={snap.snapshot_id.to_string()}
+                                selected={props.current_snapshot == snap.snapshot_id.as_str()}
+                            >
+                                {snap.snapshot_id.to_string()}
+                            </option>
+                        }
+                    })}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
         </div>
     }
 }
