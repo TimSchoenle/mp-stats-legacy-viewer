@@ -1,5 +1,5 @@
-use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
 use crate::hooks::use_theme;
+use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
@@ -13,7 +13,7 @@ pub struct SnapshotSelectorProps {
 #[function_component(SnapshotSelector)]
 pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     let theme_color = use_theme();
-    
+
     let meta = match &props.meta {
         Some(m) => m,
         None => return html! {},

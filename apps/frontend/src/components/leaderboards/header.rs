@@ -1,5 +1,5 @@
-use crate::hooks::use_theme;
 use crate::Route;
+use crate::hooks::use_theme;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -30,7 +30,7 @@ pub fn leaderboard_header(props: &HeaderProps) -> Html {
                 <span class="text-white">{ &props.game }</span>
                 <span class="text-gray-600 font-light">{"/"}</span>
                 <span class={classes!("text-theme-500", "capitalize")}>{ props.stat.replace("_", " ") }</span>
-        
+
             </h1>
         </div>
     }

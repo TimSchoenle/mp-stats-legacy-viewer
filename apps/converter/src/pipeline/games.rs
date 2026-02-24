@@ -1,6 +1,8 @@
 use anyhow::Result;
 use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
-use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition, IdMap};
+use mp_stats_core::models::{
+    GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile, PlatformEdition,
+};
 use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
 use smol_str::SmolStr;

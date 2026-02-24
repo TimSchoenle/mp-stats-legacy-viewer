@@ -7,22 +7,19 @@ use yew_router::prelude::*;
 pub fn use_theme() -> &'static str {
     let route_context = use_route::<Route>();
 
-    let theme = use_memo(
-        route_context,
-        |route_ctx| {
-            if let Some(
-                Route::Landing { edition }
-                | Route::Game { edition, .. }
-                | Route::Leaderboard { edition, .. }
-                | Route::Player { edition, .. },
-            ) = route_ctx
-            {
-                get_theme_color(edition)
-            } else {
-                "theme-olive"
-            }
-        },
-    );
+    let theme = use_memo(route_context, |route_ctx| {
+        if let Some(
+            Route::Landing { edition }
+            | Route::Game { edition, .. }
+            | Route::Leaderboard { edition, .. }
+            | Route::Player { edition, .. },
+        ) = route_ctx
+        {
+            get_theme_color(edition)
+        } else {
+            "theme-olive"
+        }
+    });
 
     *theme
 }

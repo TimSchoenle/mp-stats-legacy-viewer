@@ -1,6 +1,6 @@
+use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_game_leaderboards, use_theme};
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -52,7 +52,7 @@ pub fn game_view(props: &GameProps) -> Html {
                         <span class="text-2xl text-gray-500 font-light">{"—"}</span>
                         <span class="text-2xl text-gray-400 font-medium">{"Statistics"}</span>
                     </h1>
-                    
+
                     if let Some(data) = &game_req.data && let Some(desc) = &data.description {
                         <p class="text-gray-300 text-lg leading-relaxed max-w-4xl">
                             { desc.as_str() }

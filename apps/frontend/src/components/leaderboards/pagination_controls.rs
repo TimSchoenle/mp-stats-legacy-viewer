@@ -32,8 +32,10 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
         let max_page = props.max_page;
         move |e: SubmitEvent| {
             e.prevent_default();
-            if let Ok(p) = input_value.parse::<u32>() && (p >= 1 && p <= max_page) {
-                    on_change.emit(p);
+            if let Ok(p) = input_value.parse::<u32>()
+                && (p >= 1 && p <= max_page)
+            {
+                on_change.emit(p);
             }
         }
     };

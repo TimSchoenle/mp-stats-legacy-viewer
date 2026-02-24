@@ -1,6 +1,6 @@
+use crate::Route;
 use crate::components::search_bar::SearchBar;
 use crate::hooks::use_theme::get_theme_color;
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -10,10 +10,23 @@ fn leaderboard_button(edition: &PlatformEdition) -> Html {
 
     let box_styling = classes!(
         theme_color,
-        "group", "flex-1", "p-8", "border", "rounded-2xl", "shadow-xl",
-        "transition-all", "duration-300", "transform", "hover:-translate-y-1",
-        "flex", "flex-col", "items-center", "justify-center",
-        "bg-theme-900/40", "hover:bg-theme-800/60", "border-theme-500/30"
+        "group",
+        "flex-1",
+        "p-8",
+        "border",
+        "rounded-2xl",
+        "shadow-xl",
+        "transition-all",
+        "duration-300",
+        "transform",
+        "hover:-translate-y-1",
+        "flex",
+        "flex-col",
+        "items-center",
+        "justify-center",
+        "bg-theme-900/40",
+        "hover:bg-theme-800/60",
+        "border-theme-500/30"
     );
 
     html! {

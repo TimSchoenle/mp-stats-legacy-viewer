@@ -1,6 +1,6 @@
+use crate::Route;
 use crate::components::search_bar::SearchBar;
 use crate::hooks::use_theme;
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;

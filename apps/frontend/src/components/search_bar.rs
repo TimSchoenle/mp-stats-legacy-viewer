@@ -1,5 +1,5 @@
-use crate::{Api, Route};
 use crate::hooks::use_theme;
+use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use std::cell::RefCell;
 use std::rc::Rc;

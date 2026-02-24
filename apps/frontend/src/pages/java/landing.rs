@@ -1,9 +1,9 @@
+use crate::hooks::use_theme;
 use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use crate::hooks::use_theme;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct JavaLandingProps {

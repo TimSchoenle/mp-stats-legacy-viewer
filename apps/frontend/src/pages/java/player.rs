@@ -80,7 +80,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                 games.into_iter().map(|(game_name, stats)| {
                                     html! {
                                         <div class="card p-6 flex flex-col h-full bg-dark-850 hover:bg-dark-800 transition-colors">
-                                            <Link<Route> 
+                                            <Link<Route>
                                                 to={Route::Game { edition: props.edition.clone(), game: game_name.clone() }}
                                                 classes={classes!("text-xl", "font-bold", "mb-4", "pb-3", "border-b", "border-white/10", "text-theme-400", "hover:text-theme-300", "transition-colors", "flex", "items-center", "justify-between", "group/gamelink")}
                                             >
