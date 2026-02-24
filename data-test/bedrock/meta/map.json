@@ -1,1 +1,1 @@
-{"boards":{"1":"All"},"games":{"1":"TurfWars","2":"Skyfall","3":"MobArena","4":"BlockHunt"},"stats":{"1":"Wins"}}
+{"boards":{"1":{"name":"All","description":""}},"games":{"1":{"name":"TurfWars","description":""},"2":{"name":"Skyfall","description":""},"3":{"name":"MobArena","description":""},"4":{"name":"BlockHunt","description":""}},"stats":{"1":{"name":"Wins","description":"Wins"}}}
