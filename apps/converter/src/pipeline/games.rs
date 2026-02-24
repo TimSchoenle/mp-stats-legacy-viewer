@@ -1,6 +1,8 @@
 use anyhow::Result;
 use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
-use mp_stats_core::models::{GameLeaderboardData, LeaderboardMeta, MetaFile, PlatformEdition};
+use mp_stats_core::models::{
+    GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile, PlatformEdition,
+};
 use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
 use smol_str::SmolStr;
@@ -50,6 +52,7 @@ pub fn process_game_metadata(
     platform: &PlatformEdition,
     in_path: &Path,
     base_out: &Path,
+    id_map: &IdMap,
 ) -> Result<()> {
     let lb_in = in_path.join("leaderboards");
 
@@ -114,9 +117,22 @@ pub fn process_game_metadata(
                 .insert(SmolStr::new(board), LeaderboardMeta { snapshots, latest });
         }
 
+        let mut game_friendly_name = game_id.to_string();
+        let mut description = None;
+
+        for val in id_map.games.values() {
+            if val.name == game_id.as_str() {
+                game_friendly_name = val.name.to_string();
+                description = val.description.clone();
+                break;
+            }
+        }
+
         let game_data = GameLeaderboardData {
             game_id: SmolStr::new(game_id),
-            game_name: SmolStr::new(game_id),
+            game_name: SmolStr::new(game_friendly_name),
+            description,
+            icon: None,
             stats: meta_stats,
         };
 
