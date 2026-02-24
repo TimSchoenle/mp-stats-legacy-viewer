@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.6.0...v0.7.0) (2026-02-24)
+
+
+### Features
+
+* **Frontend:** add name search feature ([#36](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/36)) ([02779ea](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/02779ea5ac0c41e971c876c2b1194fcd7e3cec88))
+* **Frontend:** add propper home page description section ([#34](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/34)) ([4cf506d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4cf506d9eaccadbaae4aec7bd9986202331b403c))
+* standardize UI  ([#39](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/39)) ([2b0c46c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2b0c46cdc298a09f739def9d68c881ded727076f))
+
+
+### Bug Fixes
+
+* **Frontend:** improve player page ([#37](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/37)) ([b7a80e8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b7a80e8e94d3407e1ca49cf452d1ac3ea24355a9))
+
+
+### Code Refactoring
+
+* **Frontend:** split components into sub components and update h… ([#32](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/32)) ([0368922](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0368922e2a96151a0847b71a63eccc164edae873))
+
+
+### Miscellaneous
+
+* **deps:** update to vactions-helm-update-chart-version-v1.5.2 ([#38](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/38)) ([64cfd15](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/64cfd15ec693e071e259e7616bc1fc1d9b038949))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#35](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/35)) ([5622b2b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5622b2b589418684a4358b2ce7455dc19ed9cb04))
+
 ## [0.6.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.5.0...v0.6.0) (2026-02-22)
 
 
