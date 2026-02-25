@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.8.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.2...v0.8.0) (2026-02-25)
+
+
+### Features
+
+* **Frontend:** add propper caching layer ([#50](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/50)) ([ca9690e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ca9690ef85b6caa6a00c0a242d1bf635c9baba63))
+* **Frontend:** correctly format snapshot dates ([#48](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/48)) ([2e847e2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2e847e2d75cf05ab0fc1c40d57b9ec782faaedbc))
+
+
+### Bug Fixes
+
+* **Frontend:** correctly sort snapshots ([#44](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/44)) ([88098c9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/88098c927fea155f1b624eacfaa415d8b23ab650))
+* **Frontend:** total pages calculation ([#49](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/49)) ([2463945](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2463945523669093b5c369a8087869f375af966d))
+
+
+### Miscellaneous
+
+* **deps:** update rust:1.93-slim docker digest to 7e6fa79 ([#46](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/46)) ([2d53385](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2d53385e8d6417902531647d309612be9156103d))
+* **deps:** update step-security/harden-runner action to v2.15.0 ([#47](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/47)) ([7475f63](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7475f6300571540116759abd911ff1ea30059ca3))
+
 ## [0.7.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.1...v0.7.2) (2026-02-24)
 
 
