@@ -10,4 +10,6 @@ pub mod route;
 pub use route::Route;
 pub mod api;
 pub mod app;
+pub mod util;
+
 pub use api::Api;
