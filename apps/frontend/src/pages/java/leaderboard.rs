@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::components::leaderboards::board_type_selector::BoardTypeSelector;
 use crate::components::leaderboards::header::LeaderboardHeader;
@@ -10,7 +9,7 @@ use crate::components::leaderboards::leaderboard_table::LeaderboardTable;
 use crate::components::leaderboards::pagination_controls::PaginationControls;
 use crate::components::leaderboards::snapshot_selector::SnapshotSelector;
 use crate::hooks::{use_game_leaderboards, use_leaderboard_entries, use_theme};
-use mp_stats_core::ENTRIES_PER_PAGE_F64;
+use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 
 #[derive(Properties, PartialEq, Clone)]
@@ -88,13 +87,12 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let loading = game_req.loading || entries_req.loading;
     let error = game_req.error.clone().or(entries_req.error.clone());
 
-    let max_page = current_snapshot_meta
+    let total_pages = current_snapshot_meta
         .as_ref()
         .as_ref()
         .map(|meta| meta.total_pages)
         .unwrap_or(1);
-    let max_page = (max_page as f64 / ENTRIES_PER_PAGE_F64).ceil() as u32;
-    let max_page = if max_page == 0 { 1 } else { max_page };
+    let max_page = if total_pages == 0 { 1 } else { total_pages };
 
     let change_page = {
         let navigator = navigator.clone();
