@@ -9,8 +9,8 @@ use smol_str::SmolStr;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use web_sys::js_sys::Date;
 
 fn now_ms() -> f64 {
@@ -125,8 +125,7 @@ impl Api {
         self.maybe_sweep_expired();
 
         // Hot cache
-        if let Some(entry) = self.get_cached_bytes(url)
-        {
+        if let Some(entry) = self.get_cached_bytes(url) {
             return Ok(entry);
         }
 

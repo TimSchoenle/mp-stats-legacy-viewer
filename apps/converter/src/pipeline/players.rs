@@ -49,9 +49,7 @@ pub fn process_java_players(
         })
         .reduce(HashMap::new, |mut acc, file_shards| {
             for (prefix, mut uuid_map) in file_shards {
-                acc.entry(prefix)
-                    .or_default()
-                    .extend(uuid_map.drain());
+                acc.entry(prefix).or_default().extend(uuid_map.drain());
             }
             acc
         });
