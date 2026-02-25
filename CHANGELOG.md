@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.8.1...v0.9.0) (2026-02-25)
+
+
+### Features
+
+* **Frontend:** add custom score formatter ([#55](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/55)) ([9fdd3aa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9fdd3aae8dcc052e159e038569c7507c715ceefe))
+* **Frontend:** limit player profile to all data ([#54](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/54)) ([4a0831b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4a0831b21ea150ef5328797e9493dd71502da120))
+
+
+### Build System
+
+* update version lock ([f76ca22](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f76ca22e4773cea7792af7b1b6dd72e1b1e51ee5))
+
 ## [0.8.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.8.0...v0.8.1) (2026-02-25)
 
 
