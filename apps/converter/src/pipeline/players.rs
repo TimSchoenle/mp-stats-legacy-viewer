@@ -1,6 +1,6 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
-use mp_stats_core::models::{PlatformEdition, PlayerProfile, StatRaw};
+use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile, StatRaw};
 use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
@@ -12,7 +12,8 @@ pub fn process_java_players(
     platform: &PlatformEdition,
     java_in: &Path,
     output_directory: &Path,
-    lookup_map: &HashMap<String, (String, String)>,
+    id_map: &IdMap,
+    player_lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<()> {
     let players_in = java_in.join("players");
 
@@ -36,13 +37,21 @@ pub fn process_java_players(
         }
     }
 
+    // Find all board id
+    let all_board_id = id_map
+        .boards
+        .iter()
+        .find(|(_, board)| board.name.to_lowercase() == "all")
+        .map(|(id, _)| *id);
+    println!("Found all board id: {:?}", all_board_id);
+
     println!("Found {} player shards to process.", files.len());
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
     let shards: HashMap<String, HashMap<String, PlayerProfile>> = files
         .par_iter()
         .map(|path| {
-            process_player_shard(path, lookup_map).unwrap_or_else(|e| {
+            process_player_shard(path, all_board_id, player_lookup_map).unwrap_or_else(|e| {
                 eprintln!("Failed to process player shard {:?}: {}", path, e);
                 HashMap::new()
             })
@@ -70,7 +79,8 @@ pub fn process_java_players(
 /// Process a single player shard file
 fn process_player_shard(
     path: &Path,
-    lookup_map: &HashMap<String, (String, String)>,
+    all_board_id: Option<u32>,
+    player_lookup_map: &HashMap<String, (String, String)>,
 ) -> Result<HashMap<String, HashMap<String, PlayerProfile>>> {
     // Read & Decompress
     let decompressed = decompress_file_auto(path)?;
@@ -82,7 +92,7 @@ fn process_player_shard(
 
     for (player_id_str, stride_data) in raw_map {
         // Resolve Identity
-        let (uuid, name) = if let Some(info) = lookup_map.get(&player_id_str) {
+        let (uuid, name) = if let Some(info) = player_lookup_map.get(&player_id_str) {
             (SmolStr::new(&info.0), Some(SmolStr::new(&info.1)))
         } else {
             (SmolStr::new("unknown"), None)
@@ -109,6 +119,13 @@ fn process_player_shard(
             let score = stride_data[offset + 4].as_u64().unwrap_or(0);
             let rank = stride_data[offset + 5].as_u64().unwrap_or(0) as u32;
             let save_time = stride_data[offset + 6].as_u64().unwrap_or(0);
+
+            // Only show all stats on player profile
+            if let Some(all_board_id) = all_board_id
+                && board_id != all_board_id
+            {
+                continue;
+            }
 
             stats.push(StatRaw {
                 board_id,
