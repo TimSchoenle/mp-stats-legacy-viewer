@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.8.0...v0.8.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* remove dashmap ([#52](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/52)) ([9564596](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/956459663b3593cfe371dceaea807043541906a1))
+
+
+### Build System
+
+* update version lock ([0114066](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0114066f16e341f233fb59c0e28de4dc28fe2ef2))
+
 ## [0.8.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.7.2...v0.8.0) (2026-02-25)
 
 
