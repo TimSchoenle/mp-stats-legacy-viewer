@@ -7,9 +7,7 @@ pub struct ScoreFormatter {
     format_type: FormatType,
 }
 
-pub fn create_score_formatter(game: &String,
-                              stat: &String,
-) -> ScoreFormatter {
+pub fn create_score_formatter(game: &String, stat: &String) -> ScoreFormatter {
     let locale = web_sys::window()
         .map(|w| w.navigator())
         .and_then(|n| n.language())
