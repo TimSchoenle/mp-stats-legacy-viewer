@@ -31,6 +31,9 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
         })
     };
 
+    let mut sorted_snapshots = meta.snapshots.clone();
+    sorted_snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+
     html! {
         <div class="flex items-center gap-3">
             <label class="text-xs text-gray-400 font-medium uppercase tracking-wider">{"Snapshot:"}</label>
@@ -43,7 +46,8 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                     <option value="latest" selected={props.current_snapshot == "latest"}>
                         {"Latest"}
                     </option>
-                    {for meta.snapshots.iter().map(|snap| {
+                    {for sorted_snapshots.iter()
+                        .map(|snap| {
                         html! {
                             <option
                                 value={snap.snapshot_id.to_string()}
