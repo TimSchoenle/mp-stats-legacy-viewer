@@ -38,8 +38,10 @@ pub fn process_java_players(
     }
 
     // Find all board id
-    let all_board_id = id_map.boards
-        .iter().find(|(_, board)| board.name.to_lowercase() == "all")
+    let all_board_id = id_map
+        .boards
+        .iter()
+        .find(|(_, board)| board.name.to_lowercase() == "all")
         .map(|(id, _)| *id);
     println!("Found all board id: {:?}", all_board_id);
 
@@ -119,7 +121,9 @@ fn process_player_shard(
             let save_time = stride_data[offset + 6].as_u64().unwrap_or(0);
 
             // Only show all stats on player profile
-            if let Some(all_board_id) = all_board_id && board_id != all_board_id {
+            if let Some(all_board_id) = all_board_id
+                && board_id != all_board_id
+            {
                 continue;
             }
 

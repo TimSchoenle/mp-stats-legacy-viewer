@@ -72,7 +72,13 @@ impl Converter {
 
             // Step 3c: Process Java Players
             println!("Step 3c: Processing Players...");
-            process_java_players(edition, &directory_in, &self.staging_dir, &id_map, &lookup_map)?;
+            process_java_players(
+                edition,
+                &directory_in,
+                &self.staging_dir,
+                &id_map,
+                &lookup_map,
+            )?;
         }
 
         // Step 5: Finalize
