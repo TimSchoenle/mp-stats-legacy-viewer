@@ -37,7 +37,8 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     let mut sorted_snapshots = meta.snapshots.clone();
     sorted_snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
-    let locale = web_sys::window().map(|w| w.navigator())
+    let locale = web_sys::window()
+        .map(|w| w.navigator())
         .and_then(|n| n.language())
         .unwrap_or_else(|| "en-US".to_string());
     let date_formats = DateTimeFormatOptions::new();
