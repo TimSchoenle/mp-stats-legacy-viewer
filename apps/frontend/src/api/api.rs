@@ -1,7 +1,7 @@
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
-    GameLeaderboardData, IdMap, JavaMeta, LeaderboardEntry, LeaderboardPage, PlatformEdition,
+    GameLeaderboardData, IdMap, LeaderboardEntry, LeaderboardPage, PlatformEdition, PlatformMeta,
     PlayerProfile,
 };
 use mp_stats_core::routes;
@@ -9,12 +9,31 @@ use smol_str::SmolStr;
 use std::collections::HashMap;
 
 use dashmap::DashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use web_sys::js_sys::Date;
+
+fn now_ms() -> f64 {
+    Date::now()
+}
+
+#[derive(Clone, Debug)]
+struct CacheEntry {
+    expires_at_ms: f64,
+    /// Decompressed bytes.
+    bytes: Arc<Vec<u8>>,
+}
+
+impl CacheEntry {
+    fn is_fresh(&self) -> bool {
+        now_ms() < self.expires_at_ms
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Api {
-    // Cache for names_index: (Edition, Prefix) -> HashMap<Name, UUID>
-    name_index_cache: Arc<DashMap<(PlatformEdition, String), HashMap<String, String>>>,
+    cache: Arc<DashMap<String, CacheEntry>>,
+    last_sweep_ms: Arc<AtomicU64>,
 }
 
 impl PartialEq for Api {
@@ -26,46 +45,132 @@ impl PartialEq for Api {
 impl Default for Api {
     fn default() -> Self {
         Self {
-            name_index_cache: Arc::new(DashMap::new()),
+            cache: Arc::new(DashMap::new()),
+            last_sweep_ms: Arc::new(AtomicU64::new(0)),
         }
     }
 }
 
+pub type ApiResult<T> = Result<T, gloo_net::Error>;
+
 impl Api {
-    // Helper to fetch and decode binary data (LZMA or Zlib -> Postcard)
-    async fn fetch_bin<T: serde::de::DeserializeOwned>(&self, url: &str) -> Option<T> {
-        match Request::get(url).send().await {
-            Ok(resp) if resp.ok() => {
-                let bytes = match resp.binary().await {
-                    Ok(b) => b,
-                    Err(e) => {
-                        gloo_console::warn!(format!("Failed to get binary from {}: {}", url, e));
-                        return None;
-                    }
-                };
+    const TTL_GAME_MS: f64 = 60.0 * 60.0 * 1000.0; // 1 Hour
+    const TTL_ID_MAP_MS: f64 = 60.0 * 60.0 * 1000.0; // 1 Hour
+    const TTL_PLAYER_SHARD_MS: f64 = 1.0 * 60.0 * 1000.0; // 1 Minute
+    const TTL_LEADERBOARD_CHUNK_MS: f64 = 1.0 * 60.0 * 1000.0; // 1 Minute
+    const TTL_NAME_INDEX_MS: f64 = 3.0 * 60.0 * 1000.0; // 3 Minutes
 
-                let cursor = std::io::Cursor::new(bytes);
-                let decompressed = match uncompress_lzma(cursor) {
-                    Ok(d) => d,
-                    Err(e) => {
-                        gloo_console::warn!(format!("Failed to decompress {}: {:?}", url, e));
-                        return None;
-                    }
-                };
+    const TTL_ERROR_MS: f64 = 10.0 * 1000.0; // 10 Seconds
 
-                match postcard::from_bytes(&decompressed) {
-                    Ok(data) => Some(data),
-                    Err(e) => {
-                        gloo_console::warn!(format!(
-                            "Postcard deserialization failed for {}: {}",
-                            url, e
-                        ));
-                        None
-                    }
-                }
-            }
-            _ => None,
+    const SWEEP_INTERVAL_MS: u64 = 30_000; // every 30s at most
+    const SWEEP_MAX_REMOVALS: usize = 256; // limit per sweep
+
+    fn maybe_sweep_expired(&self) {
+        let now = now_ms() as u64;
+
+        let last = self.last_sweep_ms.load(Ordering::Relaxed);
+        if now.saturating_sub(last) < Self::SWEEP_INTERVAL_MS {
+            return;
         }
+        self.last_sweep_ms.store(now, Ordering::Relaxed);
+
+        let mut removed = 0usize;
+
+        // Iterate cache and remove expired entries; stop after a batch.
+        for item in self.cache.iter() {
+            if removed >= Self::SWEEP_MAX_REMOVALS {
+                break;
+            }
+
+            if !item.value().is_fresh() {
+                // key() is a ref; clone to remove.
+                let key = item.key().clone();
+                // Remove may fail if already removed; that's fine.
+                let _ = self.cache.remove(&key);
+                removed += 1;
+            }
+        }
+    }
+
+    async fn fetch_decompressed_bytes(&self, url: &str) -> ApiResult<Arc<Vec<u8>>> {
+        let resp = Request::get(url).send().await?;
+        if !resp.ok() {
+            return Err(gloo_net::Error::GlooError(format!(
+                "HTTP error fetching {}",
+                url
+            )));
+        }
+
+        let bytes = resp.binary().await.map_err(|e| {
+            gloo_net::Error::GlooError(format!("Failed to read binary from {}: {}", url, e))
+        })?;
+
+        let cursor = std::io::Cursor::new(bytes);
+        let decompressed = uncompress_lzma(cursor).map_err(|e| {
+            gloo_net::Error::GlooError(format!("Failed to decompress {}: {:?}", url, e))
+        })?;
+
+        Ok(Arc::new(decompressed))
+    }
+
+    async fn get_decompressed_cached(
+        &self,
+        url: &str,
+        ttl_ms: f64,
+    ) -> ApiResult<Arc<Vec<u8>>> {
+        // Try to cleanup cache
+        self.maybe_sweep_expired();
+
+        // Hot cache
+        if let Some(entry) = self.cache.get(url) && entry.is_fresh() {
+            return Ok(entry.bytes.clone());
+        }
+
+        // Fetch
+        match self.fetch_decompressed_bytes(url).await {
+            Ok(bytes) => {
+                self.cache.insert(
+                    url.to_string(),
+                    CacheEntry {
+                        expires_at_ms: now_ms() + ttl_ms,
+                        bytes: bytes.clone(),
+                    },
+                );
+                Ok(bytes)
+            }
+            Err(e) => {
+                // Short negative cache to reduce rapid retry storms.
+                self.cache.insert(
+                    url.to_string(),
+                    CacheEntry {
+                        expires_at_ms: now_ms() + Self::TTL_ERROR_MS,
+                        bytes: Arc::new(Vec::new()),
+                    },
+                );
+                Err(e)
+            }
+        }
+    }
+
+    async fn fetch_bin_cached<T: serde::de::DeserializeOwned>(
+        &self,
+        url: &str,
+        ttl_ms: f64,
+    ) -> ApiResult<T> {
+        let bytes = self.get_decompressed_cached(url, ttl_ms).await?;
+        if bytes.is_empty() {
+            return Err(gloo_net::Error::GlooError(format!(
+                "Empty payload for {}",
+                url
+            )));
+        }
+
+        postcard::from_bytes(&bytes).map_err(|e| {
+            gloo_net::Error::GlooError(format!(
+                "Postcard deserialization failed for {}: {}",
+                url, e
+            ))
+        })
     }
 
     async fn get_name_index(
@@ -73,45 +178,27 @@ impl Api {
         edition: &PlatformEdition,
         prefix: &str,
     ) -> Option<HashMap<String, String>> {
-        let key = (edition.clone(), prefix.to_string());
-
-        // Check cache first
-        if let Some(cached) = self.name_index_cache.get(&key) {
-            return Some(cached.clone());
-        }
-
-        // Fetch if not in cache
         let url = format!("/data/{}", routes::names_index_bin(edition, prefix));
-        if let Some(map) = self.fetch_bin::<HashMap<String, String>>(&url).await {
-            self.name_index_cache.insert(key, map.clone());
-            Some(map)
-        } else {
-            self.name_index_cache.insert(key, HashMap::new());
-            None
-        }
+        self.fetch_bin_cached::<HashMap<String, String>>(&url, Self::TTL_NAME_INDEX_MS)
+            .await
+            .ok()
     }
 
     pub async fn fetch_game_leaderboards(
         &self,
         edition: &PlatformEdition,
         game_id: &str,
-    ) -> Result<GameLeaderboardData, gloo_net::Error> {
+    ) -> ApiResult<GameLeaderboardData> {
         let url = format!("/data/{}", routes::game_bin(edition, game_id));
-        if let Some(data) = self.fetch_bin::<GameLeaderboardData>(&url).await {
-            return Ok(data);
-        }
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch game leaderboards".to_string(),
-        ))
+        self.fetch_bin_cached::<GameLeaderboardData>(&url, Self::TTL_GAME_MS)
+            .await
+            .map_err(|_| {
+                gloo_net::Error::GlooError("Failed to fetch game leaderboards".to_string())
+            })
     }
 
-    pub async fn fetch_meta(&self, edition: &PlatformEdition) -> Result<JavaMeta, gloo_net::Error> {
-        let id_map = self
-            .fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
-            .await
-            .ok_or(gloo_net::Error::GlooError(
-                "Failed to fetch id map".to_string(),
-            ))?;
+    pub async fn fetch_meta(&self, edition: &PlatformEdition) -> ApiResult<PlatformMeta> {
+        let id_map = self.fetch_id_map(edition).await?;
 
         let mut games: Vec<mp_stats_core::models::Game> = id_map
             .games
@@ -126,20 +213,16 @@ impl Api {
 
         games.sort_by(|a, b| a.name.cmp(&b.name));
 
-        Ok(JavaMeta { games })
+        Ok(PlatformMeta { games })
     }
 
-    pub async fn fetch_id_map(&self, edition: &PlatformEdition) -> Result<IdMap, gloo_net::Error> {
-        if let Some(map) = self
-            .fetch_bin::<IdMap>(&format!("/data/{}", routes::meta_map_bin(edition)))
+    pub async fn fetch_id_map(&self, edition: &PlatformEdition) -> ApiResult<IdMap> {
+        self.fetch_bin_cached::<IdMap>(
+            &format!("/data/{}", routes::meta_map_bin(edition)),
+            Self::TTL_ID_MAP_MS,
+        )
             .await
-        {
-            return Ok(map);
-        }
-
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch id map".to_string(),
-        ))
+            .map_err(|_| gloo_net::Error::GlooError("Failed to fetch id map".to_string()))
     }
 
     pub async fn fetch_leaderboard(
@@ -149,35 +232,32 @@ impl Api {
         game: &str,
         stat: &str,
         chunk: u32,
-    ) -> Result<Vec<LeaderboardEntry>, gloo_net::Error> {
-        // Fetch .bin.xz (Postcard JavaLeaderboardPage)
+    ) -> ApiResult<Vec<LeaderboardEntry>> {
         let bin_path = format!(
             "/data/{}",
             routes::leaderboard_chunk_bin(edition, board, game, stat, chunk)
         );
 
-        if let Some(page) = self.fetch_bin::<LeaderboardPage>(&bin_path).await {
-            // Convert columnar format (SoA) to row format (AoS)
-            let entries = page
-                .ranks
-                .into_iter()
-                .zip(page.uuids)
-                .zip(page.names)
-                .zip(page.scores)
-                .map(|(((rank, uuid), name), score)| LeaderboardEntry {
-                    rank,
-                    uuid,
-                    name,
-                    score,
-                })
-                .collect();
+        let page = self
+            .fetch_bin_cached::<LeaderboardPage>(&bin_path, Self::TTL_LEADERBOARD_CHUNK_MS)
+            .await
+            .map_err(|_| gloo_net::Error::GlooError("Failed to fetch leaderboard".to_string()))?;
 
-            return Ok(entries);
-        }
+        let entries = page
+            .ranks
+            .into_iter()
+            .zip(page.uuids)
+            .zip(page.names)
+            .zip(page.scores)
+            .map(|(((rank, uuid), name), score)| LeaderboardEntry {
+                rank,
+                uuid,
+                name,
+                score,
+            })
+            .collect();
 
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch leaderboard".to_string(),
-        ))
+        Ok(entries)
     }
 
     pub async fn resolve_names(
@@ -200,7 +280,7 @@ impl Api {
         &self,
         edition: &PlatformEdition,
         uuid: &str,
-    ) -> Result<PlayerProfile, gloo_net::Error> {
+    ) -> ApiResult<PlayerProfile> {
         let is_valid_len = uuid.len() == 32 || uuid.len() == 36;
         let is_hex = uuid.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
         let is_bedrock = *edition == PlatformEdition::Bedrock;
@@ -213,35 +293,30 @@ impl Api {
 
         let shard = &uuid[..3].to_uppercase();
 
-        // java/players/SHARD.bin (LZMA Postcard)
         let bin_path = format!("/data/{}", routes::player_shard_bin(edition, shard));
-        if let Some(mut shard_map) = self
-            .fetch_bin::<HashMap<String, PlayerProfile>>(&bin_path)
+        let mut shard_map = self
+            .fetch_bin_cached::<HashMap<String, PlayerProfile>>(&bin_path, Self::TTL_PLAYER_SHARD_MS)
             .await
-        {
-            if let Some(mut profile) = shard_map.remove(uuid) {
-                profile.uuid = uuid.into();
-                return Ok(profile);
-            } else {
-                gloo_console::warn!(format!(
-                    "Player {} not found in binary shard {}",
-                    uuid, shard
-                ));
-                return Err(gloo_net::Error::GlooError(
-                    "Player not found in shard".into(),
-                ));
-            }
-        }
+            .map_err(|_| gloo_net::Error::GlooError("Failed to fetch player".to_string()))?;
 
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch player".to_string(),
-        ))
+        if let Some(mut profile) = shard_map.remove(uuid) {
+            profile.uuid = uuid.into();
+            Ok(profile)
+        } else {
+            gloo_console::warn!(format!(
+                "Player {} not found in binary shard {}",
+                uuid, shard
+            ));
+            Err(gloo_net::Error::GlooError(
+                "Player not found in shard".into(),
+            ))
+        }
     }
 
     pub async fn search_players_by_name(
         &self,
         query: &str,
-    ) -> Result<Vec<(PlatformEdition, String, String)>, gloo_net::Error> {
+    ) -> ApiResult<Vec<(PlatformEdition, String, String)>> {
         let name_lower = query.to_lowercase();
         if name_lower.len() < 3 {
             return Ok(Vec::new());
@@ -309,33 +384,33 @@ impl Api {
         stat: &str,
         snapshot_id: &str,
         chunk: u32,
-    ) -> Result<Vec<LeaderboardEntry>, gloo_net::Error> {
+    ) -> ApiResult<Vec<LeaderboardEntry>> {
         let bin_path = format!(
             "/data/{}",
             routes::history_leaderboard_chunk_bin(edition, board, game, stat, snapshot_id, chunk)
         );
 
-        if let Some(page) = self.fetch_bin::<LeaderboardPage>(&bin_path).await {
-            // Convert columnar format (SoA) to row format (AoS)
-            let entries = page
-                .ranks
-                .into_iter()
-                .zip(page.uuids)
-                .zip(page.names)
-                .zip(page.scores)
-                .map(|(((rank, uuid), name), score)| LeaderboardEntry {
-                    rank,
-                    uuid,
-                    name,
-                    score,
-                })
-                .collect();
+        let page = self
+            .fetch_bin_cached::<LeaderboardPage>(&bin_path, Self::TTL_LEADERBOARD_CHUNK_MS)
+            .await
+            .map_err(|_| {
+                gloo_net::Error::GlooError("Failed to fetch history leaderboard".to_string())
+            })?;
 
-            return Ok(entries);
-        }
+        let entries = page
+            .ranks
+            .into_iter()
+            .zip(page.uuids)
+            .zip(page.names)
+            .zip(page.scores)
+            .map(|(((rank, uuid), name), score)| LeaderboardEntry {
+                rank,
+                uuid,
+                name,
+                score,
+            })
+            .collect();
 
-        Err(gloo_net::Error::GlooError(
-            "Failed to fetch history leaderboard".to_string(),
-        ))
+        Ok(entries)
     }
 }
