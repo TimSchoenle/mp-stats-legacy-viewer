@@ -1,12 +1,15 @@
 use crate::Route;
 use crate::hooks::use_theme;
 use crate::models::LeaderboardEntry;
+use crate::util::score_formatter::create_score_formatter;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardTableProps {
+    pub game: String,
+    pub stat: String,
     pub entries: Vec<LeaderboardEntry>,
     pub edition: PlatformEdition,
 }
@@ -14,6 +17,7 @@ pub struct LeaderboardTableProps {
 #[function_component(LeaderboardTable)]
 pub fn leaderboard_table(props: &LeaderboardTableProps) -> Html {
     let theme_color = use_theme();
+    let score_formatter = create_score_formatter(&props.game, &props.stat);
 
     html! {
         <div class="overflow-x-auto">
@@ -48,7 +52,7 @@ pub fn leaderboard_table(props: &LeaderboardTableProps) -> Html {
                                 </Link<Route>>
                             </td>
                             <td class="table-cell text-right font-mono font-bold text-lg text-white">
-                                { row.score }
+                                { score_formatter.format_score(row.score) }
                             </td>
                         </tr>
                     }}) }
