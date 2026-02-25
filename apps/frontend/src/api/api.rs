@@ -6,9 +6,9 @@ use mp_stats_core::models::{
 };
 use mp_stats_core::routes;
 use smol_str::SmolStr;
+use std::cell::RefCell;
 use std::collections::HashMap;
-
-use dashmap::DashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use web_sys::js_sys::Date;
@@ -32,7 +32,7 @@ impl CacheEntry {
 
 #[derive(Clone, Debug)]
 pub struct Api {
-    cache: Arc<DashMap<String, CacheEntry>>,
+    cache: Rc<RefCell<HashMap<String, CacheEntry>>>,
     last_sweep_ms: Arc<AtomicU64>,
 }
 
@@ -45,7 +45,7 @@ impl PartialEq for Api {
 impl Default for Api {
     fn default() -> Self {
         Self {
-            cache: Arc::new(DashMap::new()),
+            cache: Rc::new(RefCell::new(HashMap::new())),
             last_sweep_ms: Arc::new(AtomicU64::new(0)),
         }
     }
@@ -63,7 +63,6 @@ impl Api {
     const TTL_ERROR_MS: f64 = 10.0 * 1000.0; // 10 Seconds
 
     const SWEEP_INTERVAL_MS: u64 = 30_000; // every 30s at most
-    const SWEEP_MAX_REMOVALS: usize = 256; // limit per sweep
 
     fn maybe_sweep_expired(&self) {
         let now = now_ms() as u64;
@@ -74,22 +73,30 @@ impl Api {
         }
         self.last_sweep_ms.store(now, Ordering::Relaxed);
 
-        let mut removed = 0usize;
+        let mut cache = self.cache.borrow_mut();
+        cache.retain(|_, entry| entry.is_fresh());
+    }
 
-        // Iterate cache and remove expired entries; stop after a batch.
-        for item in self.cache.iter() {
-            if removed >= Self::SWEEP_MAX_REMOVALS {
-                break;
+    fn get_cached_bytes(&self, url: &str) -> Option<Arc<Vec<u8>>> {
+        let cache = self.cache.borrow();
+        cache.get(url).and_then(|entry| {
+            if entry.is_fresh() {
+                Some(entry.bytes.clone())
+            } else {
+                None
             }
+        })
+    }
 
-            if !item.value().is_fresh() {
-                // key() is a ref; clone to remove.
-                let key = item.key().clone();
-                // Remove may fail if already removed; that's fine.
-                let _ = self.cache.remove(&key);
-                removed += 1;
-            }
-        }
+    fn put_cache_bytes(&self, url: String, ttl_ms: f64, bytes: Arc<Vec<u8>>) {
+        let mut cache = self.cache.borrow_mut();
+        cache.insert(
+            url,
+            CacheEntry {
+                expires_at_ms: now_ms() + ttl_ms,
+                bytes,
+            },
+        );
     }
 
     async fn fetch_decompressed_bytes(&self, url: &str) -> ApiResult<Arc<Vec<u8>>> {
@@ -118,33 +125,19 @@ impl Api {
         self.maybe_sweep_expired();
 
         // Hot cache
-        if let Some(entry) = self.cache.get(url)
-            && entry.is_fresh()
-        {
-            return Ok(entry.bytes.clone());
+        if let Some(entry) = self.get_cached_bytes(url) {
+            return Ok(entry);
         }
 
         // Fetch
         match self.fetch_decompressed_bytes(url).await {
             Ok(bytes) => {
-                self.cache.insert(
-                    url.to_string(),
-                    CacheEntry {
-                        expires_at_ms: now_ms() + ttl_ms,
-                        bytes: bytes.clone(),
-                    },
-                );
+                self.put_cache_bytes(url.to_string(), ttl_ms, bytes.clone());
                 Ok(bytes)
             }
             Err(e) => {
                 // Short negative cache to reduce rapid retry storms.
-                self.cache.insert(
-                    url.to_string(),
-                    CacheEntry {
-                        expires_at_ms: now_ms() + Self::TTL_ERROR_MS,
-                        bytes: Arc::new(Vec::new()),
-                    },
-                );
+                self.put_cache_bytes(url.to_string(), Self::TTL_ERROR_MS, Arc::new(Vec::new()));
                 Err(e)
             }
         }
