@@ -1,5 +1,8 @@
 use crate::hooks::use_theme;
 use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
+use web_sys::js_sys::Date;
+use web_sys::js_sys::Intl::DateTimeFormatOptions;
+use web_sys::wasm_bindgen::JsValue;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq, Clone)]
@@ -34,6 +37,12 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     let mut sorted_snapshots = meta.snapshots.clone();
     sorted_snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
+    let locale = web_sys::window()
+        .map(|w| w.navigator())
+        .and_then(|n| n.language())
+        .unwrap_or_else(|| "en-US".to_string());
+    let date_formats = DateTimeFormatOptions::new();
+
     html! {
         <div class="flex items-center gap-3">
             <label class="text-xs text-gray-400 font-medium uppercase tracking-wider">{"Snapshot:"}</label>
@@ -48,12 +57,17 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                     </option>
                     {for sorted_snapshots.iter()
                         .map(|snap| {
+                        let timestamp_ms = (snap.timestamp * 1000) as f64;
+                                    let date = Date::new(&JsValue::from_f64(timestamp_ms));
+                        let formated_date: String = date.to_locale_date_string(&locale, &date_formats).into();
                         html! {
                             <option
                                 value={snap.snapshot_id.to_string()}
                                 selected={props.current_snapshot == snap.snapshot_id.as_str()}
                             >
-                                {snap.snapshot_id.to_string()}
+                                {
+                                    formated_date
+                                }
                             </option>
                         }
                     })}
