@@ -1,7 +1,7 @@
+use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_player_profile, use_theme};
 use crate::util::score_formatter::create_score_formatter;
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
