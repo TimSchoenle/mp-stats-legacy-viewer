@@ -1,7 +1,7 @@
+use crate::Route;
 use crate::hooks::use_theme;
 use crate::models::LeaderboardEntry;
 use crate::util::score_formatter::create_score_formatter;
-use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
