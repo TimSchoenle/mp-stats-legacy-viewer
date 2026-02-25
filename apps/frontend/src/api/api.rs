@@ -9,8 +9,8 @@ use smol_str::SmolStr;
 use std::collections::HashMap;
 
 use dashmap::DashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use web_sys::js_sys::Date;
 
 fn now_ms() -> f64 {
@@ -113,16 +113,14 @@ impl Api {
         Ok(Arc::new(decompressed))
     }
 
-    async fn get_decompressed_cached(
-        &self,
-        url: &str,
-        ttl_ms: f64,
-    ) -> ApiResult<Arc<Vec<u8>>> {
+    async fn get_decompressed_cached(&self, url: &str, ttl_ms: f64) -> ApiResult<Arc<Vec<u8>>> {
         // Try to cleanup cache
         self.maybe_sweep_expired();
 
         // Hot cache
-        if let Some(entry) = self.cache.get(url) && entry.is_fresh() {
+        if let Some(entry) = self.cache.get(url)
+            && entry.is_fresh()
+        {
             return Ok(entry.bytes.clone());
         }
 
@@ -221,8 +219,8 @@ impl Api {
             &format!("/data/{}", routes::meta_map_bin(edition)),
             Self::TTL_ID_MAP_MS,
         )
-            .await
-            .map_err(|_| gloo_net::Error::GlooError("Failed to fetch id map".to_string()))
+        .await
+        .map_err(|_| gloo_net::Error::GlooError("Failed to fetch id map".to_string()))
     }
 
     pub async fn fetch_leaderboard(
@@ -295,7 +293,10 @@ impl Api {
 
         let bin_path = format!("/data/{}", routes::player_shard_bin(edition, shard));
         let mut shard_map = self
-            .fetch_bin_cached::<HashMap<String, PlayerProfile>>(&bin_path, Self::TTL_PLAYER_SHARD_MS)
+            .fetch_bin_cached::<HashMap<String, PlayerProfile>>(
+                &bin_path,
+                Self::TTL_PLAYER_SHARD_MS,
+            )
             .await
             .map_err(|_| gloo_net::Error::GlooError("Failed to fetch player".to_string()))?;
 
