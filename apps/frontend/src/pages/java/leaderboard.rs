@@ -211,6 +211,8 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
             if !loading && error.is_none() {
                 <div class="card overflow-hidden">
                     <LeaderboardTable
+                        game={props.game.clone()}
+                        stat={props.stat.clone()}
                         entries={entries_req.entries.clone()}
                         edition={props.edition.clone()}
                     />
