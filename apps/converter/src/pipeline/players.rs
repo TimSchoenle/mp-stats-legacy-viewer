@@ -39,28 +39,32 @@ pub fn process_java_players(
     println!("Found {} player shards to process.", files.len());
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
-    // Using DashMap for concurrent access
-    let shards: dashmap::DashMap<String, HashMap<String, PlayerProfile>> = dashmap::DashMap::new();
-
-    files.par_iter().for_each(|path| {
-        if let Err(e) = process_player_shard(path, &shards, lookup_map) {
-            eprintln!("Failed to process player shard {:?}: {}", path, e);
-        }
-    });
+    let shards: HashMap<String, HashMap<String, PlayerProfile>> = files
+        .par_iter()
+        .map(|path| {
+            process_player_shard(path, lookup_map).unwrap_or_else(|e| {
+                eprintln!("Failed to process player shard {:?}: {}", path, e);
+                HashMap::new()
+            })
+        })
+        .reduce(HashMap::new, |mut acc, file_shards| {
+            for (prefix, mut uuid_map) in file_shards {
+                acc.entry(prefix)
+                    .or_default()
+                    .extend(uuid_map.drain());
+            }
+            acc
+        });
 
     println!("Writing {} player shards...", shards.len());
 
     // Write Shards
-    shards
-        .into_read_only()
-        .iter()
-        .par_bridge()
-        .for_each(|(prefix, profile_map)| {
-            let relative_path = routes::player_shard_bin(platform, prefix);
-            let out_path = output_directory.join(relative_path);
+    shards.par_iter().for_each(|(prefix, profile_map)| {
+        let relative_path = routes::player_shard_bin(platform, prefix);
+        let out_path = output_directory.join(relative_path);
 
-            let _ = write_lzma_bin(&out_path, profile_map);
-        });
+        let _ = write_lzma_bin(&out_path, profile_map);
+    });
 
     Ok(())
 }
@@ -68,14 +72,15 @@ pub fn process_java_players(
 /// Process a single player shard file
 fn process_player_shard(
     path: &Path,
-    shards: &dashmap::DashMap<String, HashMap<String, PlayerProfile>>,
     lookup_map: &HashMap<String, (String, String)>,
-) -> Result<()> {
+) -> Result<HashMap<String, HashMap<String, PlayerProfile>>> {
     // Read & Decompress
     let decompressed = decompress_file_auto(path)?;
 
     // Parse JSON: {"15432": [stride...]}
     let raw_map: HashMap<String, Vec<serde_json::Value>> = serde_json::from_slice(&decompressed)?;
+
+    let mut shards: HashMap<String, HashMap<String, PlayerProfile>> = HashMap::new();
 
     for (player_id_str, stride_data) in raw_map {
         // Resolve Identity
@@ -126,10 +131,12 @@ fn process_player_shard(
         // Determine target shard from UUID
         if uuid.len() >= 3 {
             let prefix = uuid[..3].to_uppercase();
-            let mut shard_map = shards.entry(prefix).or_default();
-            shard_map.insert(uuid.to_string(), profile);
+            shards
+                .entry(prefix)
+                .or_default()
+                .insert(uuid.to_string(), profile);
         }
     }
 
-    Ok(())
+    Ok(shards)
 }
