@@ -14,7 +14,7 @@ pub struct Game {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
-pub struct JavaMeta {
+pub struct PlatformMeta {
     pub games: Vec<Game>,
 }
 
