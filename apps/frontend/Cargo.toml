@@ -17,7 +17,7 @@ yew = { workspace = true }
 yew-router = { workspace = true }
 serde = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
-web-sys = { workspace = true }
+web-sys = { workspace = true, features = ["Navigator"] }
 postcard = { workspace = true }
 gloo-net = { workspace = true }
 gloo-console = { workspace = true }
