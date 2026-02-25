@@ -1,6 +1,7 @@
-use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_player_profile, use_theme};
+use crate::util::score_formatter::create_score_formatter;
+use crate::Route;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -93,7 +94,10 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                             <div class="space-y-1 flex-1">
                                                 { for stats.iter().map(|s| {
                                                     let board_name = map.boards.get(&s.board_id).map(|s| s.name.as_str()).unwrap_or("Board");
-                                                    let stat_name = map.stats.get(&s.stat_id).map(|s| s.name.as_str()).unwrap_or("Stat");
+                                                    let stat_name = map.stats.get(&s.stat_id).map(|s| s.name.to_string()).unwrap_or(String::from("Stat"));
+
+                                                    let score_formatter = create_score_formatter(&game_name, &stat_name);
+                                                    let formatted_score = score_formatter.format_score(s.score);
 
                                                     // Clean up names (remove redundancy if needed)
                                                     let label = if board_name == "All" {
@@ -106,7 +110,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                         <div class="stat-row py-3">
                                                             <Link<Route> to={Route::Leaderboard { edition: props.edition.clone(), game: game_name.clone(), board: board_name.to_string(), stat: stat_name.to_string(), page: 1 }} classes="font-medium text-gray-300 group-hover:text-white transition-colors">{label}</Link<Route>>
                                                             <div class="flex items-center gap-3">
-                                                                <div class="font-mono font-bold text-gray-200 bg-dark-900 px-2 py-0.5 rounded shadow-inner border border-white/5">{ s.score }</div>
+                                                                <div class="font-mono font-bold text-gray-200 bg-dark-900 px-2 py-0.5 rounded shadow-inner border border-white/5">{ formatted_score }</div>
                                                                 if s.rank > 0 {
                                                                     <span class={classes!("rank-badge", "group-hover:border-theme-500/30", "transition-colors")}>{ format!("#{}", s.rank) }</span>
                                                                 }
