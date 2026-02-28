@@ -1,5 +1,138 @@
 # Changelog
 
+## [0.10.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.9.0...v0.10.0) (2026-02-28)
+
+
+### Features
+
+* add a prototype warning on the home page ([1685e84](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1685e8418e78f826229869c6f5eb6ff1031ac56b))
+* add early prototype ([9facd63](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9facd6374e33b7fb8a995d4997a1d5ea0de66b3d))
+* add propper liveness checks for server startup ([#26](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/26)) ([87565c3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/87565c3bb26e177cda6447cd5677f53368269433))
+* **Frontend:** add custom score formatter ([#55](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/55)) ([08a865d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/08a865dffb996f3d91501bf14d09ddc8331a95e7))
+* **Frontend:** add name search feature ([#36](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/36)) ([47a0321](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/47a03215c2b7d620b5f14f62ba7b0a6f78ee68fd))
+* **Frontend:** add propper caching layer ([#50](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/50)) ([9f2479b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9f2479b089eced442ea6da3dbc0787cda4954930))
+* **Frontend:** add propper home page description section ([#34](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/34)) ([79c2048](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/79c2048552943377c14f40083b995e78b63fd328))
+* **Frontend:** cleanup Trunk usage ([53427d2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/53427d2fdd4c6b606b3b3a5ecc4d07719088dd72))
+* **Frontend:** correctly format snapshot dates ([#48](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/48)) ([25f5e94](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/25f5e94c98a7e18dbd7671d4d913617db9bdf38e))
+* **Frontend:** limit player profile to all data ([#54](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/54)) ([b2bf140](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b2bf14070fc0872de8531826143a37b5890606fb))
+* **Frontend:** simplify api ([#30](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/30)) ([326e777](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/326e777363d083cd0b18f3bb111c74add832f2fb))
+* fully disable SSR ([d0d13ac](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d0d13ac6516b03d3c5561eb49135527976283ac1))
+* increase data compression preset to 9 ([8e7c25f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8e7c25f174d141fd7fa9aea29e11cd814355301a))
+* standardize UI  ([#39](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/39)) ([843cb2e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/843cb2ef618916212041d36acbf9aae1fdfae10d))
+* unify leaderboard logic and implement bedrock loading ([431ba1e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/431ba1e72a3c9a1bdbf1c20ed737b0dc1ca15a77))
+
+
+### Bug Fixes
+
+* **Frontend:** correctly sort snapshots ([#44](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/44)) ([c32a5f0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c32a5f02ad0e4bcbc281c8ed1352d463030fc9f2))
+* **Frontend:** improve player page ([#37](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/37)) ([4685124](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/46851242ead36053a4e2e6889f13ad9126b6e39a))
+* **Frontend:** total pages calculation ([#49](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/49)) ([115c0bc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/115c0bc63ecda28bfd732770e7c8da01353c682c))
+* incorrect docker repo ([8fc4ddd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8fc4ddd9a4e1688b321363f87b3f76b0f0c984f8))
+* **Leaderboard:** latest total entry calculations ([4dad744](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4dad74490a0c636c11587b6d5039bbb62595157c))
+* model parser behaviour ([#42](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/42)) ([3d14f00](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3d14f009a2e725f987d15c22f091fe362a6ab82a))
+* **Player:** invalid direct link to leaderboards page ([#40](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/40)) ([526a673](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/526a6736f6f5d9723fe2290d4faa3d8118e62e26))
+* remove dashmap ([#52](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/52)) ([e10aadc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e10aadcf7bbe11c62062029d32f42afb10164c25))
+* restore npm dependencies for trunk ([e361e73](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e361e73ca2485ea58359afefd717a0af059b7b7b))
+* show the uuid as the player name if no player name is found ([733c5ea](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/733c5ea0a17bba1c29dcb4a4d2d81b83deefd8ae))
+* trunk tailwind setup ([d01c738](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d01c738778bdc2cb53f55671d41b19e8110edfbc))
+
+
+### Code Refactoring
+
+* cleanup models ([#31](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/31)) ([0918e89](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0918e8960cd946e900a54eb2be85b22aca31f5b3))
+* **Frontend:** split components into sub components and update h… ([#32](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/32)) ([5c18218](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5c182182c85603d1f1b9943eda81d204c1370fa9))
+* replace dead lzma-rs with lzma-rust2 & remove deprecated zlib ([d39eeda](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d39eedadbe6b33ca32d03d58cd16a09432bb254e))
+* start cleanup ([441ebe9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/441ebe9f7a934b4e8fbcef4575dd0efaa5bb1da5))
+* start splitting leaderboard components and logic ([44bd0c9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/44bd0c93cc4e298d5cbd1a215598e44628927310))
+
+
+### Styles
+
+* auto-format rust code ([c826d25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c826d2515668857f7b3c38e12caff7fd3b103e9f))
+* auto-format rust code ([06cc711](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/06cc711838a2681f1a03cc112854a92d27541f23))
+* auto-format rust code ([303bb37](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/303bb37e2f52c5e91c18a670513eef6a91109b29))
+
+
+### Build System
+
+* add basic build check action ([4a37c4a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4a37c4ab5a93f9c0625cc1f56b91d00d156b9a15))
+* add cargo lock update action ([#57](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/57)) ([a9b02ff](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a9b02ffe66c5dee54befe44912cd32334dd69aa8))
+* add CI automation actions ([#60](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/60)) ([ea13dd2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ea13dd2819c0695433df204e1f953f04e7bdfd89))
+* add propper docker build test ([d25f8a0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d25f8a013789a861e6b0d720211f94817c869b17))
+* add release please ([db55d3b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/db55d3bc68cfbfd3c9cb49dfed49f65953ed1b67))
+* add renovate ([acaedda](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/acaedda0a5ceebce96aee5bc02f1938776ad2d35))
+* centralize version across all crates ([f28d933](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f28d93351a9cd67f18a9a5184e5f0b515b29a2cf))
+* cleanup unused dependencies and update existing ones ([2d155a7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2d155a73d190fafdb2f402e89f112a91603c5b1d))
+* **Data:** add data-test sub set of the global data for testing purpose ([c77ec68](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c77ec6817b24fd9d444121452706a66d561ded36))
+* **Docker:** add DATA_INPUT_DIRECTORY to select data input directory ([5fe8900](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5fe89009ac0c787e8cf3a0c1dcd9d0925dee4ce8))
+* maybe this will fix release please ([32b20d7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/32b20d790728cf723441332425b2d4c28f896363))
+* maybe this will fix release please2 ([32ef6cc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/32ef6cc14fe76e1f5f99bc32b387f0952a69ca69))
+* maybe this will fix release please3 ([07a76bd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/07a76bd15c51429ff010bac56eb4c0c680eb094e))
+* maybe this will fix release please4 ([cf3a360](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cf3a360307127fb98bc520e74c8ac43825eb2ff1))
+* maybe this will fix release please5 ([ccd136c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ccd136cfe90b15f3a2de58faab32d7b2866e0ddc))
+* maybe this will fix release please6 ([1ffa5b3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1ffa5b31df0b51f98e634ac8f3b741d95b1b15ba))
+* maybe this will fix release please7 ([0ac7587](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0ac75874901ca976d7a3c5f927bb798b9679b96d))
+* maybe this will fix release please8 ([0d515fd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0d515fdde3c29058be34eefaa96b52f49103d007))
+* never cancel release please action ([ebe2579](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ebe2579c170052bd06bb24b8cfc33b87d7f4551d))
+* update data sources ([222e54f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/222e54f5d739c05ee979d283337575633ce61595))
+* update data sources ([fa1234a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fa1234ac285e8d365b867471357fe8c83b659300))
+* update Dockerfile to scratch image with cargo cheff ([#28](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/28)) ([fcc2b60](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fcc2b609b6ec6aae2a9ddefe42125148d52a39b7))
+* update lock ([5870112](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5870112a3f81255e2bc2b0901bd3459b2644f147))
+* update lock ([bace76f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/bace76fe70421ef6938e99140b257874425b9579))
+* update lock ([0254b9d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0254b9d2f93f0c99a418af1af2586c37a6787da2))
+* update version lock ([6ab8f19](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6ab8f19fb4b013143320c93405416dd22754c31c))
+* update version lock ([c89db1b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c89db1bef7ef1848188bdd7494f4ddb32b575c9b))
+
+
+### Miscellaneous
+
+* **deps:** pin dependencies ([#4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/4)) ([7f81d39](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7f81d39ee43810b0966a57dce2c7488678e56c40))
+* **deps:** update all non-major action updates ([#19](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/19)) ([617187f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/617187fb9462a15ccf45b9c8a8d2e01ab29ea038))
+* **deps:** update all non-major action updates ([#61](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/61)) ([ec1a4c6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ec1a4c6bae6e15a1ecd5048dea2f531744956e1c))
+* **deps:** update dependency tailwindcss to v4 ([#15](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/15)) ([c92a593](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c92a593ebee6d3f9388afb632d469df66e7c82f9))
+* **deps:** update dependency tailwindcss to v4.2.0 ([#17](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/17)) ([b16fc47](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b16fc47eaca6cd68377c9b79f620227bd934cf0f))
+* **deps:** update dependency tailwindcss to v4.2.1 ([#56](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/56)) ([eb626b4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/eb626b4f8b280e7b869b697461aa6663f789f92d))
+* **deps:** update github/codeql-action action to v4.32.4 ([#25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/25)) ([ed80bc6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ed80bc6003a795eeefac08a28fda4c03f1cca1f6))
+* **deps:** update rust crate anyhow to v1.0.102 ([#22](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/22)) ([9d12d50](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9d12d509c605096786fa1c0b56ced8b06a7366a6))
+* **deps:** update rust crate axum to 0.8 ([#8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/8)) ([dc03df6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dc03df6fd7b42a3513e69b3dd8b291dd20e6122d))
+* **deps:** update rust crate clap to v4.5.59 ([#5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/5)) ([fbd59c0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fbd59c098239679fa556b68014fc75202cfcf543))
+* **deps:** update rust crate clap to v4.5.60 ([#21](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/21)) ([0b4920d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0b4920d6a3fc03e486208e1ee4ecee2e0032aec3))
+* **deps:** update rust crate futures to v0.3.32 ([#6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/6)) ([e2f41d6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e2f41d66d6f64e20f1c1e8a616f9e7b96372dffd))
+* **deps:** update rust crate indicatif to 0.18 ([#9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/9)) ([ce50617](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ce50617bcb1b245b29db8bf3881823ce45a21fb2))
+* **deps:** update rust crate smol_str to 0.3 ([#10](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/10)) ([fa0e71a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fa0e71a487311cf3103c19e33e088fee1ab88e9e))
+* **deps:** update rust crate tower to 0.5 ([#12](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/12)) ([1c19eb8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1c19eb86e80070ee4dd480322a933ffc31ef217d))
+* **deps:** update rust crate tower-http to 0.6 ([#13](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/13)) ([16d1391](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/16d1391ca3df1fac0aded4617c5c47ddbe47bb19))
+* **deps:** update rust docker tag to v1.93 ([#14](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/14)) ([5a7bf1c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5a7bf1caf2639e03351397ce804d7b126b3fbffa))
+* **deps:** update rust:1.93-slim docker digest to 7e6fa79 ([#46](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/46)) ([9d9cbcb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9d9cbcb1da10e8d2333fd446c81596ad066ff556))
+* **deps:** update rust:1.93-slim docker digest to c0a38f5 ([#62](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/62)) ([3007fa5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3007fa5fe810361ea9ee8081c371ac70d8d2f29d))
+* **deps:** update step-security/harden-runner action to v2.15.0 ([#47](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/47)) ([82bc7dc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/82bc7dc53376a26a2793388424f2626053688f95))
+* **deps:** update step-security/harden-runner action to v2.15.0 ([#59](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/59)) ([acba1ea](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/acba1ea5e2285dd13651ac77eb4171c9ae0a42b5))
+* **deps:** update to vactions-helm-update-chart-version-v1.5.1 ([#11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/11)) ([7f2df6d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7f2df6d1eb120b7acaedc8f0879b868f5de4cbff))
+* **deps:** update to vactions-helm-update-chart-version-v1.5.2 ([#38](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/38)) ([b662ebe](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b662ebe9dd046d648b0ac6e8db7b769e9bd6bdad))
+* fix test failure ([dbc852d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dbc852d92d7d0922fe09b3fc7c77af9288746e76))
+* **main:** release 0.2.0 ([#1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/1)) ([129e2d1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/129e2d1061caa8c6042fa5eeb3fe896b04972073))
+* **main:** release 0.2.1 ([#2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/2)) ([2c25f25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2c25f250ffa715d1c441ff09c747df4cd4ba0cbb))
+* **main:** release 0.3.0 ([#3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/3)) ([63b61ed](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/63b61ed96c4b68395d2eacbb60cfc64e35ebcb1c))
+* **main:** release 0.3.1 ([#20](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/20)) ([3e06790](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3e067908f15e32e1be3186c14588fddaa98bb26f))
+* **main:** release 0.3.2 ([#23](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/23)) ([c5e47eb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c5e47ebe0a0460d2970b14ad4f461c44b4ea2fbc))
+* **main:** release 0.4.0 ([#24](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/24)) ([f1fce6c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f1fce6c5c9e8d6c7802db8943f12157b94e5ed08))
+* **main:** release 0.5.0 ([#27](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/27)) ([87961d5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/87961d53c6fe61aae729f2bcb52c9fa91af7ab89))
+* **main:** release 0.6.0 ([#29](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/29)) ([919ee68](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/919ee6814230baa32597316ffef5d88d06fa57fa))
+* **main:** release 0.7.0 ([#33](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/33)) ([4bb5454](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4bb54546924c4c72d2eb06efbb6149ae8466e0dd))
+* **main:** release 0.7.1 ([#41](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/41)) ([a3d15e0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a3d15e0ea7637a5af6aa0e0f8bd9b324b4c21ab4))
+* **main:** release 0.7.2 ([#43](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/43)) ([02a181c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/02a181c7367ee086e3742421f98f36228e89347c))
+* **main:** release 0.8.0 ([#45](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/45)) ([a1548c9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a1548c9e78884619dd5f192c04deb898c72d04bb))
+* **main:** release 0.8.1 ([#51](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/51)) ([11fa173](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/11fa173b4763ff0ea33820394c0b6a2183c5973b))
+* **main:** release 0.9.0 ([#53](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/53)) ([fdf1ff4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fdf1ff4b9b6a1612c54bed4547b27db952aa4955))
+* update cargo lock ([3450ab7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3450ab7d9b107dd36b1cd2b641413aabbaff1ee7))
+* update lock ([24b18c9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/24b18c98dbdff7ca89e9f933f50fa569df960b4b))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#16](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/16)) ([86c527b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/86c527b2fc5171bc80334eecfa01a875a2d62dce))
+* **deps:** lock file maintenance ([#35](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/35)) ([6830d8f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6830d8f8fe3f37fe59c68abf61062a3d562290ed))
+
 ## [0.9.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.8.1...v0.9.0) (2026-02-25)
 
 
