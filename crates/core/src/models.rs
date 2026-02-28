@@ -46,7 +46,6 @@ pub struct LeaderboardEntry {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardMeta {
-    pub latest: Option<HistoricalSnapshot>,
     pub snapshots: Vec<HistoricalSnapshot>,
 }
 

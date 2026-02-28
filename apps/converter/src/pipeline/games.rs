@@ -82,39 +82,33 @@ pub fn process_game_metadata(
         let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> = HashMap::new();
 
         for (board, stat, stat_path) in stats {
+            let mut all_snapshots = Vec::new();
+
             // Check latest folder for count
             let latest_meta = stat_path.join("latest");
-            let mut latest = None;
-            if latest_meta.exists() {
-                if let Ok(file) = File::open(latest_meta.join("_meta.json")) {
-                    if let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file)) {
-                        latest = Some(HistoricalSnapshot {
-                            snapshot_id: SmolStr::new("latest"),
-                            timestamp: meta.save_time_unix,
-                            total_pages: meta.total_pages,
-                            total_entries: meta.total_entries,
-                        });
-                    }
-                }
+            if latest_meta.exists()
+                && let Ok(file) = File::open(latest_meta.join("_meta.json"))
+                && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
+            {
+                all_snapshots.push(HistoricalSnapshot {
+                    snapshot_id: SmolStr::new("latest"),
+                    timestamp: meta.save_time_unix,
+                    total_pages: meta.total_pages,
+                    total_entries: meta.total_entries,
+                });
             }
 
             let history_in = stat_path.join("history.tar.xz");
-            let snapshots = read_history_data(&history_in).unwrap_or_default();
-
-            if !snapshots.is_empty() {
-                println!(
-                    "Found {} snapshots for {}/{}/{}",
-                    snapshots.len(),
-                    platform,
-                    game_id,
-                    stat
-                );
+            if let Ok(history_snapshots) = read_history_data(&history_in) {
+                all_snapshots.extend(history_snapshots);
             }
 
-            meta_stats
-                .entry(SmolStr::new(stat))
-                .or_default()
-                .insert(SmolStr::new(board), LeaderboardMeta { snapshots, latest });
+            meta_stats.entry(SmolStr::new(stat)).or_default().insert(
+                SmolStr::new(board),
+                LeaderboardMeta {
+                    snapshots: all_snapshots,
+                },
+            );
         }
 
         let mut game_friendly_name = game_id.to_string();

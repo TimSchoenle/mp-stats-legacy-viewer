@@ -61,15 +61,12 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                 Some(m) => m,
                 None => return None,
             };
-            if snapshot == "latest" {
-                meta_ref.latest.clone()
-            } else {
-                meta_ref
-                    .snapshots
-                    .iter()
-                    .find(|s| s.snapshot_id == *snapshot)
-                    .cloned()
-            }
+
+            meta_ref
+                .snapshots
+                .iter()
+                .find(|s| s.snapshot_id == *snapshot)
+                .cloned()
         },
     );
 
