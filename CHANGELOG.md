@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.10.0...v0.11.0) (2026-02-28)
+
+
+### Features
+
+* **Frontend:** correctly show the date for the latest snapshot ([#66](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/66)) ([08f46ee](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/08f46eecea46902e4a0ef71128e0228b07832155))
+
 ## [0.10.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.9.0...v0.10.0) (2026-02-28)
 
 
