@@ -52,9 +52,6 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                     {onchange}
                     class={classes!(theme_color, "appearance-none", "px-4", "py-2", "pr-10", "bg-dark-900", "border", "border-white/10", "hover:border-white/20", "rounded-lg", "text-sm", "text-white", "cursor-pointer", "focus:outline-none", "focus:border-theme-500/50", "focus:ring-1", "focus:ring-theme-500/50", "transition-all", "shadow-sm")}
                 >
-                    <option value="latest" selected={props.current_snapshot == "latest"}>
-                        {"Latest"}
-                    </option>
                     {for sorted_snapshots.iter()
                         .map(|snap| {
                         let timestamp_ms = (snap.timestamp * 1000) as f64;
@@ -66,7 +63,11 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                                 selected={props.current_snapshot == snap.snapshot_id.as_str()}
                             >
                                 {
-                                    formated_date
+                                    if snap.snapshot_id == "latest" {
+                                        format!("Latest ({})", &formated_date)
+                                    } else {
+                                        formated_date
+                                    }
                                 }
                             </option>
                         }
