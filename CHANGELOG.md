@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.9.0...v0.9.1) (2026-02-28)
+
+
+### Build System
+
+* add cargo lock update action ([#57](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/57)) ([ad43071](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ad430714982ec75257e641e282bf5a46d97012c6))
+* add CI automation actions ([#60](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/60)) ([b39c15c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b39c15c99dd7dc3cd08969d84719c1cc35aff203))
+* update data sources ([07b3e69](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/07b3e690b732400515484dece7ac1e48153cb1b4))
+
+
+### Miscellaneous
+
+* **deps:** update all non-major action updates ([#61](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/61)) ([5d4833d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5d4833d9dd864c6541cbc0402c14a203397e9a5a))
+* **deps:** update dependency tailwindcss to v4.2.1 ([#56](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/56)) ([4c9bbdc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4c9bbdc1a434a9e6e598912fb076a2c668e408c2))
+* **deps:** update rust:1.93-slim docker digest to c0a38f5 ([#62](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/62)) ([663c23e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/663c23e50c84d00f33c9457368e6518852e49c2e))
+* **deps:** update step-security/harden-runner action to v2.15.0 ([#59](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/59)) ([b12c784](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b12c7844d6b890db74471e97a9cdbd3d486a29e3))
+
 ## [0.9.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.8.1...v0.9.0) (2026-02-25)
 
 
