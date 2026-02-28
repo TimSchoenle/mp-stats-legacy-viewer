@@ -3,7 +3,7 @@ use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{
     GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile, PlatformEdition,
 };
-use mp_stats_core::{routes, HistoricalSnapshot};
+use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -86,7 +86,10 @@ pub fn process_game_metadata(
 
             // Check latest folder for count
             let latest_meta = stat_path.join("latest");
-            if latest_meta.exists() && let Ok(file) = File::open(latest_meta.join("_meta.json")) && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file)) {
+            if latest_meta.exists()
+                && let Ok(file) = File::open(latest_meta.join("_meta.json"))
+                && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
+            {
                 all_snapshots.push(HistoricalSnapshot {
                     snapshot_id: SmolStr::new("latest"),
                     timestamp: meta.save_time_unix,
@@ -100,10 +103,12 @@ pub fn process_game_metadata(
                 all_snapshots.extend(history_snapshots);
             }
 
-            meta_stats
-                .entry(SmolStr::new(stat))
-                .or_default()
-                .insert(SmolStr::new(board), LeaderboardMeta { snapshots: all_snapshots });
+            meta_stats.entry(SmolStr::new(stat)).or_default().insert(
+                SmolStr::new(board),
+                LeaderboardMeta {
+                    snapshots: all_snapshots,
+                },
+            );
         }
 
         let mut game_friendly_name = game_id.to_string();
