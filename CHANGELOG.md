@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.0...v0.11.1) (2026-03-01)
+
+
+### Miscellaneous
+
+* **deps:** update actions-rust-lang/setup-rust-toolchain action to v1.15.3 ([#70](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/70)) ([1733404](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/173340416b34993bdc45555fae3d8c0faac5b0e7))
+* **deps:** update rust crate yew to v0.22.1 ([#68](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/68)) ([40bbaaf](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/40bbaafc187d6f4ae6f02a99408fbbff187def8c))
+
 ## [0.11.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.10.0...v0.11.0) (2026-02-28)
 
 
