@@ -90,6 +90,15 @@ jobs:
           docker run --rm image:test --version || true
           docker run --rm image:test --help || true
 
+      - name: Run structure tests
+        run: |
+          docker pull gcr.io/gcp-runtimes/container-structure-test:latest
+          docker run --rm \
+            -v $PWD/cst.yaml:/cst.yaml \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            gcr.io/gcp-runtimes/container-structure-test:latest test \
+            --image image:test --config /cst.yaml
+
       - name: Check image size
         id: size-check
         run: |
