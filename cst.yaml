@@ -1,0 +1,12 @@
+schemaVersion: 2.0.0
+
+metadataTest:
+  entrypoint: [ "/server", "--dir", "/dist", "--data-dir", "/dist/data" ]
+  workdir: ''
+  exposedPorts: [ '8080' ]
+  user: '1001:1001'
+
+fileExistenceTests:
+  - name: executable present
+    path: /server
+    shouldExist: true
