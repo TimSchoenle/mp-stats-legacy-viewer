@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.11.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.1...v0.11.2) (2026-03-09)
+
+
+### Documentation
+
+* add data structure documentation ([703fa4b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/703fa4b78ce77d923216179a263ef7711691a0f6))
+* add simple readme ([de80a8e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/de80a8e52540ed6e01a0155e21fb5cc14fef224f))
+
+
+### Build System
+
+* add docker structure test ([#78](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/78)) ([e5c9079](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e5c9079bcf91b17865323537da1766b54fc7d15a))
+
+
+### Miscellaneous
+
+* **deps:** update all non-major action updates ([#75](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/75)) ([8cb2750](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8cb2750d703f8eb48b8840db2b2f6500400a9db5))
+* **deps:** update all non-major action updates ([#76](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/76)) ([8c824ce](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8c824ceae52a4db63fcae34265c1fe5050aacfbd))
+* **deps:** update all non-major action updates ([#85](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/85)) ([41ecf26](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/41ecf26d961c2f2053a6e471cc107a76f2ab0e6d))
+* **deps:** update docker/build-push-action action to v7 ([#86](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/86)) ([22ccb39](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/22ccb395cf387beb121f8a5563cb5384140b9925))
+* **deps:** update docker/dockerfile docker tag to v1.22 ([#80](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/80)) ([f24ef05](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f24ef0509c23f77b0e19bbdbefe3300de8244012))
+* **deps:** update docker/login-action action to v4 ([#83](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/83)) ([e836ddf](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e836ddfc1ad046b0d85f5e3c48507e3adf80f272))
+* **deps:** update docker/metadata-action action to v6 ([#87](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/87)) ([4d18621](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4d18621b3d135e784ebdd13d2a1f13d03e7b8098))
+* **deps:** update docker/setup-buildx-action action to v4 ([#84](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/84)) ([5d9ce19](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5d9ce19d062d99e4bdaa84be18fbed02ed26f552))
+* **deps:** update docker/setup-qemu-action action to v4 ([#82](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/82)) ([377c34a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/377c34a9ae6fed51f02117fd07b73d8aaf88414e))
+* **deps:** update rust crate smol_str to v0.3.6 ([#81](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/81)) ([843ad38](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/843ad38fa818801b0e5e94235a1cd66cd346c26f))
+* **deps:** update rust crate tokio to v1.50.0 ([#79](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/79)) ([2dd5a15](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2dd5a15f63cf2254c5e1412cea05b229f72d0950))
+* **deps:** update rust docker tag to v1.94 ([#88](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/88)) ([e618b12](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e618b126068759a1e7d7823770b4f9950a431bbd))
+* **deps:** update to vworkflows-rust-auto-format-v1.1.3 ([#77](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/77)) ([b891b79](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b891b793ac5643829601cf0358f12c87172261f6))
+* **deps:** update zizmorcore/zizmor-action action to v0.5.1 ([#89](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/89)) ([53be3a3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/53be3a3b7cf5439949a34711d92267db73065819))
+* **deps:** update zizmorcore/zizmor-action action to v0.5.2 ([#92](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/92)) ([274ea71](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/274ea71ca089eefb961c857cbaf0cd65cc24e043))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#71](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/71)) ([e6128df](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e6128df472b72a8e9b4408d0d9cf84783b07c466))
+* **deps:** lock file maintenance ([#73](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/73)) ([547a843](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/547a843d2630429b17e9af0914264d090f3d0d61))
+* **deps:** lock file maintenance ([#74](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/74)) ([07de673](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/07de6735d762e9661c40821ccd1501b4c1fd785c))
+* **deps:** lock file maintenance ([#90](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/90)) ([0bf766c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0bf766ceaa92f52d58f29114bf940b1eaea8e1fe))
+* **deps:** lock file maintenance ([#91](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/91)) ([c9f2ea0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c9f2ea097f883950defa5575ca886a3267aeb157))
+
 ## [0.11.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.0...v0.11.1) (2026-03-01)
 
 
