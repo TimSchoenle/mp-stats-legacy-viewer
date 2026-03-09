@@ -12,6 +12,7 @@ permissions: { }
 jobs:
   update-lock-file:
     name: Ensure Cargo Lock File is Up-to-Date
+    environment: ci
     runs-on: ubuntu-latest
     outputs:
       changes_detected: ${{ steps.auto-commit.outputs.changes_detected }}
