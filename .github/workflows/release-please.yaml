@@ -18,6 +18,7 @@ env:
 jobs:
   release-please:
     name: Release Please
+    environment: ci
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to create release commits and tags
@@ -118,6 +119,7 @@ jobs:
 
   helm-release:
     name: Helm Release
+    environment: ci
     needs: [ release-please, docker-release ]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
