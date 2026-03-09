@@ -19,6 +19,8 @@ pub fn create_score_formatter(game: &String, stat: &String) -> ScoreFormatter {
     let mut format_type = FormatType::Default;
     if game_lower == "global" && stat_lower == "exp earned" {
         format_type = FormatType::ExpLevel;
+    } else if stat_lower == "ingame time" || stat_lower == "hub time" {
+        format_type = FormatType::SecondsToTime;
     }
 
     ScoreFormatter {
@@ -34,6 +36,7 @@ impl ScoreFormatter {
         match self.format_type {
             FormatType::Default => self.standard_format(score),
             FormatType::ExpLevel => self.format_exp_with_level(score),
+            FormatType::SecondsToTime => self.format_seconds_to_time(score),
         }
     }
 
@@ -59,6 +62,60 @@ impl ScoreFormatter {
         let formatted_exp = self.standard_format(score);
 
         format!("{formatted_exp} (Level {level})")
+    }
+
+    fn format_seconds_to_time(&self, total_seconds: u64) -> String {
+        const SECONDS_PER_MINUTE: u64 = 60;
+        const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+        const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
+        const SECONDS_PER_MONTH: u64 = 30 * SECONDS_PER_DAY;
+        const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
+        const MAX_UNITS: usize = 3;
+
+        fn unit(value: u64, singular: &str) -> String {
+            if value == 1 {
+                format!("{value} {singular}")
+            } else {
+                format!("{value} {singular}s")
+            }
+        }
+
+        let years = total_seconds / SECONDS_PER_YEAR;
+        let remainder_after_years = total_seconds % SECONDS_PER_YEAR;
+
+        let months = remainder_after_years / SECONDS_PER_MONTH;
+        let remainder_after_months = remainder_after_years % SECONDS_PER_MONTH;
+
+        let days = remainder_after_months / SECONDS_PER_DAY;
+        let remainder_after_days = remainder_after_months % SECONDS_PER_DAY;
+
+        let hours = remainder_after_days / SECONDS_PER_HOUR;
+        let remainder_after_hours = remainder_after_days % SECONDS_PER_HOUR;
+
+        let minutes = remainder_after_hours / SECONDS_PER_MINUTE;
+        let seconds = remainder_after_hours % SECONDS_PER_MINUTE;
+
+        let units = [
+            (years, "year"),
+            (months, "month"),
+            (days, "day"),
+            (hours, "hour"),
+            (minutes, "minute"),
+            (seconds, "second"),
+        ];
+
+        let mut parts: Vec<String> = units
+            .into_iter()
+            .filter(|(value, _)| *value > 0)
+            .take(MAX_UNITS)
+            .map(|(value, name)| unit(value, name))
+            .collect();
+
+        if parts.is_empty() {
+            parts.push(unit(0, "second"));
+        }
+
+        parts.join(", ")
     }
 
     fn level_thresholds() -> &'static [u64; Self::MAX_LEVEL as usize] {
@@ -98,6 +155,7 @@ impl ScoreFormatter {
 enum FormatType {
     Default,
     ExpLevel,
+    SecondsToTime,
 }
 
 #[cfg(test)]
