@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.2...v0.12.0) (2026-03-09)
+
+
+### Features
+
+* **Frontend:** add custom time formatting ([#93](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/93)) ([594736b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/594736b60f407d389e48a8543645830e80a2456e))
+
+
+### Miscellaneous
+
+* adjust to new action linters ([#95](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/95)) ([8773f1e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8773f1e41eaafce3dfc75962209844780e55363b))
+
 ## [0.11.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.1...v0.11.2) (2026-03-09)
 
 
