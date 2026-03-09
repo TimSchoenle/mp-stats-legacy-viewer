@@ -46,6 +46,7 @@ jobs:
 
   docker-release:
     name: Docker Release
+    environment: publish
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     outputs:
