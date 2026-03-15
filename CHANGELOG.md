@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.0...v0.12.1) (2026-03-15)
+
+
+### Miscellaneous
+
+* **deps:** update actions-rust-lang/setup-rust-toolchain action to v1.15.4 ([#101](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/101)) ([4414ca6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4414ca6cc1e24c116f9ea39580e5edaf657b4629))
+* **deps:** update actions/create-github-app-token action to v3 ([#104](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/104)) ([14786b7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/14786b7f6a3f800af54285b6785865eb517f389b))
+* **deps:** update all non-major action updates ([#99](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/99)) ([ac447c5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ac447c5fe1e808b061eb0930bfe4229e57f19738))
+* **deps:** update rust crate clap to v4.6.0 ([#100](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/100)) ([f2c8ef6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f2c8ef6b7544cd31ab0885b5d80e7c1decc1a51e))
+* **deps:** update rust crate yew to 0.23.0 ([#102](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/102)) ([e3addce](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e3addce9248d9850ff750ace4db206aa1d509a91))
+* **deps:** update rust:1.94-slim docker digest to 7d37016 ([#98](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/98)) ([9271076](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/92710765a20834acd9ae08359d19ce13ee830197))
+* **deps:** update sigstore/cosign-installer action to v4.1.0 ([#96](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/96)) ([1bb1ae3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1bb1ae3ed3f334f70b10875dba42e29d6439f5c5))
+
 ## [0.12.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.11.2...v0.12.0) (2026-03-09)
 
 
