@@ -14,8 +14,10 @@
       "enabled": false
     },
     {
-      "matchPackagePatterns": ["^yew"],
-      "groupName": "yew packages"
+      "groupName": "yew packages",
+      "matchPackageNames": [
+        "/^yew/"
+      ]
     }
   ]
 }
