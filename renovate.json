@@ -12,6 +12,10 @@
         "taiki-e/install-action"
       ],
       "enabled": false
+    },
+    {
+      "matchPackagePatterns": ["^yew"],
+      "groupName": "yew packages"
     }
   ]
 }
