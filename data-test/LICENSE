@@ -1,0 +1,33 @@
+PROPRIETARY LICENSE
+
+Copyright (c) 2026 Tim Schönle
+All Rights Reserved
+
+This directory and all its contents (the "Test Data") are proprietary and
+confidential.
+
+NO LICENSE IS GRANTED. All rights in the Test Data are expressly reserved by
+the copyright holder.
+
+RESTRICTIONS:
+1. You may NOT use, copy, modify, merge, publish, distribute, sublicense,
+   or transfer the Test Data or any portion thereof.
+2. You may NOT create derivative works based on the Test Data.
+3. You may NOT reverse engineer, decompile, or disassemble the Test Data.
+4. You may NOT use the Test Data for any commercial purpose.
+5. You may NOT make the Test Data available to any third party.
+
+PERMITTED USE:
+The Test Data may only be used by authorized individuals who have received
+explicit written permission from the copyright holder. Any use not explicitly
+authorized in writing is strictly prohibited.
+
+To request permission for use of this Test Data, contact the project maintainers.
+
+THE TEST DATA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE TEST DATA OR THE USE OR OTHER DEALINGS IN
+THE TEST DATA.

@@ -82,6 +82,23 @@ cargo run -p mp-stats-converter -- [options]
 
 Please refer to the internal documentation within the `apps/converter` crate for detailed usage instructions and supported data formats.
 
+## License
+
+This project uses a dual-license structure:
+
+### Source Code
+All source code (including applications, crates, and build configurations) is licensed under the **MIT License**. See the [LICENSE](LICENSE) file in the project root for details.
+
+You are free to use, modify, and distribute the code under the terms of the MIT License.
+
+### Data Files
+The contents of the `/data` and `/data-test` directories are **proprietary** and subject to separate, restrictive licenses:
+
+- `/data/LICENSE` - Proprietary license for production data
+- `/data-test/LICENSE` - Proprietary license for test data
+
+These data files are NOT open source and may NOT be used, copied, modified, or distributed without explicit written permission from the project maintainers.
+
 ## Acknowledgements
 
 The historical data used and viewed in this project was originally collected utilizing the [StatsApi](https://github.com/TimSchoenle/StatsApi) utility.
