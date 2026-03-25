@@ -44,7 +44,7 @@ binary-layout = "4.0.2"
 tar = "0.4.44"
 thiserror = "2.0.18"
 futures = "0.3.31"
-gloo-timers = "0.3.0"
+gloo-timers = "0.4.0"
 
 # Internal crates
 mp-stats-core = { path = "crates/core" }
