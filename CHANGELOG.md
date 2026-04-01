@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.12.3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.2...v0.12.3) (2026-03-31)
+
+
+### Miscellaneous
+
+* **deps:** update docker/dockerfile docker tag to v1.23 ([#141](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/141)) ([32ddab4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/32ddab402fa2f922492ad27d74a7862ce12c64b8))
+* **deps:** update github/codeql-action action to v4.35.0 ([#132](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/132)) ([743b41d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/743b41dc735476e0202020d8a74f47b4aec20462))
+* **deps:** update github/codeql-action action to v4.35.1 ([#133](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/133)) ([c1918d7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c1918d77b5e7761b6b96dda5ce8bd713c5e0db8d))
+* **deps:** update rust crate gloo-console to 0.4.0 ([#125](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/125)) ([23ab03f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/23ab03fe4925ea2355e383e380bdd5c93efeee21))
+* **deps:** update rust crate gloo-net to 0.7.0 ([#126](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/126)) ([890f06e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/890f06e0d42c66c7f130b4958065ae6dfa91ce51))
+* **deps:** update rust crate gloo-timers to 0.4.0 ([#127](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/127)) ([ef1a62f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ef1a62f0d82176efd039e48dfdc176712ada9b98))
+* **deps:** update rust:1.94-slim docker digest to 1d0000a ([#131](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/131)) ([179deab](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/179deabf6e202be68c8bb27e673c14edd448f5af))
+* **deps:** update rust:1.94-slim docker digest to e2d3cc8 ([#130](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/130)) ([8a6cf99](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8a6cf9934cf9166df9d75f2c0a9080a23d036292))
+* **deps:** update sigstore/cosign-installer action to v4.1.1 ([#129](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/129)) ([a20291f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a20291fbee57c57127f1ce48c7be5f8da56aa6da))
+* **deps:** update step-security/harden-runner action to v2.16.1 ([#140](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/140)) ([6beca68](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6beca68c8e2b3cf0caf942c9a8def03dcbb816a4))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#134](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/134)) ([08dcbe7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/08dcbe7b0ff2488e5b75601573b68d74d2b546a2))
+* **deps:** lock file maintenance ([#135](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/135)) ([f07b379](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f07b379d6312153d0e1b04775c6dde44b4c11019))
+* **deps:** lock file maintenance ([#136](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/136)) ([fc3f75c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fc3f75c92acb82d9e832bf98b496255257c5f0f9))
+* **deps:** lock file maintenance ([#137](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/137)) ([a686650](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a686650c0c0c64ea34cfbb4ef5029fa882f599be))
+* **deps:** lock file maintenance ([#138](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/138)) ([7ab2ef7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7ab2ef7803086374d0760fc9ae86cd5e410a82f3))
+* **deps:** lock file maintenance ([#139](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/139)) ([5d5383e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5d5383e0425ce0f0d5d5793b1176dbeadb65e430))
+
 ## [0.12.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.1...v0.12.2) (2026-03-23)
 
 
