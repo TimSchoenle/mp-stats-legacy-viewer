@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.3...v0.12.4) (2026-04-09)
+
+
+### Miscellaneous
+
+* **deps:** update all non-major action updates ([#145](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/145)) ([80db385](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/80db38536d04cb1b72626e8f72388947d4b38974))
+* **deps:** update docker/login-action digest to 4907a6d ([#142](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/142)) ([15d6583](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/15d6583e36f55bcf0d980c20d9f5bb8d750a6c62))
+* **deps:** update rust crate tokio to v1.51.0 ([#144](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/144)) ([a0336be](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a0336be486adbbb86222bf5f7391518e661928c6))
+* **deps:** update rust crate tokio to v1.51.1 ([#149](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/149)) ([fd1aafa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fd1aafa6198e8fe90552d4ab1dcc50a793806d7d))
+* **deps:** update rust:1.94-slim docker digest to 48150ee ([#146](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/146)) ([f837221](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f83722118ae8a2552dad7d4bfbc203b2cf78488a))
+* **deps:** update rust:1.94-slim docker digest to a08d20a ([#147](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/147)) ([b0e8204](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b0e82047dd92ec07824b79525ac63803957a47da))
+* **deps:** update step-security/harden-runner action to v2.17.0 ([#150](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/150)) ([da25927](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/da259274d15dfb9a62c702d2bfcaf4f03ac9796b))
+* **deps:** update to vworkflows-maintenance-auto-approve-renovate-v1.4.2 ([#148](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/148)) ([00e2097](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/00e20970b01dbaa4b69293a3785045694e47a9f0))
+
 ## [0.12.3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.2...v0.12.3) (2026-03-31)
 
 
