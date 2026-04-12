@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.4...v0.12.5) (2026-04-12)
+
+
+### Miscellaneous
+
+* **deps:** update actions/create-github-app-token action to v3.1.1 ([#156](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/156)) ([8fd5a76](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8fd5a76d678fd58b0f2cf812cd64841754da5f63))
+* **deps:** update actions/github-script action to v9 ([#151](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/151)) ([fc2a84c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fc2a84c2c8ad54548357159edc7c02b97d0d80d9))
+* **deps:** update docker/build-push-action digest to bcafcac ([#154](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/154)) ([4c766b4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4c766b491579b9582e8e049c0209a1019f18ceac))
+* **deps:** update rust:1.94-slim docker digest to cf09adf ([#153](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/153)) ([9a2c5db](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9a2c5dba9b34cb16dbc649f07d72a0499099dce9))
+* update trivy sanner to valid version ([#155](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/155)) ([2f8386d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2f8386d5a444c091a2d93f7d4f2fba88d53cf919))
+
 ## [0.12.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.3...v0.12.4) (2026-04-09)
 
 
