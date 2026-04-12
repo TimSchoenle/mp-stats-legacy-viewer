@@ -1,11 +1,9 @@
 use axum::Router;
-use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::get;
 use clap::Parser;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
 use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Parser, Debug)]
@@ -16,10 +14,6 @@ struct Opt {
     /// Directory where data is located
     #[clap(long, default_value = "data")]
     data_dir: PathBuf,
-}
-
-struct AppState {
-    index_path: PathBuf,
 }
 
 fn main() {
@@ -47,15 +41,12 @@ async fn async_main() {
 
     let spa_service = ServeDir::new(&dist_dir).not_found_service(ServeFile::new(&index_path));
 
-    let state = Arc::new(AppState { index_path });
-
     let app = Router::new()
         .route("/health/startup", get(startup_probe))
         .route("/health/live", get(liveness_probe))
         .route("/health/ready", get(readiness_probe))
         .nest_service("/data", ServeDir::new(opt.data_dir))
-        .fallback_service(spa_service)
-        .with_state(state);
+        .fallback_service(spa_service);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     println!("Listening on http://{}", addr);
@@ -68,19 +59,10 @@ async fn startup_probe() -> StatusCode {
     StatusCode::OK
 }
 
-async fn liveness_probe(State(state): State<Arc<AppState>>) -> StatusCode {
-    match tokio::fs::metadata(&state.index_path).await {
-        Ok(_) => StatusCode::OK,
-        Err(e) => {
-            eprintln!(
-                "Liveness probe failed to read {:?}: {}",
-                state.index_path, e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        }
-    }
+async fn liveness_probe() -> StatusCode {
+    StatusCode::OK
 }
 
-async fn readiness_probe(State(state): State<Arc<AppState>>) -> StatusCode {
-    liveness_probe(State(state)).await
+async fn readiness_probe() -> StatusCode {
+    StatusCode::OK
 }
