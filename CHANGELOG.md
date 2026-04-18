@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.12.6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.5...v0.12.6) (2026-04-18)
+
+
+### Documentation
+
+* add simple security policy ([672935d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/672935d2fdffda970c5a38002110aab03fa7bf44))
+
+
+### Build System
+
+* **ci:** adjust version comments for zizmor ([84d7c43](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/84d7c43b4c8772adfff4a2f32c030030ddfeea2e))
+* **ci:** adjust version comments for zizmor ([8002136](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/800213605ea55f7da6fb9975886dae5bed11249e))
+* **ci:** adjust version comments for zizmor ([9938a76](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9938a76ae42c63ccf028856241c92670c054d77b))
+
+
+### Miscellaneous
+
+* **deps:** update actions-rust-lang/setup-rust-toolchain action to v1.16.0 ([#162](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/162)) ([d55661a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d55661a71452407ac358d406a2dffaa12a35a046))
+* **deps:** update all non-major action updates ([#165](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/165)) ([68156fa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/68156fa901bd51c84018b2064f1d6a8f5cf7cd72))
+* **deps:** update alpine:3.23 docker digest to 5b10f43 ([#174](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/174)) ([96e8bb9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/96e8bb9e016dc481e014aea3fe9f2c20d2c1ede2))
+* **deps:** update github/codeql-action action to v4.35.2 ([#169](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/169)) ([b4e3584](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b4e3584f85300ef9cf671e901f19c7436aae3f22))
+* **deps:** update googleapis/release-please-action digest to 5c625bf ([#161](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/161)) ([3f98882](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3f9888233745fde0d58e7e0418d74edc58a7436a))
+* **deps:** update rust crate axum to v0.8.9 ([#166](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/166)) ([2ee44ae](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2ee44ae12fc55296c88e2835853e843672dd956d))
+* **deps:** update rust crate clap to v4.6.1 ([#177](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/177)) ([c889083](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c889083ff7f8337f458c5a4c19f063d6f9576c56))
+* **deps:** update rust crate rayon to v1.12.0 ([#164](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/164)) ([70cdce7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/70cdce7147d667cb438b2aa3a19fdbac3285988e))
+* **deps:** update rust crate tokio to v1.52.0 ([#167](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/167)) ([7bb7295](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7bb7295be40afd0059c930c8de5fab2e5fb874cf))
+* **deps:** update step-security/harden-runner action to v2.18.0 ([#168](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/168)) ([3698c4c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3698c4c9cb5c629f7fd6580ceb1c5ca5ce6d7729))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.3 ([#170](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/170)) ([0900a1d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0900a1d8ade2c44dba39d77c294acb05ffcbb729))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.4 ([#175](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/175)) ([e1efcb8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e1efcb885758cd698d8e1151c729ced72fba1cd8))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.14 ([#176](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/176)) ([acaa6ea](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/acaa6ea16cb9d15fadf36f4e2c2164fd56be1eae))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.9 ([#171](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/171)) ([4892f1f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4892f1fab4468722d132ef52626839891de477cf))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.1 ([#172](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/172)) ([015d24a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/015d24a6b32abec9a644934fe0388c950394f9d7))
+* **deps:** update timschoenle/actions/actions/rust/cargo-check to vactions-rust-cargo-check-v1.1.1 ([#173](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/173)) ([e25ca49](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e25ca49169002ecba2d3465af8abf9e740e21877))
+* **deps:** update zizmorcore/zizmor-action action to v0.5.3 ([#163](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/163)) ([af8b50e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/af8b50eadea9177c9d16f6841b7af81759e6ecae))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#158](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/158)) ([a4b678a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a4b678aa467b185f8df3c853a832b1ff323de326))
+* **deps:** lock file maintenance ([#159](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/159)) ([8db62d9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8db62d97f6cdbe7e7e84f126232732dd43506270))
+* **deps:** lock file maintenance ([#160](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/160)) ([affbb15](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/affbb15702e310fc241b98092fd2e4e0ac07b76e))
+
 ## [0.12.5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.4...v0.12.5) (2026-04-12)
 
 
