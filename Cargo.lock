@@ -1024,7 +1024,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-common"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "lzma-rust2",
  "postcard",
@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-converter"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "anyhow",
  "binary-layout",
@@ -1051,7 +1051,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-core"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "mp-stats-common",
  "serde",
@@ -1061,7 +1061,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-frontend"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "futures",
  "gloo-console 0.4.0",
@@ -1080,11 +1080,11 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-platform"
-version = "0.12.5"
+version = "0.12.6"
 
 [[package]]
 name = "mp-stats-server"
-version = "0.12.5"
+version = "0.12.6"
 dependencies = [
  "axum",
  "clap",
