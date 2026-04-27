@@ -1080,7 +1080,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-platform"
-version = "0.12.6"
+version = "0.12.7"
 
 [[package]]
 name = "mp-stats-server"
