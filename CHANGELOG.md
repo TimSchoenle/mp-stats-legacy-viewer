@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.7...v0.12.8) (2026-05-01)
+
+
+### Miscellaneous
+
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.6 ([#198](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/198)) ([fd88e7a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fd88e7ac8e49c76907e6bc862a0c95b2f521cf32))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.16 ([#196](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/196)) ([ff84f73](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ff84f73f18d1886b8f4ea3923a6330436368bc9f))
+* **deps:** update timschoenle/actions/actions/rust/clippy to vactions-rust-clippy-v1.1.3 ([#197](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/197)) ([015a76f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/015a76fadadd2bc497c36bc7a6c10dc1f74e1bd6))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#194](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/194)) ([4290f18](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4290f18613ef0127d2b1753bcfa0c5cadb3fd8a3))
+
 ## [0.12.7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.6...v0.12.7) (2026-04-27)
 
 
