@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.12.11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.10...v0.12.11) (2026-05-27)
+
+
+### Miscellaneous
+
+* **deps:** update docker/build-push-action digest to f9f3042 ([#232](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/232)) ([119c3cf](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/119c3cfa864d2e75b2157c8009a08fa833ed9481))
+* **deps:** update docker/login-action digest to 650006c ([#236](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/236)) ([c3a3dc8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c3a3dc8e832f82605f73736defe5c280f07f0a38))
+* **deps:** update docker/metadata-action digest to 80c7e94 ([#237](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/237)) ([1c5c4c5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1c5c4c504f88709fde1bb21a2e05f5e09b1cad99))
+* **deps:** update docker/setup-buildx-action digest to d7f5e7f ([#238](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/238)) ([865c915](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/865c915b5d56f8499dd2215a5888b9501fed5125))
+* **deps:** update docker/setup-qemu-action digest to 0611638 ([#246](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/246)) ([1a67c49](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1a67c495c256d3f492cf275ebd5fb9685768296c))
+* **deps:** update github/codeql-action action to v4.36.0 ([#245](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/245)) ([5b6f6e8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5b6f6e84df5e61728c964ed030a405ff3879dd3b))
+* **deps:** update rust crate lzma-rust2 to v0.16.3 ([#240](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/240)) ([b179bcb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b179bcbac898037b08b94900067ddc56078ad5fd))
+* **deps:** update rust crate serde_json to v1.0.150 ([#242](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/242)) ([697210f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/697210ff3e3e3d9b402f57bd7161ea6f0c8d1c13))
+* **deps:** update rust crate tar to v0.4.46 ([#235](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/235)) ([32f3ed9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/32f3ed9dae79ec186db29093e24b6e08c212f1a6))
+* **deps:** update rust crate tower-http to v0.6.11 ([#233](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/233)) ([4ed5bfa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4ed5bfabdb9dfd8a1cb3bd502cd56c2c3f6c51e5))
+* **deps:** update rust:1.95-slim docker digest to e14e873 ([#239](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/239)) ([f6b8cfc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f6b8cfc1103c38d4c63055b1aa93b3ca410369ec))
+* **deps:** update step-security/harden-runner action to v2.19.4 ([#241](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/241)) ([84a4a37](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/84a4a374cbf77c918bcd831e085291c99416cd80))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#243](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/243)) ([345fee9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/345fee940dd48b113c74d82cf352f243fa6ae436))
+* **deps:** lock file maintenance ([#244](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/244)) ([3077759](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/30777592d2703ffa7437f2697bd28d7a54762246))
+
 ## [0.12.10](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.9...v0.12.10) (2026-05-20)
 
 
