@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.12.12](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.11...v0.12.12) (2026-06-05)
+
+
+### Miscellaneous
+
+* **deps:** update actions/checkout digest to df4cb1c ([#257](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/257)) ([e1c7500](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e1c7500fb13a57c570b22c5d1111074c99f16be2))
+* **deps:** update all non-major action updates to v4.36.1 ([#258](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/258)) ([dc22a9c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dc22a9ca5181cbc8f869a230553e88b4252f8777))
+* **deps:** update rust docker tag to v1.96 ([#252](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/252)) ([6f7eaeb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6f7eaeba9a0e938c801545583506af44dc4d576c))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.8 ([#247](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/247)) ([23292b1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/23292b1ef167eb2185d65ef970adb58c285f33d7))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.9 ([#256](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/256)) ([23ce6bd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/23ce6bdb2fcb2fe4c95b1c339e2dff39e3e261fc))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.19 ([#248](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/248)) ([773855f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/773855f36176bf72239b15c6d9397c17c9383096))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.20 ([#255](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/255)) ([f1d3ae0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f1d3ae037beda87e92d72e67b1cbd69e37b0bba9))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.11 ([#250](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/250)) ([7df1960](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7df1960d738c540a0f9403aa77fc7e44e54e5b1b))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.12 ([#254](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/254)) ([37b8c31](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/37b8c31c24857a1732a9287d6418788cfe907525))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.3 ([#251](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/251)) ([01b6a69](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/01b6a6908a6686e8ccf67134ab0d7c116577651a))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#253](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/253)) ([51e51db](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/51e51db7cc1fb465797df5c79d88cb1569072589))
+
 ## [0.12.11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.10...v0.12.11) (2026-05-27)
 
 
