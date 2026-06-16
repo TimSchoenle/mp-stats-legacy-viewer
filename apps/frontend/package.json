@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "devDependencies": {
-    "@tailwindcss/cli": "4.3.0",
-    "tailwindcss": "4.3.0"
+    "@tailwindcss/cli": "4.3.1",
+    "tailwindcss": "4.3.1"
   }
 }
