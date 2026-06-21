@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.14](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.13...v0.12.14) (2026-06-21)
+
+
+### Miscellaneous
+
+* **deps:** update alpine:3.24 docker digest to 28bd5fe ([#279](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/279)) ([3c76b6d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3c76b6d52eacb347d5517d6811d1d1002efb9c1c))
+* **deps:** update docker/dockerfile docker tag to v1.25 ([#282](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/282)) ([772b081](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/772b08121d5593f9529a1b85a8b6735fb645ca54))
+* **deps:** update rust crate tower-http to 0.7.0 ([#280](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/280)) ([72f9d7e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/72f9d7e3a1121e3d579d3aef350e6babbcf62c8d))
+* **deps:** update rust:1.96-slim docker digest to 3b05f7c ([#276](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/276)) ([e91798b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e91798b1591a6b115bd101a35242101c98e1c6cb))
+* **deps:** update tailwindcss monorepo to v4.3.1 ([#278](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/278)) ([7b6091d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7b6091d8fb5c7c9f580a99c18562940180fc1fd4))
+
 ## [0.12.13](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.12...v0.12.13) (2026-06-13)
 
 
