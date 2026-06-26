@@ -3,6 +3,12 @@ use mp_stats_core::models::{GameLeaderboardData, PlatformEdition};
 use mp_stats_core::routes;
 use mp_stats_converter::{ConversionCache, Converter};
 use std::path::PathBuf;
+use std::sync::Mutex;
+
+/// Both integration tests drive `Converter::convert`, which uses a single,
+/// hardcoded staging directory (`target/converter_staging`). Serialize them so
+/// concurrent runs (cargo's default) don't clobber each other's staging area.
+static CONVERT_GUARD: Mutex<()> = Mutex::new(());
 
 /// Locate the workspace-level `data-test` fixture directory regardless of the
 /// directory the test binary is executed from.
@@ -35,6 +41,8 @@ fn conversion_populates_per_category_top_and_total_entries() {
             .as_nanos()
     );
     let output = std::env::temp_dir().join(unique);
+
+    let _guard = CONVERT_GUARD.lock().unwrap_or_else(|e| e.into_inner());
 
     // Disable the on-disk cache so the test always exercises a full conversion.
     let converter = Converter::with_cache(input, output.clone(), ConversionCache::disabled())
@@ -69,4 +77,111 @@ fn conversion_populates_per_category_top_and_total_entries() {
 
     // Cleanup best-effort.
     let _ = std::fs::remove_dir_all(&output);
+}
+
+/// Recursively collect every file under `root` as a map of its path relative to
+/// `root` (with forward slashes) to its raw bytes. Used to compare two output
+/// trees for byte-for-byte equality.
+fn collect_tree(root: &PathBuf) -> std::collections::BTreeMap<String, Vec<u8>> {
+    let mut out = std::collections::BTreeMap::new();
+    let mut stack = vec![root.clone()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                let rel = path
+                    .strip_prefix(root)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                out.insert(rel, std::fs::read(&path).unwrap_or_default());
+            }
+        }
+    }
+    out
+}
+
+/// End-to-end verification that the incremental conversion cache is fully
+/// working: a second run over unchanged input must take the cache-hit path and
+/// produce output that is byte-for-byte identical to the first (uncached) run.
+#[test]
+fn cached_run_reuses_output_and_matches_uncached_run() {
+    let Some(input) = data_test_dir() else {
+        eprintln!("data-test fixture not found; skipping integration test");
+        return;
+    };
+
+    let unique = format!(
+        "{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    );
+    let tmp = std::env::temp_dir();
+    let cache_root = tmp.join(format!("mp_stats_cache_e2e_{unique}"));
+    let output_cold = tmp.join(format!("mp_stats_out_cold_{unique}"));
+    let output_warm = tmp.join(format!("mp_stats_out_warm_{unique}"));
+
+    let _guard = CONVERT_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+
+    // First run: empty cache -> full conversion that also populates the cache.
+    let cold = Converter::with_cache(
+        input.clone(),
+        output_cold.clone(),
+        ConversionCache::new(cache_root.clone()),
+    )
+    .expect("cold converter setup");
+    cold.convert().expect("cold conversion succeeds");
+
+    // The cache must now hold a stored output + matching fingerprint for the
+    // Java edition, proving `store` ran and the next run will hit the cache.
+    let fingerprint =
+        ConversionCache::fingerprint_dir(&input.join(PlatformEdition::Java.directory_name()))
+            .expect("fingerprint java input");
+    let probe = tmp.join(format!("mp_stats_probe_{unique}"));
+    let restored = ConversionCache::new(cache_root.clone())
+        .restore(PlatformEdition::Java.directory_name(), fingerprint, &probe)
+        .expect("restore probe");
+    assert!(
+        restored,
+        "expected a populated cache entry with a matching fingerprint after the first run"
+    );
+
+    // Second run: same cache root -> must reuse the cached output.
+    let warm = Converter::with_cache(
+        input.clone(),
+        output_warm.clone(),
+        ConversionCache::new(cache_root.clone()),
+    )
+    .expect("warm converter setup");
+    warm.convert().expect("warm conversion succeeds");
+
+    // The cached (warm) output must be byte-for-byte identical to the cold one.
+    let cold_tree = collect_tree(&output_cold);
+    let warm_tree = collect_tree(&output_warm);
+    assert!(
+        !cold_tree.is_empty(),
+        "cold run produced no output files at {output_cold:?}"
+    );
+    assert_eq!(
+        cold_tree.keys().collect::<Vec<_>>(),
+        warm_tree.keys().collect::<Vec<_>>(),
+        "cached run produced a different set of output files"
+    );
+    assert_eq!(
+        cold_tree, warm_tree,
+        "cached run output differs from the uncached run output"
+    );
+
+    // Cleanup best-effort.
+    let _ = std::fs::remove_dir_all(&cache_root);
+    let _ = std::fs::remove_dir_all(&output_cold);
+    let _ = std::fs::remove_dir_all(&output_warm);
+    let _ = std::fs::remove_dir_all(&probe);
 }

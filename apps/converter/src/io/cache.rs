@@ -1,5 +1,6 @@
-use crate::io::copy_dir_all;
+use crate::io::{copy_dir_all, link_or_copy_dir_all};
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
@@ -70,31 +71,39 @@ impl ConversionCache {
     /// Compute a stable fingerprint of an input directory from the relative
     /// path, byte length and modification time of every file it contains.
     pub fn fingerprint_dir(input: &Path) -> Result<u64> {
-        let mut files: Vec<(String, u64, u64)> = Vec::new();
+        // Collect the file paths in a single walk, then read their metadata in
+        // parallel. The per-file `stat` syscalls dominate the cost for large
+        // input trees (thousands of files) and are especially slow over
+        // bind-mounted/networked filesystems, so fanning them out across cores
+        // is a large win over a sequential walk.
+        let paths: Vec<PathBuf> = WalkDir::new(input)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .map(|e| e.into_path())
+            .collect();
 
-        for entry in WalkDir::new(input).into_iter().filter_map(|e| e.ok()) {
-            if !entry.file_type().is_file() {
-                continue;
-            }
+        let mut files: Vec<(String, u64, u64)> = paths
+            .par_iter()
+            .filter_map(|path| {
+                let rel = path
+                    .strip_prefix(input)
+                    .unwrap_or(path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
 
-            let rel = entry
-                .path()
-                .strip_prefix(input)
-                .unwrap_or(entry.path())
-                .to_string_lossy()
-                .replace('\\', "/");
+                let meta = std::fs::metadata(path).ok()?;
+                let len = meta.len();
+                let mtime = meta
+                    .modified()
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
 
-            let meta = entry.metadata()?;
-            let len = meta.len();
-            let mtime = meta
-                .modified()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs())
-                .unwrap_or(0);
-
-            files.push((rel, len, mtime));
-        }
+                Some((rel, len, mtime))
+            })
+            .collect();
 
         // Sort for a deterministic order independent of filesystem traversal.
         files.sort();
@@ -138,7 +147,7 @@ impl ConversionCache {
             return Ok(false);
         }
 
-        copy_dir_all(&output, dest)
+        link_or_copy_dir_all(&output, dest)
             .with_context(|| format!("restoring cached output for '{key}'"))?;
         Ok(true)
     }
