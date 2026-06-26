@@ -420,15 +420,17 @@ mod tests {
     #[test]
     fn competition_ranker_strictly_decreasing_is_sequential() {
         let mut ranker = CompetitionRanker::new();
-        let ranks: Vec<u32> = [50, 40, 30].into_iter().map(|s| ranker.next_rank(s)).collect();
+        let ranks: Vec<u32> = [50, 40, 30]
+            .into_iter()
+            .map(|s| ranker.next_rank(s))
+            .collect();
         assert_eq!(ranks, vec![1, 2, 3]);
     }
 
     #[test]
     fn competition_ranks_by_score_matches_streaming_ranker() {
         // Same multiset as `competition_ranker_shares_rank_for_equal_scores`.
-        let counts: HashMap<u64, u64> =
-            HashMap::from([(100, 3), (90, 1), (80, 2), (70, 1)]);
+        let counts: HashMap<u64, u64> = HashMap::from([(100, 3), (90, 1), (80, 2), (70, 1)]);
 
         let table = competition_ranks_by_score(&counts);
 

@@ -270,9 +270,18 @@ mod tests {
         shards.insert(
             "AAA".to_string(),
             HashMap::from([
-                ("aaa-1".to_string(), profile("aaa-1", vec![stat(1, 2, 100, 1)])),
-                ("aaa-2".to_string(), profile("aaa-2", vec![stat(1, 2, 100, 2)])),
-                ("aaa-3".to_string(), profile("aaa-3", vec![stat(1, 2, 50, 3)])),
+                (
+                    "aaa-1".to_string(),
+                    profile("aaa-1", vec![stat(1, 2, 100, 1)]),
+                ),
+                (
+                    "aaa-2".to_string(),
+                    profile("aaa-2", vec![stat(1, 2, 100, 2)]),
+                ),
+                (
+                    "aaa-3".to_string(),
+                    profile("aaa-3", vec![stat(1, 2, 50, 3)]),
+                ),
             ]),
         );
 
