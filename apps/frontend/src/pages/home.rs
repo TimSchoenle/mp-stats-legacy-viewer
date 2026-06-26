@@ -48,30 +48,12 @@ pub fn home() -> Html {
                 <h1 class="serif page-title text-6xl md:text-7xl lg:text-8xl text-paper-1 max-w-4xl">
                     { "MP Stats Legacy Viewer" }
                 </h1>
-                <p class="text-base text-paper-3 max-w-xl mt-6 leading-relaxed">
-                    { "The complete historical stats archive created by the StatsBot Project." }
-                </p>
-            </div>
-
-            // Search bar
-            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] mb-10">
-                <SearchBar
-                    class={classes!("w-full", "max-w-none")}
-                    input_classes={classes!("py-5", "pl-14", "pr-16", "text-base", "rounded-xl")}
-                />
-            </div>
-
-            // Edition cards
-            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] pb-12">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    { for PlatformEdition::iter().map(edition_card) }
-                </div>
             </div>
 
             // Archive notice
-            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] pb-20">
+            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] mb-10">
                 <div
-                    class="card p-7 max-w-3xl border-2"
+                    class="card p-7 w-full border-2"
                     style="border-color: var(--color-brand-amber-500); background-color: color-mix(in oklch, var(--color-brand-amber-500), transparent 92%);"
                 >
                     <div class="eyebrow text-base mb-4 font-semibold" style="color: var(--color-brand-amber-500);">
@@ -97,6 +79,22 @@ pub fn home() -> Html {
                     </ul>
                 </div>
             </div>
+
+            // Search bar
+            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] mb-10">
+                <SearchBar
+                    class={classes!("w-full", "max-w-none")}
+                    input_classes={classes!("py-5", "pl-14", "pr-16", "text-base", "rounded-xl")}
+                />
+            </div>
+
+            // Edition cards
+            <div class="container mx-auto px-6 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] pb-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    { for PlatformEdition::iter().map(edition_card) }
+                </div>
+            </div>
+
         </div>
     }
 }

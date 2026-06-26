@@ -93,7 +93,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                 </span>
                                             </div>
 
-                                            <div class="flex flex-col gap-1.5">
+                                            <div class="grid grid-cols-[1fr_56px_minmax(56px,auto)_minmax(40px,auto)] gap-x-2.5 gap-y-0.5">
                                                 { for stats.iter().map(|s| {
                                                     let board_name = map.boards.get(&s.board_id).map(|s| s.name.as_str()).unwrap_or("Board");
                                                     let stat_name = map.stats.get(&s.stat_id).map(|s| s.name.to_string()).unwrap_or(String::from("Stat"));
@@ -126,7 +126,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                     html! {
                                                         <Link<Route>
                                                             to={Route::Leaderboard { edition: props.edition.clone(), game: game_name.clone(), board: board_name.to_string(), stat: stat_name.to_string(), page: 1 }}
-                                                            classes="grid grid-cols-[1fr_56px_minmax(56px,auto)_minmax(40px,auto)] gap-2.5 items-center py-1.5 rounded hover:bg-ink-3 -mx-1 px-1 transition-colors"
+                                                            classes="col-span-full grid grid-cols-subgrid gap-x-2.5 items-center py-1.5 rounded hover:bg-ink-3 -mx-1 px-1 transition-colors"
                                                         >
                                                             <span class="text-xs text-paper-2 truncate">{ label }</span>
                                                             <span class="bar-track">

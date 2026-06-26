@@ -99,15 +99,16 @@ pub fn game_view(props: &GameProps) -> Html {
                     <p class="text-paper-3 text-sm">{ "No statistics found for this game." }</p>
                 </div>
             } else {
-                // Eyebrow row (table-style header)
-                <div class="mt-7 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_minmax(160px,1fr)_minmax(120px,auto)_80px] gap-4 px-4 pb-3">
-                    <span class="eyebrow">{"#"}</span>
-                    <span class="eyebrow">{"Category"}</span>
-                    <span class="eyebrow hidden md:block">{"#1 holder (latest)"}</span>
-                    <span class="eyebrow hidden md:block text-right">{"Top score"}</span>
-                    <span class="eyebrow text-right">{""}</span>
-                </div>
-                <div class="grid grid-cols-1 gap-px bg-rule border border-rule rounded-lg overflow-hidden">
+                // Table: header + rows share one grid so columns self-balance and stay aligned
+                <div class="mt-7 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_minmax(160px,1fr)_minmax(120px,auto)_80px] border border-rule rounded-lg overflow-hidden">
+                    // Eyebrow row (table-style header)
+                    <div class="col-span-full grid grid-cols-subgrid gap-4 px-4 py-3 bg-ink-1 border-b border-rule">
+                        <span class="eyebrow">{"#"}</span>
+                        <span class="eyebrow">{"Category"}</span>
+                        <span class="eyebrow hidden md:block">{"#1 holder (latest)"}</span>
+                        <span class="eyebrow hidden md:block text-right">{"Top score"}</span>
+                        <span class="eyebrow text-right">{""}</span>
+                    </div>
                     { for stats.iter().enumerate().map(|(i, stat_name)| {
                         let game = props.game.clone();
                         let stat = stat_name.clone();
@@ -124,7 +125,7 @@ pub fn game_view(props: &GameProps) -> Html {
                         html! {
                             <Link<Route>
                                 to={Route::Leaderboard { edition: props.edition.clone(), game, board: "All".to_string(), stat: stat.clone(), page: 1 }}
-                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_minmax(160px,1fr)_minmax(120px,auto)_80px] gap-4 items-center group"
+                                classes="col-span-full grid grid-cols-subgrid gap-4 items-center bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 border-b border-rule-soft last:border-0 group"
                             >
                                 <span class="font-mono text-xs text-paper-3">
                                     { format!("{:02}", i + 1) }

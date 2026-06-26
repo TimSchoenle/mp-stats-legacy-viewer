@@ -9,6 +9,75 @@ use std::str::FromStr;
 /// latest snapshot is used to expose the per-category "game list" stats.
 pub const GLOBAL_BOARD: &str = "All";
 
+/// Stateful helper implementing **standard competition ranking** ("1224").
+///
+/// Entries must be fed in *descending* score order. Entries that share a score
+/// receive the same rank, and the next distinct (lower) score jumps to its
+/// 1-based positional index, leaving gaps where ties occurred. Centralizing the
+/// algorithm here keeps position/rank calculation identical between the
+/// leaderboard and player-profile pipelines so a player with a given score is
+/// always shown at the same position in both views.
+///
+/// ```
+/// use mp_stats_core::models::CompetitionRanker;
+///
+/// let mut ranker = CompetitionRanker::new();
+/// assert_eq!(ranker.next_rank(100), 1); // 1st place
+/// assert_eq!(ranker.next_rank(100), 1); // tie -> same rank
+/// assert_eq!(ranker.next_rank(90), 3);  // next distinct score skips #2
+/// ```
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct CompetitionRanker {
+    /// 1-based ordinal of the most recently ranked entry.
+    position: u32,
+    /// Score of the most recently ranked entry, if any.
+    last_score: Option<u64>,
+    /// Rank assigned to the most recently ranked entry.
+    last_rank: u32,
+}
+
+impl CompetitionRanker {
+    /// Create a fresh ranker positioned before the first entry.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Feed the next entry's `score` (which must be `<=` the previously fed
+    /// score) and obtain its competition rank.
+    pub fn next_rank(&mut self, score: u64) -> u32 {
+        self.position += 1;
+        let rank = if self.last_score == Some(score) {
+            self.last_rank
+        } else {
+            self.position
+        };
+        self.last_score = Some(score);
+        self.last_rank = rank;
+        rank
+    }
+}
+
+/// Compute a `score -> rank` lookup applying standard competition ranking
+/// ("1224") to an unordered multiset of scores supplied as `score -> count`.
+///
+/// The rank of a score equals `1 + (number of entries with a strictly greater
+/// score)`, so every entry sharing a score gets the same position. This is the
+/// batch counterpart to [`CompetitionRanker`] (used for the streaming,
+/// already-sorted leaderboard case) and yields identical positions.
+pub fn competition_ranks_by_score(counts: &HashMap<u64, u64>) -> HashMap<u64, u32> {
+    let mut scores: Vec<u64> = counts.keys().copied().collect();
+    // Highest score first so prefix-summing the counts gives "entries ahead".
+    scores.sort_unstable_by(|a, b| b.cmp(a));
+
+    let mut table = HashMap::with_capacity(scores.len());
+    let mut ahead: u64 = 0;
+    for score in scores {
+        table.insert(score, (ahead + 1) as u32);
+        ahead += counts.get(&score).copied().unwrap_or(0);
+    }
+    table
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Game {
     pub id: SmolStr,
@@ -333,5 +402,45 @@ mod tests {
         assert_eq!(summary.top_hundred, 0);
         assert_eq!(summary.total_score, 30);
         assert_eq!(summary.games_played, 1);
+    }
+
+    #[test]
+    fn competition_ranker_shares_rank_for_equal_scores() {
+        let mut ranker = CompetitionRanker::new();
+        // Scores fed in descending order; ties share a rank and the next
+        // distinct score skips the consumed positions ("1224" ranking).
+        let ranks: Vec<u32> = [100, 100, 100, 90, 80, 80, 70]
+            .into_iter()
+            .map(|s| ranker.next_rank(s))
+            .collect();
+
+        assert_eq!(ranks, vec![1, 1, 1, 4, 5, 5, 7]);
+    }
+
+    #[test]
+    fn competition_ranker_strictly_decreasing_is_sequential() {
+        let mut ranker = CompetitionRanker::new();
+        let ranks: Vec<u32> = [50, 40, 30].into_iter().map(|s| ranker.next_rank(s)).collect();
+        assert_eq!(ranks, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn competition_ranks_by_score_matches_streaming_ranker() {
+        // Same multiset as `competition_ranker_shares_rank_for_equal_scores`.
+        let counts: HashMap<u64, u64> =
+            HashMap::from([(100, 3), (90, 1), (80, 2), (70, 1)]);
+
+        let table = competition_ranks_by_score(&counts);
+
+        assert_eq!(table.get(&100), Some(&1));
+        assert_eq!(table.get(&90), Some(&4));
+        assert_eq!(table.get(&80), Some(&5));
+        assert_eq!(table.get(&70), Some(&7));
+    }
+
+    #[test]
+    fn competition_ranks_by_score_handles_empty_input() {
+        let table = competition_ranks_by_score(&HashMap::new());
+        assert!(table.is_empty());
     }
 }
