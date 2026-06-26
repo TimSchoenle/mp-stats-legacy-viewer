@@ -156,6 +156,10 @@
 @layer base {
     html {
         background: var(--color-ink-1);
+        /* Scale the whole page up for better readability.
+           Tailwind sizing is rem-based, so this proportionally enlarges
+           text, spacing and layout across the site. */
+        font-size: 18px;
     }
 
     body {
@@ -194,7 +198,7 @@
     }
     .eyebrow {
         font-family: var(--font-mono);
-        font-size: 10px;
+        font-size: 12px;
         letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--color-paper-4);
@@ -213,7 +217,7 @@
     /* ---- Crumbs ---- */
     .crumbs {
         font-family: var(--font-mono);
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: var(--color-paper-4);
@@ -248,7 +252,7 @@
 
     /* ---- Chips ---- */
     .chip {
-        @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[11px] font-medium bg-ink-3 text-paper-2 border border-rule;
+        @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-xs font-medium bg-ink-3 text-paper-2 border border-rule;
     }
     .chip-amber  { color: var(--color-brand-amber-500);        border-color: color-mix(in oklch, var(--color-brand-amber-500), transparent 70%);        background: color-mix(in oklch, var(--color-brand-amber-500), transparent 90%); }
     .chip-mint   { color: var(--color-brand-javamint-500);     border-color: color-mix(in oklch, var(--color-brand-javamint-500), transparent 70%);     background: color-mix(in oklch, var(--color-brand-javamint-500), transparent 90%); }
@@ -284,7 +288,7 @@
     /* ---- Tables ---- */
     .table-header {
         font-family: var(--font-mono);
-        @apply text-[10px] font-medium tracking-[0.12em] uppercase text-paper-4 py-3 px-5 bg-ink-1 border-b border-rule;
+        @apply text-[11px] font-medium tracking-[0.12em] uppercase text-paper-4 py-3 px-5 bg-ink-1 border-b border-rule;
     }
     .table-row { @apply transition-colors; }
     .table-row:hover { background: color-mix(in oklch, var(--color-ink-3), transparent 50%); }
@@ -295,9 +299,9 @@
         @apply flex justify-between items-center py-2.5 border-b border-rule-soft last:border-0;
     }
     .rank-badge {
-        @apply px-2 py-0.5 rounded font-mono text-[11px] font-medium bg-ink-3 text-paper-2 border border-rule;
+        @apply px-2 py-0.5 rounded font-mono text-xs font-medium bg-ink-3 text-paper-2 border border-rule;
     }
     .kbd {
-        @apply font-mono text-[10px] text-paper-4 border border-rule rounded px-1.5 py-0.5;
+        @apply font-mono text-[11px] text-paper-4 border border-rule rounded px-1.5 py-0.5;
     }
 }
