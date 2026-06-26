@@ -2,7 +2,7 @@ use crate::models::leaderboard::binary_leaderboard;
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
 use mp_stats_common::formats::raw::ENTRIES_PER_PAGE;
-use mp_stats_core::models::{LeaderboardPage, PlatformEdition};
+use mp_stats_core::models::{CompetitionRanker, LeaderboardPage, PlatformEdition};
 use rayon::prelude::*;
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -138,7 +138,11 @@ fn process_binary_chunks(
         names: Vec::with_capacity(ENTRIES_PER_PAGE),
         scores: Vec::with_capacity(ENTRIES_PER_PAGE),
     };
-    let mut global_rank = 1;
+    // Standard competition ranking ("1224"): entries sharing the same score
+    // receive the same rank, and the next distinct score jumps to its positional
+    // index. The shared `CompetitionRanker` keeps this identical to the
+    // player-profile pipeline.
+    let mut ranker = CompetitionRanker::new();
     let mut total_entries_written = 0u32;
 
     for chunk_data in chunks {
@@ -169,13 +173,16 @@ fn process_binary_chunks(
             // Resolve Name/UUID
             let pid_str = pid.to_string();
             if let Some((uuid, name)) = lookup_map.get(&pid_str) {
+                // Compute rank: same score shares the rank of the first entry
+                // that achieved it, otherwise it takes the current position.
+                let rank = ranker.next_rank(score);
+
                 // Add to current page (columnar format)
-                current_page.ranks.push(global_rank);
+                current_page.ranks.push(rank);
                 current_page.uuids.push(SmolStr::new(uuid));
                 current_page.names.push(SmolStr::new(name));
                 current_page.scores.push(score);
 
-                global_rank += 1;
                 total_entries_written += 1;
 
                 // If page full, write it

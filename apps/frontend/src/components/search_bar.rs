@@ -11,7 +11,7 @@ use yew_router::prelude::*;
 pub struct SearchBarProps {
     #[prop_or(Classes::from("max-w-md"))]
     pub class: Classes,
-    #[prop_or(Classes::from("py-2 pl-4 pr-12 text-sm"))]
+    #[prop_or(Classes::from("py-2 pl-10 pr-12 text-sm rounded-md"))]
     pub input_classes: Classes,
 }
 
@@ -56,10 +56,10 @@ struct DropdownProps {
 #[function_component(SearchDropdown)]
 fn search_dropdown(props: &DropdownProps) -> Html {
     html! {
-        <div class="absolute mt-2 w-full glass-panel overflow-hidden z-50">
+        <div class="absolute mt-2 w-full card overflow-hidden z-50 shadow-2xl">
             { for props.suggestions.iter().enumerate().map(|(index, suggestion)| {
                 let is_focused = props.focused_index == Some(index);
-                let bg_class = if is_focused { "bg-white/10" } else { "hover:bg-white/5" };
+                let bg_class = if is_focused { "bg-ink-3" } else { "hover:bg-ink-3/60" };
 
                 let onmousedown = {
                     let on_navigate = props.on_navigate.clone();
@@ -71,29 +71,35 @@ fn search_dropdown(props: &DropdownProps) -> Html {
                 };
 
                 match suggestion {
-                    Suggestion::Player(edition, name, _uuid) => {
-                        let (badge_bg, badge_text, badge_label) = match edition {
-                            PlatformEdition::Java => ("bg-emerald-500/20", "text-emerald-400", "Java"),
-                            PlatformEdition::Bedrock => ("bg-blue-500/20", "text-blue-400", "Bedrock"),
+                    Suggestion::Player(edition, name, uuid) => {
+                        let badge_class = match edition {
+                            PlatformEdition::Java => "chip chip-mint",
+                            PlatformEdition::Bedrock => "chip chip-azure",
                         };
+                        let short_uuid = if uuid.len() > 8 { &uuid[..8] } else { uuid.as_str() };
                         html! {
-                            <div {onmousedown} class={classes!("px-4", "py-3", "cursor-pointer", "flex", "items-center", "justify-between", "transition-colors", bg_class)}>
-                                <span class="text-white font-medium">{name}</span>
-                                <span class={classes!("text-xs", "font-semibold", "px-2", "py-0.5", "rounded", badge_text, badge_bg)}>{badge_label}</span>
+                            <div {onmousedown} class={classes!("px-4", "py-2.5", "cursor-pointer", "flex", "items-center", "justify-between", "gap-3", "transition-colors", bg_class)}>
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="text-paper-1 text-sm font-medium truncate">{name}</span>
+                                    <span class="font-mono text-xs text-paper-3">{short_uuid}{"…"}</span>
+                                </div>
+                                <span class={badge_class}>{ edition.display_name() }</span>
                             </div>
                         }
                     }
                     Suggestion::UuidAction(edition, _uuid) => {
-                        let (text, color) = match edition {
-                            PlatformEdition::Java => ("Search UUID in Java", "text-emerald-400"),
-                            PlatformEdition::Bedrock => ("Search UUID in Bedrock", "text-blue-400"),
+                        let badge_class = match edition {
+                            PlatformEdition::Java => "chip chip-mint",
+                            PlatformEdition::Bedrock => "chip chip-azure",
+                        };
+                        let text = match edition {
+                            PlatformEdition::Java => "Look up UUID in Java",
+                            PlatformEdition::Bedrock => "Look up UUID in Bedrock",
                         };
                         html! {
-                            <div {onmousedown} class={classes!("px-4", "py-3", "cursor-pointer", "flex", "items-center", "transition-colors", bg_class)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" class={classes!("h-4", "w-4", "mr-2", color)} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <span class={classes!("text-sm", "font-medium", color)}>{text}</span>
+                            <div {onmousedown} class={classes!("px-4", "py-2.5", "cursor-pointer", "flex", "items-center", "justify-between", "gap-3", "transition-colors", bg_class)}>
+                                <span class="text-sm font-medium text-paper-2">{text}</span>
+                                <span class={badge_class}>{ edition.display_name() }</span>
                             </div>
                         }
                     }
@@ -257,13 +263,15 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
             if let Some(s) = suggestions.first() {
                 navigate_to.emit(s.clone());
             } else {
-                let val_len = query.len();
-                if val_len == 32 || val_len == 36 {
-                    navigate_to.emit(Suggestion::UuidAction(
-                        PlatformEdition::Java,
-                        query.to_string(),
-                    ));
+                let val = query.trim().to_string();
+                if val.is_empty() {
+                    return;
                 }
+                // No matching suggestion: still route to the player page so the
+                // visitor lands on the dedicated "no profile data" empty state
+                // (which explains why a profile may be missing) instead of the
+                // form silently doing nothing. Default to the Java edition.
+                navigate_to.emit(Suggestion::UuidAction(PlatformEdition::Java, val));
             }
         })
     };
@@ -272,7 +280,6 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
         let show_dropdown = state.show_dropdown.clone();
         Callback::from(move |_| {
             let show_dropdown = show_dropdown.clone();
-            // Delay hidding the dropdown so mousedown events on suggestions can fire first
             gloo_timers::callback::Timeout::new(200, move || {
                 show_dropdown.set(false);
             })
@@ -293,13 +300,21 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
     };
 
     html! {
-        <div class={classes!("relative", "w-full", props.class.clone())}>
+        <div class={classes!(theme_color, "relative", "w-full", props.class.clone())}>
             <form {onsubmit} class="relative flex items-center">
+                // Search icon (left)
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-paper-4 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7"/>
+                        <path stroke-linecap="round" d="m21 21-4.3-4.3"/>
+                    </svg>
+                </span>
+
                 <input
                     ref={input_ref}
                     type="text"
-                    placeholder="Search player (Name/UUID)..."
-                    class={classes!(theme_color, "input-text", "focus:ring-theme-500/50", "focus:border-theme-500/50", props.input_classes.clone())}
+                    placeholder="Find a player by name or UUID…"
+                    class={classes!("input-text", "font-mono", props.input_classes.clone())}
                     value={(*state.query).clone()}
                     {oninput}
                     {onkeydown}
@@ -307,14 +322,15 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                     {onblur}
                     autocomplete="off"
                 />
+
+                // ⌘K hint or submit button (right)
                 <button
                     type="submit"
-                    class={classes!(theme_color, "absolute", "right-2", "top-2", "bottom-2", "bg-theme-600", "hover:bg-theme-500", "text-white", "rounded-full", "px-4", "text-sm", "font-medium", "transition-colors", "disabled:opacity-50", "disabled:cursor-not-allowed", "shadow")}
+                    class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-theme-500 text-ink-0 border border-theme-500 hover:bg-theme-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={state.query.is_empty()}
+                    title="Search"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    { "Search" }
                 </button>
             </form>
 

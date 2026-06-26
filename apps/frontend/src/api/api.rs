@@ -164,15 +164,29 @@ impl Api {
         })
     }
 
+    /// Fetch the names index for a prefix.
+    ///
+    /// Each entry maps a player name to `(uuid, has_profile)`, where
+    /// `has_profile` indicates whether an actual profile exists for that player.
+    ///
+    /// To stay compatible with data generated before the `has_profile` flag was
+    /// introduced, this falls back to the legacy `name -> uuid` layout when the
+    /// new tuple layout cannot be decoded. Legacy entries are treated as having
+    /// a profile so search keeps returning results against older data instead of
+    /// silently showing nothing.
     async fn get_name_index(
         &self,
         edition: &PlatformEdition,
         prefix: &str,
-    ) -> Option<HashMap<String, String>> {
+    ) -> Option<HashMap<String, (String, bool)>> {
         let url = format!("/data/{}", routes::names_index_bin(edition, prefix));
-        self.fetch_bin_cached::<HashMap<String, String>>(&url, Self::TTL_NAME_INDEX_MS)
+
+        let bytes = self
+            .get_decompressed_cached(&url, Self::TTL_NAME_INDEX_MS)
             .await
-            .ok()
+            .ok()?;
+
+        decode_name_index(&bytes)
     }
 
     pub async fn fetch_game_leaderboards(
@@ -199,6 +213,7 @@ impl Api {
                 name: value.name.clone(),
                 description: value.description.clone(),
                 icon: None,
+                total_snapshots: value.total_snapshots,
             })
             .collect();
 
@@ -327,16 +342,18 @@ impl Api {
         let mut results = Vec::new();
 
         if let Some(map) = java_res {
-            for (name, uuid) in map {
-                if name.to_lowercase().contains(&name_lower) {
+            for (name, (uuid, has_profile)) in map {
+                // Skip players without a profile so suggestions never lead to an
+                // empty "no profile data" page.
+                if has_profile && name.to_lowercase().contains(&name_lower) {
                     results.push((PlatformEdition::Java, name, uuid));
                 }
             }
         }
 
         if let Some(map) = bedrock_res {
-            for (name, uuid) in map {
-                if name.to_lowercase().contains(&name_lower) {
+            for (name, (uuid, has_profile)) in map {
+                if has_profile && name.to_lowercase().contains(&name_lower) {
                     results.push((PlatformEdition::Bedrock, name, uuid));
                 }
             }
@@ -406,5 +423,84 @@ impl Api {
             .collect();
 
         Ok(entries)
+    }
+}
+
+/// Decode a (decompressed) names-index payload into `name -> (uuid, has_profile)`.
+///
+/// The current data layout stores `name -> (uuid, has_profile)`, but data
+/// produced before the `has_profile` flag was introduced stored `name -> uuid`.
+/// We first try the current layout and fall back to the legacy one (treating
+/// legacy entries as having a profile) so player search keeps returning results
+/// even when the served data has not yet been regenerated.
+fn decode_name_index(bytes: &[u8]) -> Option<HashMap<String, (String, bool)>> {
+    if bytes.is_empty() {
+        return None;
+    }
+
+    // Current layout: name -> (uuid, has_profile).
+    if let Ok(map) = postcard::from_bytes::<HashMap<String, (String, bool)>>(bytes) {
+        return Some(map);
+    }
+
+    // Legacy layout: name -> uuid (no has_profile flag).
+    if let Ok(legacy) = postcard::from_bytes::<HashMap<String, String>>(bytes) {
+        return Some(
+            legacy
+                .into_iter()
+                .map(|(name, uuid)| (name, (uuid, true)))
+                .collect(),
+        );
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decodes_current_layout_preserving_has_profile() {
+        let mut index: HashMap<String, (String, bool)> = HashMap::new();
+        index.insert("relyh".into(), ("68b61e3c".into(), true));
+        index.insert("ghost".into(), ("deadbeef".into(), false));
+        let bytes = postcard::to_stdvec(&index).unwrap();
+
+        let decoded = decode_name_index(&bytes).expect("current layout should decode");
+        assert_eq!(decoded.get("relyh"), Some(&("68b61e3c".into(), true)));
+        assert_eq!(decoded.get("ghost"), Some(&("deadbeef".into(), false)));
+    }
+
+    #[test]
+    fn falls_back_to_legacy_layout_as_has_profile() {
+        // Legacy data: name -> uuid (no has_profile flag).
+        let mut legacy: HashMap<String, String> = HashMap::new();
+        legacy.insert(
+            "relyh".into(),
+            "68b61e3c-4be0-4c0c-8897-6a8d3703fe9a".into(),
+        );
+        legacy.insert("geno".into(), "ddd3b782-ba30-4cc1-9c43-8829eeed5b0e".into());
+        let bytes = postcard::to_stdvec(&legacy).unwrap();
+
+        let decoded = decode_name_index(&bytes).expect("legacy layout should decode via fallback");
+        assert_eq!(decoded.len(), 2);
+        // Legacy entries must be treated as having a profile so they stay
+        // searchable.
+        for (_name, (_uuid, has_profile)) in &decoded {
+            assert!(
+                has_profile,
+                "legacy entries must be marked has_profile=true"
+            );
+        }
+        assert_eq!(
+            decoded.get("relyh").map(|(u, _)| u.as_str()),
+            Some("68b61e3c-4be0-4c0c-8897-6a8d3703fe9a")
+        );
+    }
+
+    #[test]
+    fn empty_payload_returns_none() {
+        assert!(decode_name_index(&[]).is_none());
     }
 }

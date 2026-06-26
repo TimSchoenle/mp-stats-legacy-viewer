@@ -30,15 +30,13 @@ pub struct SnapshotQuery {
 pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let location = use_location().unwrap();
     let query: SnapshotQuery = location.query::<SnapshotQuery>().unwrap_or(SnapshotQuery {
-        snapshot: "latest".to_string(), // Handle missing or malformed queries
+        snapshot: "latest".to_string(),
     });
 
     let navigator = use_navigator().unwrap();
 
-    // Fetch Game Metadata
     let game_req = use_game_leaderboards(props.edition.clone(), props.game.clone());
 
-    // Compute active meta and snapshot based on game data
     let current_meta = use_memo(
         (
             game_req.data.clone(),
@@ -70,7 +68,6 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
         },
     );
 
-    // Fetch Leaderboard Entries (Chunk)
     let entries_req = use_leaderboard_entries(
         props.edition.clone(),
         props.game.clone(),
@@ -163,12 +160,21 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let theme_color = use_theme();
 
     html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-4", "py-8", "text-white", "relative")}>
-            <div class="mb-8">
-                <LeaderboardHeader edition={props.edition.clone()} game={props.game.clone()} stat={props.stat.clone()} />
+        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
+            <LeaderboardHeader edition={props.edition.clone()} game={props.game.clone()} stat={props.stat.clone()} />
+
+            // Snapshot timeline card
+            <div class="mt-6">
+                <SnapshotSelector
+                    edition={props.edition.clone()}
+                    current_snapshot={query.snapshot.clone()}
+                    meta={(*current_meta).clone()}
+                    on_change={change_snapshot}
+                />
             </div>
 
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            // Controls row: board selector + go-to-bottom
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mt-6 mb-4">
                 <div>
                     if !boards.is_empty() {
                         <BoardTypeSelector
@@ -181,28 +187,16 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                     }
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <SnapshotSelector
-                        edition={props.edition.clone()}
-                        current_snapshot={query.snapshot.clone()}
-                        meta={(*current_meta).clone()}
-                        on_change={change_snapshot}
-                    />
-
-                    <button
-                        onclick={scroll_to_bottom}
-                        class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors text-sm font-bold flex items-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                        {"Go to Bottom"}
-                    </button>
-                </div>
+                <button onclick={scroll_to_bottom} class="btn-ghost text-xs font-mono">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                    { "Go to bottom" }
+                </button>
             </div>
 
             if let Some(err) = &error {
-                <ErrorMessage title="Error Loading Data" message={err.clone()} />
+                <ErrorMessage title="Error loading data" message={err.clone()} />
             }
 
             if !loading && error.is_none() {
@@ -220,21 +214,23 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
                         on_change={Callback::from(change_page)}
                     />
                     if entries_req.entries.is_empty() {
-                        <div class="p-12 text-center text-gray-500">
-                             if game_req.data.is_some() {
-                                 {"No entries found for this leaderboard."}
-                             } else {
-                                 {"Game data empty."}
-                             }
+                        <div class="p-12 text-center">
+                            <p class="text-sm text-paper-3">
+                                if game_req.data.is_some() {
+                                    {"No entries found for this leaderboard."}
+                                } else {
+                                    {"Game data empty."}
+                                }
+                            </p>
                         </div>
                     }
                 </div>
             }
 
             if loading {
-                <div class="card p-12 text-center text-gray-500">
-                    <div class={classes!("animate-spin", "h-6", "w-6", "border-2", "border-theme-500", "border-t-transparent", "rounded-full", "mx-auto", "mb-2")}></div>
-                    {"Loading leaderboard..."}
+                <div class="card p-12 text-center">
+                    <div class={classes!("animate-spin", "h-5", "w-5", "border-2", "border-theme-500", "border-t-transparent", "rounded-full", "mx-auto", "mb-3")}></div>
+                    <p class="text-sm text-paper-3">{ "Loading leaderboard…" }</p>
                 </div>
             }
         </div>

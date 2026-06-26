@@ -5,7 +5,15 @@
     <meta charset="utf-8"/>
     <title>MP Stats Legacy Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link data-trunk rel="copy-dir" href="assets/fonts" data-target-path="fonts"/>
+
+    <!-- Fonts are self-hosted via @fontsource npm packages (fetched on demand by `npm install`).
+         The latin woff2 subsets are copied into /fonts and referenced by @font-face rules in assets/input.css. -->
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2" data-target-path="fonts"/>
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2" data-target-path="fonts"/>
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2" data-target-path="fonts"/>
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2" data-target-path="fonts"/>
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2" data-target-path="fonts"/>
+    <link data-trunk rel="copy-file" href="node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2" data-target-path="fonts"/>
     <link data-trunk data-inline rel="tailwind-css" href="assets/input.css"/>
     <link data-trunk rel="rust" data-bin="mp-stats-frontend" data-wasm-opt="z" data-wasm-no-import="true"/>
 </head>

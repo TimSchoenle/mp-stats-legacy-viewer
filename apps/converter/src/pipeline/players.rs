@@ -1,24 +1,31 @@
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
-use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile, StatRaw};
+use mp_stats_core::models::{
+    IdMap, PlatformEdition, PlayerProfile, StatRaw, competition_ranks_by_score,
+};
 use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use walkdir::WalkDir;
 
+/// Process the player snapshot files into profile shards.
+///
+/// Returns the set of UUIDs that actually received a profile shard entry. This
+/// set is later used to stamp a `has_profile` flag onto the names index so the
+/// frontend can hide search suggestions for players without any profile.
 pub fn process_java_players(
     platform: &PlatformEdition,
     java_in: &Path,
     output_directory: &Path,
     id_map: &IdMap,
     player_lookup_map: &HashMap<String, (String, String)>,
-) -> Result<()> {
+) -> Result<HashSet<String>> {
     let players_in = java_in.join("players");
 
     if !players_in.exists() {
-        return Ok(());
+        return Ok(HashSet::new());
     }
 
     let walker = WalkDir::new(&players_in).into_iter();
@@ -48,7 +55,7 @@ pub fn process_java_players(
     println!("Found {} player shards to process.", files.len());
 
     // Sharded storage: Prefix (e.g. "EF4") -> Map<UUID, Profile>
-    let shards: HashMap<String, HashMap<String, PlayerProfile>> = files
+    let mut shards: HashMap<String, HashMap<String, PlayerProfile>> = files
         .par_iter()
         .map(|path| {
             process_player_shard(path, all_board_id, player_lookup_map).unwrap_or_else(|e| {
@@ -63,7 +70,19 @@ pub fn process_java_players(
             acc
         });
 
+    // Recompute tie-aware positions across the whole player population so a
+    // player's rank on their profile matches the leaderboard: players sharing a
+    // score must share a position. The source stride only carries a sequential
+    // rank, so we override it with standard competition ranking ("1224").
+    assign_competition_ranks(&mut shards);
+
     println!("Writing {} player shards...", shards.len());
+
+    // Collect the set of UUIDs that received a profile.
+    let profiled_uuids: HashSet<String> = shards
+        .values()
+        .flat_map(|profile_map| profile_map.keys().cloned())
+        .collect();
 
     // Write Shards
     shards.par_iter().for_each(|(prefix, profile_map)| {
@@ -73,7 +92,51 @@ pub fn process_java_players(
         let _ = write_lzma_bin(&out_path, profile_map);
     });
 
-    Ok(())
+    Ok(profiled_uuids)
+}
+
+/// Recompute every profile's per-stat rank using standard competition ranking
+/// ("1224") so players who share a score share a position.
+///
+/// Ranks are computed independently for each `(board_id, game_id, stat_id)`
+/// group across the entire player population: a stat's rank is `1 + (number of
+/// entries with a strictly greater score)`. This mirrors the leaderboard
+/// pipeline exactly, keeping a player's position identical between the
+/// leaderboard and their profile.
+fn assign_competition_ranks(shards: &mut HashMap<String, HashMap<String, PlayerProfile>>) {
+    // Pass 1: tally how many entries achieved each score per stat group.
+    let mut counts: HashMap<(u32, u32, u32), HashMap<u64, u64>> = HashMap::new();
+    for profile_map in shards.values() {
+        for profile in profile_map.values() {
+            for stat in &profile.stats {
+                *counts
+                    .entry((stat.board_id, stat.game_id, stat.stat_id))
+                    .or_default()
+                    .entry(stat.score)
+                    .or_insert(0) += 1;
+            }
+        }
+    }
+
+    // Build a score -> rank lookup for each stat group.
+    let rank_tables: HashMap<(u32, u32, u32), HashMap<u64, u32>> = counts
+        .into_iter()
+        .map(|(key, score_counts)| (key, competition_ranks_by_score(&score_counts)))
+        .collect();
+
+    // Pass 2: stamp the tie-aware rank back onto every stat entry.
+    for profile_map in shards.values_mut() {
+        for profile in profile_map.values_mut() {
+            for stat in &mut profile.stats {
+                if let Some(rank) = rank_tables
+                    .get(&(stat.board_id, stat.game_id, stat.stat_id))
+                    .and_then(|table| table.get(&stat.score))
+                {
+                    stat.rank = *rank;
+                }
+            }
+        }
+    }
 }
 
 /// Process a single player shard file
@@ -154,4 +217,107 @@ fn process_player_shard(
     }
 
     Ok(shards)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stat(game_id: u32, stat_id: u32, score: u64, rank: u32) -> StatRaw {
+        StatRaw {
+            board_id: 0,
+            game_id,
+            stat_id,
+            score,
+            rank,
+            save_time: 0,
+        }
+    }
+
+    fn profile(uuid: &str, stats: Vec<StatRaw>) -> PlayerProfile {
+        PlayerProfile {
+            uuid: SmolStr::new(uuid),
+            name: Some(SmolStr::new(uuid)),
+            stats,
+        }
+    }
+
+    fn rank_of(
+        shards: &HashMap<String, HashMap<String, PlayerProfile>>,
+        uuid: &str,
+        game_id: u32,
+        stat_id: u32,
+    ) -> u32 {
+        shards
+            .values()
+            .flat_map(|m| m.values())
+            .find(|p| p.uuid == uuid)
+            .and_then(|p| {
+                p.stats
+                    .iter()
+                    .find(|s| s.game_id == game_id && s.stat_id == stat_id)
+            })
+            .map(|s| s.rank)
+            .expect("stat present")
+    }
+
+    #[test]
+    fn tied_scores_get_the_same_position() {
+        // Three players: A and B tie at 100, C trails at 50. The original
+        // stride ranks are sequential (1, 2, 3) and must be corrected so the
+        // tie shares position #1 and C jumps to #3.
+        let mut shards: HashMap<String, HashMap<String, PlayerProfile>> = HashMap::new();
+        shards.insert(
+            "AAA".to_string(),
+            HashMap::from([
+                (
+                    "aaa-1".to_string(),
+                    profile("aaa-1", vec![stat(1, 2, 100, 1)]),
+                ),
+                (
+                    "aaa-2".to_string(),
+                    profile("aaa-2", vec![stat(1, 2, 100, 2)]),
+                ),
+                (
+                    "aaa-3".to_string(),
+                    profile("aaa-3", vec![stat(1, 2, 50, 3)]),
+                ),
+            ]),
+        );
+
+        assign_competition_ranks(&mut shards);
+
+        assert_eq!(rank_of(&shards, "aaa-1", 1, 2), 1);
+        assert_eq!(rank_of(&shards, "aaa-2", 1, 2), 1);
+        assert_eq!(rank_of(&shards, "aaa-3", 1, 2), 3);
+    }
+
+    #[test]
+    fn ranks_are_scoped_per_stat_group() {
+        // The same player ranks differently across two distinct stats, and a
+        // tie in one stat must not affect the other.
+        let mut shards: HashMap<String, HashMap<String, PlayerProfile>> = HashMap::new();
+        shards.insert(
+            "AAA".to_string(),
+            HashMap::from([
+                (
+                    "p1".to_string(),
+                    profile("p1", vec![stat(1, 1, 10, 0), stat(2, 1, 5, 0)]),
+                ),
+                (
+                    "p2".to_string(),
+                    profile("p2", vec![stat(1, 1, 10, 0), stat(2, 1, 9, 0)]),
+                ),
+            ]),
+        );
+
+        assign_competition_ranks(&mut shards);
+
+        // Stat (game 1, stat 1): both tie at 10 -> both #1.
+        assert_eq!(rank_of(&shards, "p1", 1, 1), 1);
+        assert_eq!(rank_of(&shards, "p2", 1, 1), 1);
+        // Stat (game 2, stat 1): 9 beats 5 -> p2 #1, p1 #2.
+        assert_eq!(rank_of(&shards, "p2", 2, 1), 1);
+        assert_eq!(rank_of(&shards, "p1", 2, 1), 2);
+    }
 }

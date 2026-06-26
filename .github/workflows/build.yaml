@@ -106,7 +106,36 @@ jobs:
         uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4
 
       - name: Set up Docker Buildx
+        id: setup-buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
+
+      # BuildKit does not persist `RUN --mount=type=cache` mounts in the GitHub
+      # Actions cache (only image layers are stored via `type=gha`). The
+      # converter's incremental cache lives in such a mount, so we restore it
+      # into a host directory and inject it into the build, then extract and
+      # save it again afterwards (the extraction runs in the cache-dance post
+      # step, and `actions/cache` persists the host directory between runs).
+      - name: Restore converter data cache
+        id: converter-cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: converter-cache
+          key: converter-cache-${{ hashFiles('data-test/**') }}
+          restore-keys: |
+            converter-cache-
+
+      - name: Inject converter cache into Docker build
+        uses: reproducible-containers/buildkit-cache-dance@5422eac04292c961a382e0f584ea0f03ad9da723 # v3.4.0
+        with:
+          builder: ${{ steps.setup-buildx.outputs.name }}
+          cache-map: |
+            {
+              "converter-cache": {
+                "target": "/app/.converter_cache",
+                "id": "converter-cache"
+              }
+            }
+          skip-extraction: ${{ steps.converter-cache.outputs.cache-hit }}
 
       - name: Build Docker image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7

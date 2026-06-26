@@ -41,12 +41,24 @@ RUN cargo build --release --target x86_64-unknown-linux-musl -p mp-stats-server
 RUN strip --strip-all /app/target/x86_64-unknown-linux-musl/release/server && \
     upx --best --lzma /app/target/x86_64-unknown-linux-musl/release/server
 
-FROM backend_cacher AS data-optimizer
-ARG DATA_INPUT_DIRECTORY=data
+# Build the converter binary once in a dedicated stage so that the (expensive)
+# data conversion below is only re-run when the converter source or the input
+# data actually changes - not on every unrelated frontend/server edit.
+FROM backend_cacher AS converter_builder
 COPY . .
+RUN cargo build --release --target x86_64-unknown-linux-musl -p mp-stats-converter
 
+FROM converter_builder AS data-optimizer
+ARG DATA_INPUT_DIRECTORY=data
+
+# The converter is deterministic with respect to its input, so we keep a
+# persistent build cache (`CONVERTER_CACHE_DIR`) and let it skip re-processing
+# editions whose input is byte-for-byte unchanged. This prevents useless
+# re-calculation of the data artifacts across image rebuilds.
 RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
-    cargo run --release --target x86_64-unknown-linux-musl -p mp-stats-converter -- /app/data /app/data-dist
+    --mount=type=cache,id=converter-cache,target=/app/.converter_cache,sharing=locked \
+    CONVERTER_CACHE_DIR=/app/.converter_cache \
+    ./target/x86_64-unknown-linux-musl/release/converter /app/data /app/data-dist
 
 FROM chef AS frontend_base
 RUN apt-get update && apt-get install -y nodejs npm

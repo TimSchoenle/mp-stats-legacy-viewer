@@ -1,7 +1,8 @@
 use anyhow::Result;
-use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
+use mp_stats_common::compression::{read_lzma_bin, read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{
-    GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile, PlatformEdition,
+    GLOBAL_BOARD, GameLeaderboardData, IdMap, LeaderboardMeta, LeaderboardPage, MetaFile,
+    PlatformEdition, TopEntry,
 };
 use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
@@ -47,13 +48,43 @@ fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
     Ok(snapshots)
 }
 
-/// Process and aggregate game metadata from leaderboards
+/// Read the `#1 holder` (highest score) from the already-produced latest
+/// leaderboard page (`chunk_0000`) for a given board/game/stat.
+///
+/// The page is stored in rank order (best first), so the first row is the top
+/// entry. Returns `None` when the page is missing or empty.
+fn read_top_entry(
+    platform: &PlatformEdition,
+    base_out: &Path,
+    board: &str,
+    game: &str,
+    stat: &str,
+) -> Option<TopEntry> {
+    let relative = routes::leaderboard_chunk_bin(platform, board, game, stat, 0);
+    let page_path = base_out.join(relative);
+    if !page_path.exists() {
+        return None;
+    }
+
+    let page: LeaderboardPage = read_lzma_bin(&page_path).ok()?;
+
+    let uuid = page.uuids.into_iter().next()?;
+    let name = page.names.into_iter().next()?;
+    let score = page.scores.into_iter().next()?;
+
+    Some(TopEntry { uuid, name, score })
+}
+
+/// Process and aggregate game metadata from leaderboards.
+///
+/// Returns a map of `game_id -> total distinct snapshots` so callers can
+/// enrich the edition-level metadata with snapshot counts.
 pub fn process_game_metadata(
     platform: &PlatformEdition,
     in_path: &Path,
     base_out: &Path,
     id_map: &IdMap,
-) -> Result<()> {
+) -> Result<HashMap<SmolStr, u64>> {
     let lb_in = in_path.join("leaderboards");
 
     // Group by Game using WalkDir
@@ -78,62 +109,85 @@ pub fn process_game_metadata(
         }
     }
 
-    game_dirs.par_iter().for_each(|(game_id, stats)| {
-        let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> = HashMap::new();
+    let snapshot_totals: HashMap<SmolStr, u64> = game_dirs
+        .par_iter()
+        .map(|(game_id, stats)| {
+            let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> =
+                HashMap::new();
+            let mut total_entries: u64 = 0;
+            let mut total_snapshots: u64 = 0;
 
-        for (board, stat, stat_path) in stats {
-            let mut all_snapshots = Vec::new();
+            for (board, stat, stat_path) in stats {
+                let mut all_snapshots = Vec::new();
 
-            // Check latest folder for count
-            let latest_meta = stat_path.join("latest");
-            if latest_meta.exists()
-                && let Ok(file) = File::open(latest_meta.join("_meta.json"))
-                && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
-            {
-                all_snapshots.push(HistoricalSnapshot {
-                    snapshot_id: SmolStr::new("latest"),
-                    timestamp: meta.save_time_unix,
-                    total_pages: meta.total_pages,
-                    total_entries: meta.total_entries,
-                });
+                // Check latest folder for count
+                let latest_meta = stat_path.join("latest");
+                if latest_meta.exists()
+                    && let Ok(file) = File::open(latest_meta.join("_meta.json"))
+                    && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
+                {
+                    total_entries = total_entries.saturating_add(meta.total_entries as u64);
+                    all_snapshots.push(HistoricalSnapshot {
+                        snapshot_id: SmolStr::new("latest"),
+                        timestamp: meta.save_time_unix,
+                        total_pages: meta.total_pages,
+                        total_entries: meta.total_entries,
+                    });
+                }
+
+                // Only the global (all-time) board exposes the per-category "game
+                // list" stats. Read its already-produced latest leaderboard page to
+                // find the `#1 holder` (highest score); other boards stay `None`.
+                let top = if board.eq_ignore_ascii_case(GLOBAL_BOARD) {
+                    read_top_entry(platform, base_out, board, game_id, stat)
+                } else {
+                    None
+                };
+
+                let history_in = stat_path.join("history.tar.xz");
+                if let Ok(history_snapshots) = read_history_data(&history_in) {
+                    all_snapshots.extend(history_snapshots);
+                }
+
+                total_snapshots = total_snapshots.saturating_add(all_snapshots.len() as u64);
+
+                meta_stats.entry(SmolStr::new(stat)).or_default().insert(
+                    SmolStr::new(board),
+                    LeaderboardMeta {
+                        snapshots: all_snapshots,
+                        top,
+                    },
+                );
             }
 
-            let history_in = stat_path.join("history.tar.xz");
-            if let Ok(history_snapshots) = read_history_data(&history_in) {
-                all_snapshots.extend(history_snapshots);
+            let mut game_friendly_name = game_id.to_string();
+            let mut description = None;
+
+            for val in id_map.games.values() {
+                if val.name == game_id.as_str() {
+                    game_friendly_name = val.name.to_string();
+                    description = val.description.clone();
+                    break;
+                }
             }
 
-            meta_stats.entry(SmolStr::new(stat)).or_default().insert(
-                SmolStr::new(board),
-                LeaderboardMeta {
-                    snapshots: all_snapshots,
-                },
-            );
-        }
+            let game_data = GameLeaderboardData {
+                game_id: SmolStr::new(game_id),
+                game_name: SmolStr::new(game_friendly_name),
+                description,
+                icon: None,
+                stats: meta_stats,
+                total_entries,
+                total_snapshots,
+            };
 
-        let mut game_friendly_name = game_id.to_string();
-        let mut description = None;
+            let relative_out_path = routes::game_bin(platform, game_id);
+            let out_path = base_out.join(relative_out_path);
+            let _ = write_lzma_bin(&out_path, &game_data);
 
-        for val in id_map.games.values() {
-            if val.name == game_id.as_str() {
-                game_friendly_name = val.name.to_string();
-                description = val.description.clone();
-                break;
-            }
-        }
+            (SmolStr::new(game_id), total_snapshots)
+        })
+        .collect();
 
-        let game_data = GameLeaderboardData {
-            game_id: SmolStr::new(game_id),
-            game_name: SmolStr::new(game_friendly_name),
-            description,
-            icon: None,
-            stats: meta_stats,
-        };
-
-        let relative_out_path = routes::game_bin(platform, game_id);
-        let out_path = base_out.join(relative_out_path);
-        let _ = write_lzma_bin(&out_path, &game_data);
-    });
-
-    Ok(())
+    Ok(snapshot_totals)
 }
