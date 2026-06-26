@@ -5,5 +5,11 @@
   "devDependencies": {
     "@tailwindcss/cli": "4.3.1",
     "tailwindcss": "4.3.1"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource/instrument-serif": "^5.2.8",
+    "@fontsource/inter": "^5.2.8"
   }
 }
