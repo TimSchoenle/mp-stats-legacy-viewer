@@ -476,7 +476,10 @@ mod tests {
     fn falls_back_to_legacy_layout_as_has_profile() {
         // Legacy data: name -> uuid (no has_profile flag).
         let mut legacy: HashMap<String, String> = HashMap::new();
-        legacy.insert("relyh".into(), "68b61e3c-4be0-4c0c-8897-6a8d3703fe9a".into());
+        legacy.insert(
+            "relyh".into(),
+            "68b61e3c-4be0-4c0c-8897-6a8d3703fe9a".into(),
+        );
         legacy.insert("geno".into(), "ddd3b782-ba30-4cc1-9c43-8829eeed5b0e".into());
         let bytes = postcard::to_stdvec(&legacy).unwrap();
 
@@ -485,7 +488,10 @@ mod tests {
         // Legacy entries must be treated as having a profile so they stay
         // searchable.
         for (_name, (_uuid, has_profile)) in &decoded {
-            assert!(has_profile, "legacy entries must be marked has_profile=true");
+            assert!(
+                has_profile,
+                "legacy entries must be marked has_profile=true"
+            );
         }
         assert_eq!(
             decoded.get("relyh").map(|(u, _)| u.as_str()),
