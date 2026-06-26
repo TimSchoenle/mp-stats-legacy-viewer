@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.13.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.14...v0.13.0) (2026-06-26)
+
+
+### Features
+
+* redesign ([#291](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/291)) ([f0e1488](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f0e1488cb0a0cbdeb24a5ae66d8c0471138a444d))
+
+
+### Miscellaneous
+
+* **deps:** update actions/checkout action to v7 ([#281](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/281)) ([88f6f96](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/88f6f96ad84b731018091bebc91f2a1b063b3324))
+* **deps:** update all non-major action updates ([92b747e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/92b747ed2a5d51d91edfb88be714caa1cd217d43))
+* **deps:** update all non-major action updates ([#290](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/290)) ([92b747e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/92b747ed2a5d51d91edfb88be714caa1cd217d43))
+* **deps:** update rust:1.96-slim docker digest to 4ddd2eb ([#288](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/288)) ([f992501](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f992501e6b137bdbc8060cb69421e781a0816d68))
+* **deps:** update rust:1.96-slim docker digest to 6abf73f ([#289](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/289)) ([4117ffa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4117ffa873d16825dddb4d7bcc6ef9584db60394))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.22 ([#286](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/286)) ([8588374](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/858837474cde152c6d5be2110829aebd457e3427))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.15 ([#287](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/287)) ([65cc84f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/65cc84f81a4a89b467a41761f321b4ff73913492))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#283](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/283)) ([2339063](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2339063921f6c3de1e1159995d41b60720802d22))
+* **deps:** lock file maintenance ([#285](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/285)) ([ff9c522](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ff9c5225c3ffc110ea5cd659b831aa4e3aded587))
+
 ## [0.12.14](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.13...v0.12.14) (2026-06-21)
 
 
