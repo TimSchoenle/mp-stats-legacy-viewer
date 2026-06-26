@@ -7,8 +7,8 @@ use mp_stats_core::models::{IdMap, PlatformEdition};
 use std::path::{Path, PathBuf};
 
 pub use io::{
-    copy_dir_all, finalize_output, read_json, setup_staging_directory, validate_different_paths,
-    validate_directory,
+    ConversionCache, copy_dir_all, finalize_output, read_json, setup_staging_directory,
+    validate_different_paths, validate_directory,
 };
 use mp_stats_core::routes;
 pub use pipeline::{
@@ -21,10 +21,19 @@ pub struct Converter {
     pub input_dir: PathBuf,
     pub output_dir: PathBuf,
     pub staging_dir: PathBuf,
+    pub cache: ConversionCache,
 }
 
 impl Converter {
     pub fn new(input_dir: PathBuf, output_dir: PathBuf) -> Result<Self> {
+        Self::with_cache(input_dir, output_dir, ConversionCache::from_env())
+    }
+
+    pub fn with_cache(
+        input_dir: PathBuf,
+        output_dir: PathBuf,
+        cache: ConversionCache,
+    ) -> Result<Self> {
         validate_directory(&input_dir, "Input")?;
         validate_different_paths(&input_dir, &output_dir)?;
 
@@ -34,6 +43,7 @@ impl Converter {
             input_dir,
             output_dir,
             staging_dir,
+            cache,
         })
     }
 
@@ -52,6 +62,29 @@ impl Converter {
 
             // Setup directories
             let directory_in = self.input_dir.join(edition.directory_name());
+
+            if !directory_in.exists() {
+                println!(
+                    "  Input directory {:?} missing, skipping {}",
+                    directory_in,
+                    edition.display_name()
+                );
+                continue;
+            }
+
+            // Incremental cache: reuse a previous run's output when the input
+            // for this edition is byte-for-byte unchanged.
+            let edition_key = edition.directory_name();
+            let staging_edition = self.staging_dir.join(edition_key);
+            let fingerprint = ConversionCache::fingerprint_dir(&directory_in)?;
+
+            if self.cache.restore(edition_key, fingerprint, &staging_edition)? {
+                println!(
+                    "  Cache hit for {} - reusing previous output",
+                    edition.display_name()
+                );
+                continue;
+            }
 
             // Step 1: Process Metadata & Build ID Maps
             println!("Step 1: Processing Metadata...");
@@ -79,6 +112,11 @@ impl Converter {
                 &id_map,
                 &lookup_map,
             )?;
+
+            // Persist this edition's output for future incremental runs.
+            if let Err(e) = self.cache.store(edition_key, fingerprint, &staging_edition) {
+                eprintln!("  Failed to update conversion cache for {edition_key}: {e}");
+            }
         }
 
         // Step 5: Finalize

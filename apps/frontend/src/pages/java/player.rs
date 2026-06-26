@@ -50,6 +50,22 @@ pub fn player_view(props: &PlayerProps) -> Html {
                             </h1>
                             <div class="flex flex-wrap gap-2 mt-4">
                                 <span class="chip select-all">{ p.uuid.as_str() }</span>
+                                {
+                                    {
+                                        let summary = p.summary();
+                                        html! {
+                                            <>
+                                                if summary.best_rank > 0 {
+                                                    <span class="chip chip-mint">{ format!("Best #{}", summary.best_rank) }</span>
+                                                }
+                                                if summary.top_ten > 0 {
+                                                    <span class="chip">{ format!("{} in top 10", summary.top_ten) }</span>
+                                                }
+                                                <span class="chip">{ format!("{} categories", summary.total_categories) }</span>
+                                            </>
+                                        }
+                                    }
+                                }
                                 if let Some(map) = &profile_req.id_map {
                                     {
                                         {

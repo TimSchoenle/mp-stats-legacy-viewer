@@ -1,7 +1,8 @@
 use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_game_leaderboards, use_theme};
-use mp_stats_core::models::PlatformEdition;
+use crate::util::score_formatter::create_score_formatter;
+use mp_stats_core::models::{GLOBAL_BOARD, PlatformEdition, TopEntry};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -21,6 +22,18 @@ pub fn game_view(props: &GameProps) -> Html {
         Vec::new()
     };
     stats.sort_by_key(|a| a.to_lowercase());
+
+    // Resolve the `#1 holder` of a category strictly from the latest snapshot of
+    // the global board. Returns `None` (rendered as "—") when the global board or
+    // its top entry is missing, so missing data is handled gracefully.
+    let top_holder = |stat: &str| -> Option<TopEntry> {
+        game_req.data.as_ref().and_then(|data| {
+            data.stats
+                .get(stat)
+                .and_then(|boards| boards.get(GLOBAL_BOARD))
+                .and_then(|meta| meta.top.clone())
+        })
+    };
 
     let theme_color = use_theme();
 
@@ -60,7 +73,7 @@ pub fn game_view(props: &GameProps) -> Html {
                             </p>
                         }
                         <p class="mt-2 text-sm text-paper-4">
-                            { "Pick a category to view its leaderboard." }
+                            { "Pick a category to view its leaderboard. Each board defaults to the latest snapshot." }
                         </p>
                     </div>
                 </div>
@@ -71,9 +84,9 @@ pub fn game_view(props: &GameProps) -> Html {
                     <ErrorMessage title="Error loading game data" message={err.clone()} />
                 </div>
             } else if game_req.loading {
-                <div class="mt-7 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-rule border border-rule rounded-lg overflow-hidden animate-pulse">
+                <div class="mt-7 grid grid-cols-1 gap-px bg-rule border border-rule rounded-lg overflow-hidden animate-pulse">
                     { for (0..6).map(|_| html! {
-                        <div class="h-16 bg-ink-2"></div>
+                        <div class="h-14 bg-ink-2"></div>
                     }) }
                 </div>
             } else if stats.is_empty() {
@@ -82,9 +95,11 @@ pub fn game_view(props: &GameProps) -> Html {
                 </div>
             } else {
                 // Eyebrow row (table-style header)
-                <div class="mt-7 grid grid-cols-[40px_1fr_80px] gap-4 px-4 pb-3">
+                <div class="mt-7 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_220px_160px_80px] gap-4 px-4 pb-3">
                     <span class="eyebrow">{"#"}</span>
                     <span class="eyebrow">{"Category"}</span>
+                    <span class="eyebrow hidden md:block">{"#1 holder (latest)"}</span>
+                    <span class="eyebrow hidden md:block text-right">{"Top score"}</span>
                     <span class="eyebrow text-right">{""}</span>
                 </div>
                 <div class="grid grid-cols-1 gap-px bg-rule border border-rule rounded-lg overflow-hidden">
@@ -98,10 +113,13 @@ pub fn game_view(props: &GameProps) -> Html {
                             None
                         };
 
+                        let top = top_holder(stat_name);
+                        let formatter = create_score_formatter(&game, &stat);
+
                         html! {
                             <Link<Route>
                                 to={Route::Leaderboard { edition: props.edition.clone(), game, board: "All".to_string(), stat: stat.clone(), page: 1 }}
-                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 grid grid-cols-[40px_1fr_80px] gap-4 items-center group"
+                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_220px_160px_80px] gap-4 items-center group"
                             >
                                 <span class="font-mono text-[11px] text-paper-4">
                                     { format!("{:02}", i + 1) }
@@ -119,6 +137,32 @@ pub fn game_view(props: &GameProps) -> Html {
                                         </p>
                                     }
                                 </div>
+                                // #1 holder (latest)
+                                <div class="hidden md:flex items-center gap-2 min-w-0">
+                                    if let Some(top) = &top {
+                                        <img
+                                            src={format!("https://mc-heads.net/avatar/{}/32", top.uuid)}
+                                            class="w-[18px] h-[18px] rounded bg-ink-3 border border-rule shrink-0"
+                                            alt="Avatar"
+                                            loading="lazy"
+                                        />
+                                        <span class="font-mono text-xs text-paper-2 truncate">
+                                            { top.name.as_str() }
+                                        </span>
+                                    } else {
+                                        <span class="font-mono text-xs text-paper-4">{ "—" }</span>
+                                    }
+                                </div>
+                                // Top score
+                                <span class="hidden md:block text-right font-mono text-sm text-paper-1 tnum truncate">
+                                    {
+                                        if let Some(top) = &top {
+                                            formatter.format_score(top.score)
+                                        } else {
+                                            "—".to_string()
+                                        }
+                                    }
+                                </span>
                                 <span class="text-right text-xs font-mono text-paper-4 group-hover:text-theme-400 transition-colors">
                                     { "view →" }
                                 </span>

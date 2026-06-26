@@ -1,7 +1,8 @@
 use anyhow::Result;
-use mp_stats_common::compression::{read_lzma_raw, write_lzma_bin};
+use mp_stats_common::compression::{read_lzma_bin, read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{
-    GameLeaderboardData, IdMap, LeaderboardMeta, MetaFile, PlatformEdition,
+    GLOBAL_BOARD, GameLeaderboardData, IdMap, LeaderboardMeta, LeaderboardPage, MetaFile,
+    PlatformEdition, TopEntry,
 };
 use mp_stats_core::{HistoricalSnapshot, routes};
 use rayon::prelude::*;
@@ -47,6 +48,33 @@ fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
     Ok(snapshots)
 }
 
+/// Read the `#1 holder` (highest score) from the already-produced latest
+/// leaderboard page (`chunk_0000`) for a given board/game/stat.
+///
+/// The page is stored in rank order (best first), so the first row is the top
+/// entry. Returns `None` when the page is missing or empty.
+fn read_top_entry(
+    platform: &PlatformEdition,
+    base_out: &Path,
+    board: &str,
+    game: &str,
+    stat: &str,
+) -> Option<TopEntry> {
+    let relative = routes::leaderboard_chunk_bin(platform, board, game, stat, 0);
+    let page_path = base_out.join(relative);
+    if !page_path.exists() {
+        return None;
+    }
+
+    let page: LeaderboardPage = read_lzma_bin(&page_path).ok()?;
+
+    let uuid = page.uuids.into_iter().next()?;
+    let name = page.names.into_iter().next()?;
+    let score = page.scores.into_iter().next()?;
+
+    Some(TopEntry { uuid, name, score })
+}
+
 /// Process and aggregate game metadata from leaderboards
 pub fn process_game_metadata(
     platform: &PlatformEdition,
@@ -80,6 +108,7 @@ pub fn process_game_metadata(
 
     game_dirs.par_iter().for_each(|(game_id, stats)| {
         let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> = HashMap::new();
+        let mut total_entries: u64 = 0;
 
         for (board, stat, stat_path) in stats {
             let mut all_snapshots = Vec::new();
@@ -90,6 +119,7 @@ pub fn process_game_metadata(
                 && let Ok(file) = File::open(latest_meta.join("_meta.json"))
                 && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
             {
+                total_entries = total_entries.saturating_add(meta.total_entries as u64);
                 all_snapshots.push(HistoricalSnapshot {
                     snapshot_id: SmolStr::new("latest"),
                     timestamp: meta.save_time_unix,
@@ -97,6 +127,15 @@ pub fn process_game_metadata(
                     total_entries: meta.total_entries,
                 });
             }
+
+            // Only the global (all-time) board exposes the per-category "game
+            // list" stats. Read its already-produced latest leaderboard page to
+            // find the `#1 holder` (highest score); other boards stay `None`.
+            let top = if board.eq_ignore_ascii_case(GLOBAL_BOARD) {
+                read_top_entry(platform, base_out, board, game_id, stat)
+            } else {
+                None
+            };
 
             let history_in = stat_path.join("history.tar.xz");
             if let Ok(history_snapshots) = read_history_data(&history_in) {
@@ -107,6 +146,7 @@ pub fn process_game_metadata(
                 SmolStr::new(board),
                 LeaderboardMeta {
                     snapshots: all_snapshots,
+                    top,
                 },
             );
         }
@@ -128,6 +168,7 @@ pub fn process_game_metadata(
             description,
             icon: None,
             stats: meta_stats,
+            total_entries,
         };
 
         let relative_out_path = routes::game_bin(platform, game_id);
