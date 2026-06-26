@@ -19,7 +19,6 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
     let current_page = props.current_page;
     let max_page = props.max_page;
 
-    // Sync internal input when external page changes
     {
         let input_value = input_value.clone();
         let page = props.current_page;
@@ -45,34 +44,34 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
         Callback::from(move |_| on_change.emit(page))
     };
 
+    let nav_btn = "btn px-3 py-2 disabled:opacity-40 disabled:cursor-not-allowed";
+
     html! {
-        <div class="p-4 border-t border-white/10 flex flex-col md:flex-row justify-between items-center bg-dark-850 gap-4">
-             // Controls Left
-             <div class="flex items-center gap-2">
-                 // First Page
-                 <button
+        <div class={classes!(theme_color, "p-4", "border-t", "border-rule", "flex", "flex-col", "md:flex-row", "justify-between", "items-center", "gap-3", "bg-ink-1")}>
+            // Left controls
+            <div class="flex items-center gap-2">
+                <button
                     onclick={ emit_page(1) }
                     disabled={current_page <= 1}
-                    class="p-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors shadow-sm"
-                    title="First Page"
-                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                 </button>
-
-               // Previous
-                <button
-                    onclick={emit_page(current_page - 1)}
-                    disabled={current_page <= 1}
-                    class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold text-white transition-colors shadow-sm"
+                    class={nav_btn}
+                    title="First page"
                 >
-                    {"Previous"}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0L8 9.414V13a1 1 0 11-2 0V7a1 1 0 011-1h6a1 1 0 110 2H9.414l6.293 6.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button
+                    onclick={emit_page(current_page.saturating_sub(1).max(1))}
+                    disabled={current_page <= 1}
+                    class={nav_btn}
+                >
+                    { "← Prev" }
                 </button>
             </div>
 
-            // Middle / Input
+            // Middle / page input
             <form onsubmit={on_submit} class="flex items-center gap-2">
+                <span class="eyebrow">{"Page"}</span>
                 <input
                     type="number"
                     value={(*input_value).clone()}
@@ -80,34 +79,31 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                         let target: web_sys::HtmlInputElement = e.target_unchecked_into();
                         input_value.set(target.value());
                     })}
-                    class={classes!(theme_color, "w-16", "px-2", "py-1", "bg-dark-950", "border", "border-white/10", "rounded-md", "text-center", "text-white", "text-sm", "focus:border-theme-500/50", "outline-none", "shadow-inner")}
+                    class="w-16 px-2 py-1 bg-ink-2 border border-rule rounded-md text-center font-mono text-sm text-paper-1 focus:border-theme-500/60 outline-none tnum"
                 />
-                <span class="text-gray-400 txt-sm font-medium">{ format!("of {}", props.max_page) }</span>
+                <span class="font-mono text-xs text-paper-4 tnum">{ format!("of {}", props.max_page) }</span>
             </form>
 
-            // Controls Right
+            // Right controls
             <div class="flex items-center gap-2">
-                // Next
                 <button
                     onclick={emit_page(current_page + 1)}
                     disabled={current_page >= max_page}
-                    class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-bold text-white transition-colors shadow-sm"
+                    class={nav_btn}
                 >
-                    {"Next"}
+                    { "Next →" }
                 </button>
-
-                 // Last Page
-                 <button
+                <button
                     onclick={emit_page(max_page)}
                     disabled={current_page >= max_page}
-                    class="p-2 bg-white/5 hover:bg-white/10 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors shadow-sm"
-                    title="Last Page"
-                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    class={nav_btn}
+                    title="Last page"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L12 10.586V7a1 1 0 112 0v6a1 1 0 01-1 1H7a1 1 0 110-2h3.586L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
-                 </button>
-             </div>
+                </button>
+            </div>
         </div>
     }
 }

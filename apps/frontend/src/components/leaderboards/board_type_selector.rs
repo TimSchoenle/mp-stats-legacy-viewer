@@ -42,13 +42,22 @@ pub fn board_type_selector(props: &BoardTypeSelectorProps) -> Html {
     let theme_color = use_theme();
 
     html! {
-        <div class="flex gap-1 glass-panel p-1 w-fit shadow-inner bg-dark-900 border border-white/5">
+        <div class={classes!(theme_color, "inline-flex", "items-center", "gap-1", "p-1", "bg-ink-2", "border", "border-rule", "rounded-md")}>
             { for sorted_boards.iter().map(|board| {
                 let is_active = *board == props.current_board;
                 let classes = if is_active {
-                    classes!(theme_color, "px-4", "py-2", "rounded-lg", "text-sm", "font-bold", "bg-theme-600", "shadow-md", "text-white", "transition-all", "transform", "hover:scale-105")
+                    classes!(
+                        "px-3", "py-1.5", "rounded", "text-xs", "font-medium",
+                        "bg-ink-3", "text-theme-400", "border", "border-theme-500/40",
+                        "font-mono", "tracking-wide"
+                    )
                 } else {
-                    classes!("px-4", "py-2", "rounded-lg", "text-sm", "font-medium", "text-gray-400", "hover:text-white", "hover:bg-white/5", "transition-all", "cursor-pointer")
+                    classes!(
+                        "px-3", "py-1.5", "rounded", "text-xs", "font-medium",
+                        "text-paper-3", "hover:text-paper-1", "hover:bg-ink-3",
+                        "transition-colors", "cursor-pointer", "font-mono", "tracking-wide",
+                        "border", "border-transparent"
+                    )
                 };
 
                 let route = Route::Leaderboard {
@@ -56,13 +65,13 @@ pub fn board_type_selector(props: &BoardTypeSelectorProps) -> Html {
                     game: props.game.clone(),
                     board: board.to_string(),
                     stat: props.stat.clone(),
-                    page: 1, // Reset to page 1 on board switch
+                    page: 1,
                 };
 
                 html! {
                     <Link<Route, SnapshotQuery>
                         to={route}
-                        classes={classes!(classes)}
+                        classes={classes}
                     >
                         { board.to_string() }
                     </Link<Route, SnapshotQuery>>
