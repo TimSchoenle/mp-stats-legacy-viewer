@@ -112,80 +112,81 @@ pub fn process_game_metadata(
     let snapshot_totals: HashMap<SmolStr, u64> = game_dirs
         .par_iter()
         .map(|(game_id, stats)| {
-        let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> = HashMap::new();
-        let mut total_entries: u64 = 0;
-        let mut total_snapshots: u64 = 0;
+            let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> =
+                HashMap::new();
+            let mut total_entries: u64 = 0;
+            let mut total_snapshots: u64 = 0;
 
-        for (board, stat, stat_path) in stats {
-            let mut all_snapshots = Vec::new();
+            for (board, stat, stat_path) in stats {
+                let mut all_snapshots = Vec::new();
 
-            // Check latest folder for count
-            let latest_meta = stat_path.join("latest");
-            if latest_meta.exists()
-                && let Ok(file) = File::open(latest_meta.join("_meta.json"))
-                && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
-            {
-                total_entries = total_entries.saturating_add(meta.total_entries as u64);
-                all_snapshots.push(HistoricalSnapshot {
-                    snapshot_id: SmolStr::new("latest"),
-                    timestamp: meta.save_time_unix,
-                    total_pages: meta.total_pages,
-                    total_entries: meta.total_entries,
-                });
+                // Check latest folder for count
+                let latest_meta = stat_path.join("latest");
+                if latest_meta.exists()
+                    && let Ok(file) = File::open(latest_meta.join("_meta.json"))
+                    && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
+                {
+                    total_entries = total_entries.saturating_add(meta.total_entries as u64);
+                    all_snapshots.push(HistoricalSnapshot {
+                        snapshot_id: SmolStr::new("latest"),
+                        timestamp: meta.save_time_unix,
+                        total_pages: meta.total_pages,
+                        total_entries: meta.total_entries,
+                    });
+                }
+
+                // Only the global (all-time) board exposes the per-category "game
+                // list" stats. Read its already-produced latest leaderboard page to
+                // find the `#1 holder` (highest score); other boards stay `None`.
+                let top = if board.eq_ignore_ascii_case(GLOBAL_BOARD) {
+                    read_top_entry(platform, base_out, board, game_id, stat)
+                } else {
+                    None
+                };
+
+                let history_in = stat_path.join("history.tar.xz");
+                if let Ok(history_snapshots) = read_history_data(&history_in) {
+                    all_snapshots.extend(history_snapshots);
+                }
+
+                total_snapshots = total_snapshots.saturating_add(all_snapshots.len() as u64);
+
+                meta_stats.entry(SmolStr::new(stat)).or_default().insert(
+                    SmolStr::new(board),
+                    LeaderboardMeta {
+                        snapshots: all_snapshots,
+                        top,
+                    },
+                );
             }
 
-            // Only the global (all-time) board exposes the per-category "game
-            // list" stats. Read its already-produced latest leaderboard page to
-            // find the `#1 holder` (highest score); other boards stay `None`.
-            let top = if board.eq_ignore_ascii_case(GLOBAL_BOARD) {
-                read_top_entry(platform, base_out, board, game_id, stat)
-            } else {
-                None
+            let mut game_friendly_name = game_id.to_string();
+            let mut description = None;
+
+            for val in id_map.games.values() {
+                if val.name == game_id.as_str() {
+                    game_friendly_name = val.name.to_string();
+                    description = val.description.clone();
+                    break;
+                }
+            }
+
+            let game_data = GameLeaderboardData {
+                game_id: SmolStr::new(game_id),
+                game_name: SmolStr::new(game_friendly_name),
+                description,
+                icon: None,
+                stats: meta_stats,
+                total_entries,
+                total_snapshots,
             };
 
-            let history_in = stat_path.join("history.tar.xz");
-            if let Ok(history_snapshots) = read_history_data(&history_in) {
-                all_snapshots.extend(history_snapshots);
-            }
+            let relative_out_path = routes::game_bin(platform, game_id);
+            let out_path = base_out.join(relative_out_path);
+            let _ = write_lzma_bin(&out_path, &game_data);
 
-            total_snapshots = total_snapshots.saturating_add(all_snapshots.len() as u64);
-
-            meta_stats.entry(SmolStr::new(stat)).or_default().insert(
-                SmolStr::new(board),
-                LeaderboardMeta {
-                    snapshots: all_snapshots,
-                    top,
-                },
-            );
-        }
-
-        let mut game_friendly_name = game_id.to_string();
-        let mut description = None;
-
-        for val in id_map.games.values() {
-            if val.name == game_id.as_str() {
-                game_friendly_name = val.name.to_string();
-                description = val.description.clone();
-                break;
-            }
-        }
-
-        let game_data = GameLeaderboardData {
-            game_id: SmolStr::new(game_id),
-            game_name: SmolStr::new(game_friendly_name),
-            description,
-            icon: None,
-            stats: meta_stats,
-            total_entries,
-            total_snapshots,
-        };
-
-        let relative_out_path = routes::game_bin(platform, game_id);
-        let out_path = base_out.join(relative_out_path);
-        let _ = write_lzma_bin(&out_path, &game_data);
-
-        (SmolStr::new(game_id), total_snapshots)
-    })
+            (SmolStr::new(game_id), total_snapshots)
+        })
         .collect();
 
     Ok(snapshot_totals)

@@ -165,12 +165,7 @@ impl Converter {
             // player actually has a profile, letting the frontend filter out
             // suggestions that would lead to an empty profile page.
             println!("Step 4: Building Names Index...");
-            build_names_archive(
-                edition,
-                &self.staging_dir,
-                names_map,
-                &profiled_uuids,
-            )?;
+            build_names_archive(edition, &self.staging_dir, names_map, &profiled_uuids)?;
 
             // Persist this edition's output for future incremental runs.
             if let Err(e) = self.cache.store(edition_key, fingerprint, &staging_edition) {
