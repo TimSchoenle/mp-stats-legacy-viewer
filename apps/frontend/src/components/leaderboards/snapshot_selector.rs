@@ -191,7 +191,7 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                                         <span class="text-theme-500">{ " · viewing" }</span>
                                     }
                                 </div>
-                                <div class="mt-0.5 font-mono text-[10px] text-paper-4">
+                                <div class="mt-0.5 font-mono text-[11px] text-paper-3">
                                     { format!("{} entries · {} pages", s.total_entries, s.total_pages) }
                                 </div>
                             </div>
@@ -202,7 +202,7 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                 }
             </div>
 
-            <div class="font-mono text-[10px] text-paper-4 flex justify-between mt-1 tracking-[0.06em] uppercase">
+            <div class="font-mono text-[11px] text-paper-3 flex justify-between mt-1 tracking-[0.06em] uppercase">
                 <span>{ first_date }</span>
                 <span class="text-theme-500">{ last_date }</span>
             </div>

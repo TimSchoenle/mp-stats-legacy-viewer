@@ -15,6 +15,10 @@ pub struct Game {
     pub name: SmolStr,
     pub description: Option<SmolStr>,
     pub icon: Option<SmolStr>,
+    /// Total number of snapshots collected for this game across all of its
+    /// leaderboards. Defaults to `0` for legacy payloads.
+    #[serde(default)]
+    pub total_snapshots: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -77,12 +81,21 @@ pub struct GameLeaderboardData {
     /// leaderboards. Defaults to `0` for legacy payloads.
     #[serde(default)]
     pub total_entries: u64,
+    /// Total number of distinct snapshots collected for this game across all of
+    /// its leaderboards. Defaults to `0` for legacy payloads.
+    #[serde(default)]
+    pub total_snapshots: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMapValue {
     pub name: SmolStr,
     pub description: Option<SmolStr>,
+    /// Total number of snapshots collected for this entry (games only).
+    /// Defaults to `0` and is populated by the converter after game metadata
+    /// processing.
+    #[serde(default)]
+    pub total_snapshots: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]

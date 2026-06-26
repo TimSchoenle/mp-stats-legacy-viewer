@@ -61,9 +61,10 @@ pub fn java_landing(props: &JavaLandingProps) -> Html {
     let theme_color = use_theme();
     let alphabet: Vec<char> = ('A'..='Z').collect();
     let has_non_alpha = by_letter.contains_key(&'#');
+    let total_snapshots: u64 = sorted_games.iter().map(|g| g.total_snapshots).sum();
 
     html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl")}>
+        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
             // Crumbs
             <div class="crumbs mb-5">
                 <Link<Route> to={Route::Home}>{"Home"}</Link<Route>>
@@ -83,6 +84,12 @@ pub fn java_landing(props: &JavaLandingProps) -> Html {
                         <span class="text-paper-1 font-medium">
                             { format!("{} archived games", games.len()) }
                         </span>
+                        if total_snapshots > 0 {
+                            { " across " }
+                            <span class="text-paper-1 font-medium">
+                                { format!("{} snapshots", total_snapshots) }
+                            </span>
+                        }
                         { ". Browse historical leaderboards from snapshots collected 2021–2023." }
                     </p>
                 </div>
@@ -133,7 +140,7 @@ pub fn java_landing(props: &JavaLandingProps) -> Html {
                                                 <div class="text-sm font-medium text-paper-1 truncate pr-2">
                                                     { game.name.as_str() }
                                                 </div>
-                                                <span class="text-theme-500 text-xs opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                                                <span class="text-theme-500 text-sm opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
                                                     { "→" }
                                                 </span>
                                             </Link<Route>>

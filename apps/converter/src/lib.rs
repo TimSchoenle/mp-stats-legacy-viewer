@@ -5,6 +5,8 @@ pub mod pipeline;
 use anyhow::Result;
 use mp_stats_core::models::{IdMap, PlatformEdition};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub use io::{
     ConversionCache, copy_dir_all, finalize_output, read_json, setup_staging_directory,
@@ -12,9 +14,27 @@ pub use io::{
 };
 use mp_stats_core::routes;
 pub use pipeline::{
-    process_dictionary_and_names, process_game_metadata, process_java_leaderboards,
-    process_java_players,
+    build_names_archive, process_dictionary_and_names, process_game_metadata,
+    process_java_leaderboards, process_java_players,
 };
+
+/// Build a process-unique staging directory name.
+///
+/// Combines the process id, a high-resolution timestamp and a monotonically
+/// increasing counter so that no two `Converter` instances - whether in the
+/// same process or across concurrently running test processes (`cargo
+/// nextest`) - ever share a staging area.
+fn unique_staging_name() -> String {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
+
+    format!("converter_staging_{}_{}_{}", std::process::id(), nanos, seq)
+}
 
 /// Main conversion orchestrator
 pub struct Converter {
@@ -37,7 +57,18 @@ impl Converter {
         validate_directory(&input_dir, "Input")?;
         validate_different_paths(&input_dir, &output_dir)?;
 
-        let staging_dir = PathBuf::from("target/converter_staging");
+        // Use a unique staging directory per converter instance.
+        //
+        // The staging area is a private, intermediate workspace that is moved
+        // into `output_dir` at the end of a run. A shared, hardcoded path would
+        // be clobbered whenever two conversions run at the same time. In
+        // particular, `cargo nextest` executes each test in its own process, so
+        // a process-local lock cannot serialize access - the integration tests
+        // would race over the same staging area and produce corrupt/partial
+        // output. A unique path keeps concurrent runs fully isolated while
+        // staying under `target/` so the final `rename` into the output stays
+        // on the same filesystem (and thus cheap) in the common case.
+        let staging_dir = PathBuf::from("target").join(unique_staging_name());
 
         Ok(Self {
             input_dir,
@@ -88,11 +119,14 @@ impl Converter {
 
             // Step 1: Process Metadata & Build ID Maps
             println!("Step 1: Processing Metadata...");
-            let id_map = self.process_metadata(edition, &directory_in, &self.staging_dir)?;
+            let mut id_map = self.process_metadata(edition, &directory_in, &self.staging_dir)?;
 
-            // Step 2: Dictionary & Names Index
+            // Step 2: Dictionary & Names
+            // Builds the player_id -> (uuid, name) lookup map and gathers the
+            // raw names map. The names index is written later (Step 4) once we
+            // know which players actually have a profile.
             println!("Step 2: Processing Dictionary & Names...");
-            let lookup_map =
+            let (lookup_map, names_map) =
                 process_dictionary_and_names(edition, &directory_in, &self.staging_dir)?;
 
             // Step 3: Process Leaderboards
@@ -101,16 +135,38 @@ impl Converter {
 
             // Step 3b: Process Game Metadata
             println!("Step 3b: Processing Game Metadata...");
-            process_game_metadata(edition, &directory_in, &self.staging_dir, &id_map)?;
+            let snapshot_totals =
+                process_game_metadata(edition, &directory_in, &self.staging_dir, &id_map)?;
+
+            // Enrich the edition metadata with per-game snapshot counts and
+            // re-persist the map so the frontend can show total snapshots.
+            for value in id_map.games.values_mut() {
+                if let Some(total) = snapshot_totals.get(value.name.as_str()) {
+                    value.total_snapshots = *total;
+                }
+            }
+            self.write_metadata(edition, &self.staging_dir, &id_map)?;
 
             // Step 3c: Process Java Players
             println!("Step 3c: Processing Players...");
-            process_java_players(
+            let profiled_uuids = process_java_players(
                 edition,
                 &directory_in,
                 &self.staging_dir,
                 &id_map,
                 &lookup_map,
+            )?;
+
+            // Step 4: Build Names Index (with has_profile flag)
+            // Done after players so each name entry can record whether the
+            // player actually has a profile, letting the frontend filter out
+            // suggestions that would lead to an empty profile page.
+            println!("Step 4: Building Names Index...");
+            build_names_archive(
+                edition,
+                &self.staging_dir,
+                names_map,
+                &profiled_uuids,
             )?;
 
             // Persist this edition's output for future incremental runs.
@@ -141,10 +197,21 @@ impl Converter {
         let id_map: IdMap = read_json(&map_path)?;
 
         // Serialize map to bin (LZMA)
-        let relative_path = routes::meta_map_bin(platform);
-        let map_out = output_dir.join(relative_path);
-        mp_stats_common::compression::write_lzma_bin(&map_out, &id_map)?;
+        self.write_metadata(platform, output_dir, &id_map)?;
 
         Ok(id_map)
+    }
+
+    /// Persist the edition's ID map to its LZMA-compressed bin file.
+    fn write_metadata(
+        &self,
+        platform: &PlatformEdition,
+        output_dir: &Path,
+        id_map: &IdMap,
+    ) -> Result<()> {
+        let relative_path = routes::meta_map_bin(platform);
+        let map_out = output_dir.join(relative_path);
+        mp_stats_common::compression::write_lzma_bin(&map_out, id_map)?;
+        Ok(())
     }
 }

@@ -18,7 +18,7 @@ pub fn player_view(props: &PlayerProps) -> Html {
     let theme_color = use_theme();
 
     html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl")}>
+        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
             // Crumbs
             <div class="crumbs mb-5">
                 <Link<Route> to={Route::Home}>{"Home"}</Link<Route>>
@@ -50,39 +50,6 @@ pub fn player_view(props: &PlayerProps) -> Html {
                             </h1>
                             <div class="flex flex-wrap gap-2 mt-4">
                                 <span class="chip select-all">{ p.uuid.as_str() }</span>
-                                {
-                                    {
-                                        let summary = p.summary();
-                                        html! {
-                                            <>
-                                                if summary.best_rank > 0 {
-                                                    <span class="chip chip-mint">{ format!("Best #{}", summary.best_rank) }</span>
-                                                }
-                                                if summary.top_ten > 0 {
-                                                    <span class="chip">{ format!("{} in top 10", summary.top_ten) }</span>
-                                                }
-                                                <span class="chip">{ format!("{} categories", summary.total_categories) }</span>
-                                            </>
-                                        }
-                                    }
-                                }
-                                if let Some(map) = &profile_req.id_map {
-                                    {
-                                        {
-                                            let game_count = {
-                                                use std::collections::BTreeSet;
-                                                let mut games = BTreeSet::new();
-                                                for stat in &p.stats {
-                                                    if let Some(g) = map.games.get(&stat.game_id) {
-                                                        games.insert(g.name.clone());
-                                                    }
-                                                }
-                                                games.len()
-                                            };
-                                            html! { <span class="chip chip-mint">{ format!("● {game_count} games") }</span> }
-                                        }
-                                    }
-                                }
                             </div>
                         </div>
                     </div>
@@ -121,8 +88,8 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                 >
                                                     { game_name.clone() }
                                                 </Link<Route>>
-                                                <span class="font-mono text-[10px] text-paper-4 shrink-0">
-                                                    { format!("{} {}", stats.len(), if stats.len() == 1 { "category" } else { "cats" }) }
+                                                <span class="font-mono text-xs text-paper-3 shrink-0">
+                                                    { format!("{} {}", stats.len(), if stats.len() == 1 { "category" } else { "categories" }) }
                                                 </span>
                                             </div>
 
@@ -149,23 +116,23 @@ pub fn player_view(props: &PlayerProps) -> Html {
                                                     let bar_style = format!("width:{:.1}%; background:{};", fill * 100.0, bar_color);
 
                                                     let rank_class = if is_top10 {
-                                                        "font-mono tnum text-[11px] font-semibold text-theme-500 text-right w-12"
+                                                        "font-mono tnum text-xs font-semibold text-theme-500 text-right whitespace-nowrap"
                                                     } else if rank > 0 {
-                                                        "font-mono tnum text-[11px] text-paper-4 text-right w-12"
+                                                        "font-mono tnum text-xs text-paper-3 text-right whitespace-nowrap"
                                                     } else {
-                                                        "font-mono tnum text-[11px] text-paper-4 text-right w-12"
+                                                        "font-mono tnum text-xs text-paper-4 text-right whitespace-nowrap"
                                                     };
 
                                                     html! {
                                                         <Link<Route>
                                                             to={Route::Leaderboard { edition: props.edition.clone(), game: game_name.clone(), board: board_name.to_string(), stat: stat_name.to_string(), page: 1 }}
-                                                            classes="grid grid-cols-[1fr_60px_60px_44px] gap-2.5 items-center py-1.5 rounded hover:bg-ink-3 -mx-1 px-1 transition-colors"
+                                                            classes="grid grid-cols-[1fr_56px_minmax(56px,auto)_minmax(40px,auto)] gap-2.5 items-center py-1.5 rounded hover:bg-ink-3 -mx-1 px-1 transition-colors"
                                                         >
                                                             <span class="text-xs text-paper-2 truncate">{ label }</span>
                                                             <span class="bar-track">
                                                                 <span class="bar-fill" style={bar_style}></span>
                                                             </span>
-                                                            <span class="font-mono tnum text-[11px] text-paper-1 text-right truncate">
+                                                            <span class="font-mono tnum text-xs text-paper-1 text-right whitespace-nowrap">
                                                                 { formatted_score }
                                                             </span>
                                                             <span class={rank_class}>
@@ -193,7 +160,93 @@ pub fn player_view(props: &PlayerProps) -> Html {
                     <div class={classes!("animate-spin", "h-5", "w-5", "border-2", "border-theme-500", "border-t-transparent", "rounded-full")}></div>
                     <p class="text-sm text-paper-3">{ "Loading profile…" }</p>
                 </div>
+            } else if profile_req.not_found {
+                <NoProfileData edition={props.edition.clone()} uuid={props.uuid.clone()} />
             }
+        </div>
+    }
+}
+
+#[derive(Properties, PartialEq, Clone)]
+struct NoProfileProps {
+    edition: PlatformEdition,
+    uuid: String,
+}
+
+/// Rich empty state shown when a player has no archived profile data.
+///
+/// In this archival mirror a player profile only materialises if the player was
+/// captured inside the *latest page* of a game's leaderboard at snapshot time.
+/// Anyone ranked below that cut-off (or who never placed) leaves no trace here,
+/// so we explain that clearly instead of surfacing a raw error.
+#[function_component(NoProfileData)]
+fn no_profile_data(props: &NoProfileProps) -> Html {
+    html! {
+        <div class="mt-6 flex flex-col items-center">
+            <div class="card w-full max-w-2xl p-8 md:p-12 text-center">
+                // ---- Ghost avatar ----
+                <div class="flex justify-center mb-6">
+                    <div class="relative">
+                        <div class="w-24 h-24 md:w-28 md:h-28 rounded-lg bg-ink-2 border border-rule flex items-center justify-center text-5xl text-paper-4 opacity-70 select-none">
+                            { "?" }
+                        </div>
+                        <span class="absolute -bottom-2 -right-2 chip chip-rose text-[10px]">{ "no data" }</span>
+                    </div>
+                </div>
+
+                <div class="eyebrow mb-3">
+                    { format!("Player profile · {} edition", props.edition.display_name()) }
+                </div>
+                <h1 class="serif page-title text-4xl md:text-5xl text-paper-1 mb-4 break-words">
+                    { "No profile data found" }
+                </h1>
+
+                <p class="text-sm text-paper-3 leading-relaxed max-w-lg mx-auto mb-6">
+                    { "We couldn't find any archived statistics for this player. \
+                       That usually doesn't mean anything is broken — it simply means \
+                       this player was never captured by the archive." }
+                </p>
+
+                // ---- Explanation box: why profiles can be missing ----
+                <div class="rounded-lg border border-rule bg-ink-2 p-5 text-left mb-7">
+                    <div class="eyebrow mb-2" style="color: var(--color-theme-500);">
+                        { "Why is this empty?" }
+                    </div>
+                    <p class="text-sm text-paper-2 leading-relaxed">
+                        { "A profile only exists if the player appeared inside the " }
+                        <span class="text-paper-1 font-semibold">{ "latest page" }</span>
+                        { " of a game's leaderboard when each snapshot was taken. \
+                           Players ranked beyond that final page — or who never placed on \
+                           any board — leave no record behind, so there is nothing to show here." }
+                    </p>
+                </div>
+
+                // ---- The looked-up id, for reference ----
+                <div class="flex flex-wrap gap-2 justify-center mb-7">
+                    <span class="chip select-all">{ props.uuid.as_str() }</span>
+                </div>
+
+                // ---- Actions ----
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <Link<Route>
+                        to={Route::Landing { edition: props.edition.clone() }}
+                        classes="btn"
+                    >
+                        { format!("← Browse {} games", props.edition.display_name()) }
+                    </Link<Route>>
+                    <Link<Route>
+                        to={Route::Home}
+                        classes="btn btn-ghost"
+                    >
+                        { "Return home" }
+                    </Link<Route>>
+                </div>
+
+                <p class="text-xs text-paper-4 mt-6 leading-relaxed">
+                    { "Tip: double-check the spelling of the name or UUID — even a small \
+                       difference points to a different player." }
+                </p>
+            </div>
         </div>
     }
 }

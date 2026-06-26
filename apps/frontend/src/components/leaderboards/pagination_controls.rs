@@ -81,7 +81,7 @@ pub fn pagination_controls(props: &PaginationProps) -> Html {
                     })}
                     class="w-16 px-2 py-1 bg-ink-2 border border-rule rounded-md text-center font-mono text-sm text-paper-1 focus:border-theme-500/60 outline-none tnum"
                 />
-                <span class="font-mono text-xs text-paper-4 tnum">{ format!("of {}", props.max_page) }</span>
+                <span class="font-mono text-xs text-paper-3 tnum">{ format!("of {}", props.max_page) }</span>
             </form>
 
             // Right controls

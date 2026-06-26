@@ -4,21 +4,26 @@ use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile, StatRaw};
 use mp_stats_core::routes;
 use rayon::prelude::*;
 use smol_str::SmolStr;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use walkdir::WalkDir;
 
+/// Process the player snapshot files into profile shards.
+///
+/// Returns the set of UUIDs that actually received a profile shard entry. This
+/// set is later used to stamp a `has_profile` flag onto the names index so the
+/// frontend can hide search suggestions for players without any profile.
 pub fn process_java_players(
     platform: &PlatformEdition,
     java_in: &Path,
     output_directory: &Path,
     id_map: &IdMap,
     player_lookup_map: &HashMap<String, (String, String)>,
-) -> Result<()> {
+) -> Result<HashSet<String>> {
     let players_in = java_in.join("players");
 
     if !players_in.exists() {
-        return Ok(());
+        return Ok(HashSet::new());
     }
 
     let walker = WalkDir::new(&players_in).into_iter();
@@ -65,6 +70,12 @@ pub fn process_java_players(
 
     println!("Writing {} player shards...", shards.len());
 
+    // Collect the set of UUIDs that received a profile.
+    let profiled_uuids: HashSet<String> = shards
+        .values()
+        .flat_map(|profile_map| profile_map.keys().cloned())
+        .collect();
+
     // Write Shards
     shards.par_iter().for_each(|(prefix, profile_map)| {
         let relative_path = routes::player_shard_bin(platform, prefix);
@@ -73,7 +84,7 @@ pub fn process_java_players(
         let _ = write_lzma_bin(&out_path, profile_map);
     });
 
-    Ok(())
+    Ok(profiled_uuids)
 }
 
 /// Process a single player shard file

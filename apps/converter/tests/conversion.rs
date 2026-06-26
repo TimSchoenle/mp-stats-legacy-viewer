@@ -5,9 +5,11 @@ use mp_stats_converter::{ConversionCache, Converter};
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-/// Both integration tests drive `Converter::convert`, which uses a single,
-/// hardcoded staging directory (`target/converter_staging`). Serialize them so
-/// concurrent runs (cargo's default) don't clobber each other's staging area.
+/// Both integration tests drive `Converter::convert`. Each converter now uses
+/// its own process-unique staging directory, so the two tests are safe to run
+/// concurrently - including under `cargo nextest`, which runs every test in a
+/// separate process where a process-local lock could not serialize them anyway.
+/// This guard is kept only as cheap in-process defense-in-depth.
 static CONVERT_GUARD: Mutex<()> = Mutex::new(());
 
 /// Locate the workspace-level `data-test` fixture directory regardless of the

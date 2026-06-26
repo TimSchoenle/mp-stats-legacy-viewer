@@ -4,19 +4,31 @@ use mp_stats_common::formats::raw;
 use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::routes;
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
 
-/// Process dictionary and generate names index
-/// Returns a map of player_id -> (uuid, name) for lookups
+/// Process the dictionary and gather the raw names map.
+///
+/// Returns a tuple of:
+/// * `lookup_map`: player_id -> (uuid, name) used by later pipeline steps.
+/// * `names_map`: name prefix -> [(name, uuid)] used to build the names index.
+///
+/// The names index itself is intentionally *not* written here: it is built
+/// later (via [`build_names_archive`]) once the set of players that actually
+/// received a profile is known, so each entry can be stamped with a
+/// `has_profile` flag.
 pub fn process_dictionary_and_names(
     platform: &PlatformEdition,
     java_in: &Path,
     output_dir: &Path,
-) -> Result<HashMap<String, (String, String)>> {
+) -> Result<(
+    HashMap<String, (String, String)>,
+    HashMap<String, Vec<(String, String)>>,
+)> {
+    let _ = (platform, output_dir);
     let dict_in = java_in.join("dictionary/ids");
 
     let walker = WalkDir::new(&dict_in).into_iter();
@@ -84,23 +96,29 @@ pub fn process_dictionary_and_names(
 
     println!("Found {} names.", names_map.len());
 
-    build_names_archive(platform, output_dir, names_map)?;
-
-    Ok(global_id_map)
+    Ok((global_id_map, names_map))
 }
 
-/// Build names archive and index
-fn build_names_archive(
+/// Build names archive and index.
+///
+/// Each index entry maps a player name to `(uuid, has_profile)`, where
+/// `has_profile` is `true` when the player's UUID is present in
+/// `profiled_uuids` (i.e. an actual profile shard was produced for them).
+/// The frontend uses this flag to hide search suggestions that would lead to
+/// an empty "no profile data" page.
+pub fn build_names_archive(
     platform: &PlatformEdition,
     output_dir: &Path,
     names_map: HashMap<String, Vec<(String, String)>>,
+    profiled_uuids: &HashSet<String>,
 ) -> Result<()> {
     for (prefix, entries) in names_map {
-        // Write Index Bin (Name -> UUID)
-        let mut index_map: HashMap<String, String> = HashMap::with_capacity(entries.len());
+        // Write Index Bin (Name -> (UUID, has_profile))
+        let mut index_map: HashMap<String, (String, bool)> = HashMap::with_capacity(entries.len());
 
         for (name, uuid) in &entries {
-            index_map.insert(name.clone(), uuid.clone());
+            let has_profile = profiled_uuids.contains(uuid);
+            index_map.insert(name.clone(), (uuid.clone(), has_profile));
         }
 
         // Save Index Bin (LZMA)

@@ -28,7 +28,7 @@ pub struct ConversionCache {
 /// `LeaderboardMeta`) invalidates previously cached output, even when the raw
 /// input data is byte-for-byte unchanged. Bump this whenever the produced
 /// binaries change in a way that older readers/newer code cannot consume.
-const OUTPUT_SCHEMA_VERSION: u64 = 2;
+const OUTPUT_SCHEMA_VERSION: u64 = 3;
 
 impl ConversionCache {
     /// Create an enabled cache rooted at `root`.

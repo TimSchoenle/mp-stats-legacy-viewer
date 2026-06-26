@@ -98,8 +98,8 @@
 
     --color-paper-1:  oklch(0.96 0.012 85);
     --color-paper-2:  oklch(0.86 0.014 85);
-    --color-paper-3:  oklch(0.66 0.018 85);
-    --color-paper-4:  oklch(0.50 0.018 85);
+    --color-paper-3:  oklch(0.72 0.018 85);
+    --color-paper-4:  oklch(0.60 0.018 85);
 
     /* ----- Accent palettes (all near lightness 0.78) ----- */
     --color-brand-amber-50:   oklch(0.96 0.04 75);

@@ -75,13 +75,16 @@ fn read_top_entry(
     Some(TopEntry { uuid, name, score })
 }
 
-/// Process and aggregate game metadata from leaderboards
+/// Process and aggregate game metadata from leaderboards.
+///
+/// Returns a map of `game_id -> total distinct snapshots` so callers can
+/// enrich the edition-level metadata with snapshot counts.
 pub fn process_game_metadata(
     platform: &PlatformEdition,
     in_path: &Path,
     base_out: &Path,
     id_map: &IdMap,
-) -> Result<()> {
+) -> Result<HashMap<SmolStr, u64>> {
     let lb_in = in_path.join("leaderboards");
 
     // Group by Game using WalkDir
@@ -106,9 +109,12 @@ pub fn process_game_metadata(
         }
     }
 
-    game_dirs.par_iter().for_each(|(game_id, stats)| {
+    let snapshot_totals: HashMap<SmolStr, u64> = game_dirs
+        .par_iter()
+        .map(|(game_id, stats)| {
         let mut meta_stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>> = HashMap::new();
         let mut total_entries: u64 = 0;
+        let mut total_snapshots: u64 = 0;
 
         for (board, stat, stat_path) in stats {
             let mut all_snapshots = Vec::new();
@@ -142,6 +148,8 @@ pub fn process_game_metadata(
                 all_snapshots.extend(history_snapshots);
             }
 
+            total_snapshots = total_snapshots.saturating_add(all_snapshots.len() as u64);
+
             meta_stats.entry(SmolStr::new(stat)).or_default().insert(
                 SmolStr::new(board),
                 LeaderboardMeta {
@@ -169,12 +177,16 @@ pub fn process_game_metadata(
             icon: None,
             stats: meta_stats,
             total_entries,
+            total_snapshots,
         };
 
         let relative_out_path = routes::game_bin(platform, game_id);
         let out_path = base_out.join(relative_out_path);
         let _ = write_lzma_bin(&out_path, &game_data);
-    });
 
-    Ok(())
+        (SmolStr::new(game_id), total_snapshots)
+    })
+        .collect();
+
+    Ok(snapshot_totals)
 }

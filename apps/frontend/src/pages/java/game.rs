@@ -38,7 +38,7 @@ pub fn game_view(props: &GameProps) -> Html {
     let theme_color = use_theme();
 
     html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl")}>
+        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
             // Crumbs
             <div class="crumbs mb-5">
                 <Link<Route> to={Route::Home}>{"Home"}</Link<Route>>
@@ -60,7 +60,12 @@ pub fn game_view(props: &GameProps) -> Html {
                     }
                     <div class="min-w-0">
                         <div class="eyebrow mb-2">
-                            { format!("Game · {} categories", stats.len()) }
+                            {
+                                match game_req.data.as_ref().map(|d| d.total_snapshots).unwrap_or(0) {
+                                    0 => format!("Game · {} categories", stats.len()),
+                                    snapshots => format!("Game · {} categories · {} snapshots", stats.len(), snapshots),
+                                }
+                            }
                         </div>
                         <h1 class="serif page-title text-5xl md:text-6xl text-paper-1 break-words">
                             { &props.game }
@@ -95,7 +100,7 @@ pub fn game_view(props: &GameProps) -> Html {
                 </div>
             } else {
                 // Eyebrow row (table-style header)
-                <div class="mt-7 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_220px_160px_80px] gap-4 px-4 pb-3">
+                <div class="mt-7 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_minmax(160px,1fr)_minmax(120px,auto)_80px] gap-4 px-4 pb-3">
                     <span class="eyebrow">{"#"}</span>
                     <span class="eyebrow">{"Category"}</span>
                     <span class="eyebrow hidden md:block">{"#1 holder (latest)"}</span>
@@ -119,9 +124,9 @@ pub fn game_view(props: &GameProps) -> Html {
                         html! {
                             <Link<Route>
                                 to={Route::Leaderboard { edition: props.edition.clone(), game, board: "All".to_string(), stat: stat.clone(), page: 1 }}
-                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_220px_160px_80px] gap-4 items-center group"
+                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3.5 grid grid-cols-[40px_1fr_80px] md:grid-cols-[40px_1fr_minmax(160px,1fr)_minmax(120px,auto)_80px] gap-4 items-center group"
                             >
-                                <span class="font-mono text-[11px] text-paper-4">
+                                <span class="font-mono text-xs text-paper-3">
                                     { format!("{:02}", i + 1) }
                                 </span>
                                 <div class="min-w-0">
@@ -132,7 +137,7 @@ pub fn game_view(props: &GameProps) -> Html {
                                         </span>
                                     </div>
                                     if let Some(desc) = stat_desc {
-                                        <p class="text-xs text-paper-4 mt-0.5 pl-4 line-clamp-1">
+                                        <p class="text-xs text-paper-3 mt-0.5 pl-4 line-clamp-1">
                                             { desc.as_str() }
                                         </p>
                                     }
@@ -154,7 +159,7 @@ pub fn game_view(props: &GameProps) -> Html {
                                     }
                                 </div>
                                 // Top score
-                                <span class="hidden md:block text-right font-mono text-sm text-paper-1 tnum truncate">
+                                <span class="hidden md:block text-right font-mono text-sm text-paper-1 tnum whitespace-nowrap">
                                     {
                                         if let Some(top) = &top {
                                             formatter.format_score(top.score)
@@ -163,7 +168,7 @@ pub fn game_view(props: &GameProps) -> Html {
                                         }
                                     }
                                 </span>
-                                <span class="text-right text-xs font-mono text-paper-4 group-hover:text-theme-400 transition-colors">
+                                <span class="text-right text-xs font-mono text-paper-3 group-hover:text-theme-400 transition-colors">
                                     { "view →" }
                                 </span>
                             </Link<Route>>

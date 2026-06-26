@@ -160,7 +160,7 @@ pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let theme_color = use_theme();
 
     html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl")}>
+        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
             <LeaderboardHeader edition={props.edition.clone()} game={props.game.clone()} stat={props.stat.clone()} />
 
             // Snapshot timeline card

@@ -1,6 +1,7 @@
 use crate::Route;
 use crate::hooks::use_theme;
 use crate::models::LeaderboardEntry;
+use crate::util::percent::format_percent;
 use crate::util::score_formatter::create_score_formatter;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
@@ -75,8 +76,8 @@ pub fn leaderboard_table(props: &LeaderboardTableProps) -> Html {
                                     <span class="bar-track flex-1">
                                         <span class="bar-fill" style={bar_style}></span>
                                     </span>
-                                    <span class="font-mono text-[10px] text-paper-4 tnum w-9 text-right">
-                                        { format!("{:.0}%", pct) }
+                                    <span class="font-mono text-xs text-paper-3 tnum w-10 text-right">
+                                        { format_percent(pct) }
                                     </span>
                                 </div>
                             </td>

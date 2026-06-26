@@ -138,7 +138,12 @@ fn process_binary_chunks(
         names: Vec::with_capacity(ENTRIES_PER_PAGE),
         scores: Vec::with_capacity(ENTRIES_PER_PAGE),
     };
-    let mut global_rank = 1;
+    // Standard competition ranking ("1224"): entries sharing the same score
+    // receive the same rank, and the next distinct score jumps to its positional
+    // index. `position` is the 1-based ordinal of each resolved entry.
+    let mut position = 0u32;
+    let mut last_score: Option<u64> = None;
+    let mut last_rank = 0u32;
     let mut total_entries_written = 0u32;
 
     for chunk_data in chunks {
@@ -169,13 +174,23 @@ fn process_binary_chunks(
             // Resolve Name/UUID
             let pid_str = pid.to_string();
             if let Some((uuid, name)) = lookup_map.get(&pid_str) {
+                // Compute rank: same score shares the rank of the first entry
+                // that achieved it, otherwise it takes the current position.
+                position += 1;
+                let rank = if last_score == Some(score) {
+                    last_rank
+                } else {
+                    position
+                };
+                last_score = Some(score);
+                last_rank = rank;
+
                 // Add to current page (columnar format)
-                current_page.ranks.push(global_rank);
+                current_page.ranks.push(rank);
                 current_page.uuids.push(SmolStr::new(uuid));
                 current_page.names.push(SmolStr::new(name));
                 current_page.scores.push(score);
 
-                global_rank += 1;
                 total_entries_written += 1;
 
                 // If page full, write it

@@ -81,7 +81,7 @@ fn search_dropdown(props: &DropdownProps) -> Html {
                             <div {onmousedown} class={classes!("px-4", "py-2.5", "cursor-pointer", "flex", "items-center", "justify-between", "gap-3", "transition-colors", bg_class)}>
                                 <div class="flex items-center gap-3 min-w-0">
                                     <span class="text-paper-1 text-sm font-medium truncate">{name}</span>
-                                    <span class="font-mono text-[10px] text-paper-4">{short_uuid}{"…"}</span>
+                                    <span class="font-mono text-xs text-paper-3">{short_uuid}{"…"}</span>
                                 </div>
                                 <span class={badge_class}>{ edition.display_name() }</span>
                             </div>
@@ -255,13 +255,15 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
             if let Some(s) = suggestions.first() {
                 navigate_to.emit(s.clone());
             } else {
-                let val_len = query.len();
-                if val_len == 32 || val_len == 36 {
-                    navigate_to.emit(Suggestion::UuidAction(
-                        PlatformEdition::Java,
-                        query.to_string(),
-                    ));
+                let val = query.trim().to_string();
+                if val.is_empty() {
+                    return;
                 }
+                // No matching suggestion: still route to the player page so the
+                // visitor lands on the dedicated "no profile data" empty state
+                // (which explains why a profile may be missing) instead of the
+                // form silently doing nothing. Default to the Java edition.
+                navigate_to.emit(Suggestion::UuidAction(PlatformEdition::Java, val));
             }
         })
     };
@@ -316,7 +318,7 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                 // ⌘K hint or submit button (right)
                 <button
                     type="submit"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-[0.1em] text-paper-4 border border-rule hover:text-theme-400 hover:border-theme-500/50 transition-colors disabled:opacity-50"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-theme-500 text-ink-0 border border-theme-500 hover:bg-theme-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={state.query.is_empty()}
                     title="Search"
                 >
