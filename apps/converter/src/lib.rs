@@ -78,7 +78,10 @@ impl Converter {
             let staging_edition = self.staging_dir.join(edition_key);
             let fingerprint = ConversionCache::fingerprint_dir(&directory_in)?;
 
-            if self.cache.restore(edition_key, fingerprint, &staging_edition)? {
+            if self
+                .cache
+                .restore(edition_key, fingerprint, &staging_edition)?
+            {
                 println!(
                     "  Cache hit for {} - reusing previous output",
                     edition.display_name()

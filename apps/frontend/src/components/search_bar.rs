@@ -210,7 +210,11 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                     e.prevent_default();
                     let next = match *focused_index {
                         Some(i) => {
-                            if i + 1 < len { i + 1 } else { 0 }
+                            if i + 1 < len {
+                                i + 1
+                            } else {
+                                0
+                            }
                         }
                         None => 0,
                     };
@@ -220,7 +224,11 @@ pub fn search_bar(props: &SearchBarProps) -> Html {
                     e.prevent_default();
                     let prev = match *focused_index {
                         Some(i) => {
-                            if i > 0 { i - 1 } else { len - 1 }
+                            if i > 0 {
+                                i - 1
+                            } else {
+                                len - 1
+                            }
                         }
                         None => len - 1,
                     };

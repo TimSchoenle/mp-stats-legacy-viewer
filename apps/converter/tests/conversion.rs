@@ -1,7 +1,7 @@
 use mp_stats_common::compression::read_lzma_bin;
+use mp_stats_converter::{ConversionCache, Converter};
 use mp_stats_core::models::{GameLeaderboardData, PlatformEdition};
 use mp_stats_core::routes;
-use mp_stats_converter::{ConversionCache, Converter};
 use std::path::PathBuf;
 use std::sync::Mutex;
 

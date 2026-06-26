@@ -72,13 +72,16 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
             .find(|s| s.snapshot_id == current_snapshot_str)
             .cloned()
     };
-    let active_label = active_snap.as_ref().map(|s| {
-        if current_snapshot_str == "latest" {
-            format!("Latest · {}", fmt_date(s.timestamp))
-        } else {
-            fmt_date(s.timestamp)
-        }
-    }).unwrap_or_else(|| "—".to_string());
+    let active_label = active_snap
+        .as_ref()
+        .map(|s| {
+            if current_snapshot_str == "latest" {
+                format!("Latest · {}", fmt_date(s.timestamp))
+            } else {
+                fmt_date(s.timestamp)
+            }
+        })
+        .unwrap_or_else(|| "—".to_string());
 
     html! {
         <div class={classes!(theme_color, "card", "p-4")}>

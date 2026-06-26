@@ -278,10 +278,10 @@ mod tests {
             uuid: SmolStr::new("abc"),
             name: Some(SmolStr::new("Player")),
             stats: vec![
-                stat(1, 100, 5),    // top 10 & top 100
-                stat(1, 50, 80),    // top 100 only, same game
-                stat(2, 200, 0),    // unranked, new game
-                stat(3, 25, 150),   // ranked but outside top 100
+                stat(1, 100, 5),  // top 10 & top 100
+                stat(1, 50, 80),  // top 100 only, same game
+                stat(2, 200, 0),  // unranked, new game
+                stat(3, 25, 150), // ranked but outside top 100
             ],
         };
 
