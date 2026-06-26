@@ -16,6 +16,7 @@ pub struct SnapshotSelectorProps {
 #[function_component(SnapshotSelector)]
 pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     let theme_color = use_theme();
+    let hovered = use_state(|| None::<usize>);
 
     let meta = match &props.meta {
         Some(m) => m,
@@ -91,11 +92,11 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                 </div>
             </div>
 
-            // Tickmark SVG
+            // Tickmark SVG (interactive)
             <div class="relative w-full">
                 <svg viewBox="0 0 1180 36" preserveAspectRatio="none" class="block w-full h-9">
                     <line x1="0" y1="22" x2="1180" y2="22" stroke="var(--color-rule)" stroke-width="1" />
-                    { for chronological.iter().map(|s| {
+                    { for chronological.iter().enumerate().map(|(i, s)| {
                         let t = if range > 0 {
                             (s.timestamp - min_ts) as f64 / range as f64
                         } else { 0.0 };
@@ -105,8 +106,15 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                         } else {
                             s.snapshot_id == current_snapshot_str
                         };
-                        let stroke = if is_active { "var(--color-theme-500)" } else { "var(--color-paper-4)" };
-                        let stroke_w = if is_active { 2 } else { 1 };
+                        let is_hovered = *hovered == Some(i);
+                        let stroke = if is_active {
+                            "var(--color-theme-500)"
+                        } else if is_hovered {
+                            "var(--color-paper-1)"
+                        } else {
+                            "var(--color-paper-4)"
+                        };
+                        let stroke_w = if is_active || is_hovered { 2 } else { 1 };
                         html! {
                             <>
                                 <line
@@ -122,6 +130,76 @@ pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
                         }
                     }) }
                 </svg>
+
+                // Invisible hit targets for hover/click on each snapshot
+                <div class="absolute inset-0">
+                    { for chronological.iter().enumerate().map(|(i, s)| {
+                        let t = if range > 0 {
+                            (s.timestamp - min_ts) as f64 / range as f64
+                        } else { 0.0 };
+                        let left_pct = (8.0 + t * 1164.0) / 1180.0 * 100.0;
+                        let snap_id = s.snapshot_id.to_string();
+                        let on_click = {
+                            let on_change = props.on_change.clone();
+                            let id = snap_id.clone();
+                            Callback::from(move |_: MouseEvent| on_change.emit(id.clone()))
+                        };
+                        let on_enter = {
+                            let hovered = hovered.clone();
+                            Callback::from(move |_: MouseEvent| hovered.set(Some(i)))
+                        };
+                        let on_leave = {
+                            let hovered = hovered.clone();
+                            Callback::from(move |_: MouseEvent| hovered.set(None))
+                        };
+                        html! {
+                            <button
+                                type="button"
+                                aria-label={fmt_date(s.timestamp)}
+                                onclick={on_click}
+                                onmouseenter={on_enter}
+                                onmouseleave={on_leave}
+                                class="absolute top-0 h-full w-3 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-0 focus:outline-none"
+                                style={format!("left:{left_pct}%")}
+                            />
+                        }
+                    }) }
+                </div>
+
+                // Hover tooltip
+                {
+                    if let Some(idx) = *hovered
+                        && let Some(s) = chronological.get(idx)
+                    {
+                        let t = if range > 0 {
+                            (s.timestamp - min_ts) as f64 / range as f64
+                        } else { 0.0 };
+                        let left_pct = (8.0 + t * 1164.0) / 1180.0 * 100.0;
+                        let is_active_tip = if current_snapshot_str == "latest" {
+                            s.timestamp == max_ts
+                        } else {
+                            s.snapshot_id == current_snapshot_str
+                        };
+                        html! {
+                            <div
+                                class="pointer-events-none absolute bottom-full z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-rule bg-ink-3 px-3 py-2 shadow-lg"
+                                style={format!("left:{left_pct}%")}
+                            >
+                                <div class="font-mono text-[11px] text-paper-1">
+                                    { fmt_date(s.timestamp) }
+                                    if is_active_tip {
+                                        <span class="text-theme-500">{ " · viewing" }</span>
+                                    }
+                                </div>
+                                <div class="mt-0.5 font-mono text-[10px] text-paper-4">
+                                    { format!("{} entries · {} pages", s.total_entries, s.total_pages) }
+                                </div>
+                            </div>
+                        }
+                    } else {
+                        html! {}
+                    }
+                }
             </div>
 
             <div class="font-mono text-[10px] text-paper-4 flex justify-between mt-1 tracking-[0.06em] uppercase">
