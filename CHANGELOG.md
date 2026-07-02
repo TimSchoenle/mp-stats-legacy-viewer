@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.13.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.0...v0.13.1) (2026-07-02)
+
+
+### Miscellaneous
+
+* **deps:** update actions-rust-lang/setup-rust-toolchain action to v1.17.0 ([#298](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/298)) ([58be04e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/58be04e1ef8dd0112cf5791c5d8bbe9d45707031))
+* **deps:** update actions/cache action to v4.2.4 ([#292](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/292)) ([30ee3b4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/30ee3b4499e6dfc740406821841889da0a381c0e))
+* **deps:** update actions/cache action to v4.3.0 ([#293](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/293)) ([4551144](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4551144a9ca4f48f5c37b7877bc6093e22fd844b))
+* **deps:** update actions/cache action to v6 ([#295](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/295)) ([3ac34b6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3ac34b6c24de46d15aca0c118f3f8813a087c7cf))
+* **deps:** update docker/build-push-action digest to 53b7df9 ([#302](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/302)) ([eb79d95](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/eb79d9583fe32b9202980940413855d3ea7c406a))
+* **deps:** update docker/login-action digest to c99871d ([#305](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/305)) ([03b3889](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/03b3889d9a29c05e22cfd57852109a91fc571971))
+* **deps:** update docker/metadata-action digest to dc80280 ([#306](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/306)) ([958482f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/958482f5f5259ea9ed58fd145bb53114316631d7))
+* **deps:** update docker/setup-buildx-action digest to bb05f3f ([#307](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/307)) ([1ac09fd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1ac09fd812fea3cf1e1f07786f5c7121e44c84c7))
+* **deps:** update docker/setup-qemu-action digest to 96fe6ef ([#303](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/303)) ([56ef668](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/56ef66843e642ff8c767c91dcbda0f5ec1fb27d8))
+* **deps:** update rust crate anyhow to v1.0.103 ([#297](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/297)) ([7f66256](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7f6625656b7ed19473396c8a5fbb3277ad96d88e))
+* **deps:** update rust:1.96-slim docker digest to 31ee7fc ([#304](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/304)) ([cfc5a05](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cfc5a054b4b1851e6439e6a52487cd4c3d3f4419))
+* **deps:** update rust:1.96-slim docker digest to c37af73 ([#299](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/299)) ([bda24cb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/bda24cb5307e622baa0df7ca4a069e5ae2becb19))
+* **deps:** update tailwindcss monorepo to v4.3.2 ([#308](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/308)) ([51caf9d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/51caf9dc8629d674f228012f352628639f043e7e))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.1.5 ([#296](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/296)) ([85c0cc7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/85c0cc7711f1c06b5a3101a671d3a2a058b6bbf8))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.16 ([#309](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/309)) ([e8de600](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e8de60024e72b5aa8b95831bcac910294f522171))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.5 ([#301](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/301)) ([95006f1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/95006f1f7b339d3211e054375d290a4dc3271c7e))
+* **deps:** update timschoenle/actions/actions/rust/clippy to vactions-rust-clippy-v1.1.6 ([#300](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/300)) ([3058a98](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3058a982449be94b35e090b9ed2b8e79a1300e48))
+
 ## [0.13.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.12.14...v0.13.0) (2026-06-26)
 
 
