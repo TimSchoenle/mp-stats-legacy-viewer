@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.13.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.1...v0.13.2) (2026-07-11)
+
+
+### Miscellaneous
+
+* **deps:** update github/codeql-action action to v4.36.3 ([#311](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/311)) ([8a87ddc](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8a87ddc3386d4222099cff1df94559dbb53e555e))
+* **deps:** update github/codeql-action action to v4.37.0 ([#324](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/324)) ([6c8a600](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6c8a600a4ba12b1358e1aeae18f9d5847fff568b))
+* **deps:** update rust crate lzma-rust2 to v0.16.5 ([#319](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/319)) ([a0b5588](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a0b55883f4fa04badf71bfaa1415c83de10c1964))
+* **deps:** update step-security/harden-runner action to v2.20.0 ([#323](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/323)) ([d245952](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d2459522175def59d9ac3a43c96a060144a37684))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.12 ([#315](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/315)) ([66e0703](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/66e070322deb3bcb8374d716ecc20ba353c69f26))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.13 ([#321](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/321)) ([ca58f92](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ca58f92b81b55d4adceed7b830415eab10a8ccb0))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.23 ([#313](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/313)) ([f37de9e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f37de9e3d7022c3203d2cd64b7e6e0ed2e88833c))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.24 ([#320](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/320)) ([8f8e15b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8f8e15b04ddbde179da188c5821c5b702b1a749e))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.17 ([#314](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/314)) ([569235f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/569235f50cbaa8b8d9053aafb60d67092ca8a293))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.18 ([#322](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/322)) ([5a2724b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5a2724b6998244deb27813a543e068cdb6621c9c))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.6 ([#316](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/316)) ([ca5a568](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ca5a568af2fa44983b36596d11e6f5cdd4e67ade))
+* **deps:** update timschoenle/actions/actions/rust/cargo-check to vactions-rust-cargo-check-v1.1.4 ([#317](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/317)) ([3b14452](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3b14452c3ffadcda0066948f0039d3d6882567a0))
+* **deps:** update timschoenle/actions/actions/rust/clippy to vactions-rust-clippy-v1.1.7 ([#318](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/318)) ([5c47dc1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5c47dc1a4b8e3c4b78b5de93eefcc7a236d347ed))
+
 ## [0.13.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.0...v0.13.1) (2026-07-03)
 
 
