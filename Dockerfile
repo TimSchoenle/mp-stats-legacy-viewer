@@ -4,7 +4,7 @@
 ARG USER_ID=1001
 ARG GROUP_ID=1001
 
-FROM rust:1.97-slim@sha256:34fb2f168c432d421a09883c663b275b33cbb30f6b18642fbd09a684c6546d0e AS base
+FROM rust:1.97-slim@sha256:5c6f46a6e4472ab1ca7ba7d494e6677f2f219ebc02f32025d3986f057635ec9c AS base
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
