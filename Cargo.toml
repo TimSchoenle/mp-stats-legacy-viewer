@@ -39,7 +39,7 @@ clap = { version = "4.5.60", features = ["derive"] }
 walkdir = "2.5.0"
 rayon = "1.11.0"
 web-sys = { version = "0.3.87", features = ["HtmlElement", "HtmlInputElement", "HtmlSelectElement", "Window", "Document", "console"] }
-lzma-rust2 = "0.16.2"
+lzma-rust2 = "0.17.0"
 binary-layout = "4.0.2"
 tar = "0.4.44"
 thiserror = "2.0.18"
