@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.13.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.3...v0.13.4) (2026-07-24)
+
+
+### Miscellaneous
+
+* **deps:** update actions/checkout digest to 3d3c42e ([#350](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/350)) ([9b8a76a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9b8a76ad2976c0c1871ffe89f28dbd04a934cf68))
+* **deps:** update docker/login-action digest to 06fb636 ([#360](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/360)) ([d6b7c72](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d6b7c726cdced5e82e0bdd9f64893e1660f6ffd6))
+* **deps:** update docker/login-action digest to abd2ef4 ([#363](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/363)) ([d54f3aa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d54f3aa58adcb07c9f1ed0670551d1c9863b7336))
+* **deps:** update fontsource monorepo to v5.3.0 ([#355](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/355)) ([96a6820](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/96a682076029334ddc702411db431dd1034e53ae))
+* **deps:** update github/codeql-action action to v4.37.2 ([#364](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/364)) ([943135a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/943135a4e4efc8d8e4fe6a97479ce8bd67e78cd0))
+* **deps:** update rust crate clap to v4.6.3 ([#361](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/361)) ([a499393](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a49939307a5b854758452ea12cb0d47f6db88441))
+* **deps:** update rust crate lzma-rust2 to 0.17.0 ([#356](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/356)) ([a8f4ee8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a8f4ee8eea029cc845ba8d6714ccded75e4d1a8a))
+* **deps:** update rust crate serde_json to v1.0.151 ([#357](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/357)) ([d5e602e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d5e602e702503674cd1fc6d85e079f3ea530749e))
+* **deps:** update rust crate tokio to v1.53.1 ([#362](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/362)) ([2c54d20](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2c54d20f1decdf9b9e659dad66f2090014a79701))
+* **deps:** update rust:1.97-slim docker digest to 5c6f46a ([#351](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/351)) ([524c00b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/524c00be0452a1018fbeec3e18e70c147553d3f4))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.5.22 ([#354](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/354)) ([723e3c5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/723e3c5edb389b90b91fdea8d34f85796fc4c3b2))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.7 ([#353](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/353)) ([8029e42](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8029e42754de69cd8779a8b0655c16bec2e6d441))
+* **deps:** update timschoenle/actions/actions/rust/cargo-check to vactions-rust-cargo-check-v1.1.5 ([#358](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/358)) ([740f9c6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/740f9c697a3c0d29ab5a9b10f22825a0b25b1ba8))
+* **deps:** update timschoenle/actions/actions/rust/clippy to vactions-rust-clippy-v1.1.8 ([#359](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/359)) ([1d51303](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1d51303d9581ba0334b29ea1816fd7e3a1334f1d))
+
 ## [0.13.3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.2...v0.13.3) (2026-07-19)
 
 
