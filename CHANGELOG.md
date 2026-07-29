@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.4...v0.14.0) (2026-07-29)
+
+
+### Features
+
+* add arm docker target ([#374](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/374)) ([b079b1a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b079b1a29d1d7599366abd9db8e9e2c4100cf9a9))
+
+
+### Miscellaneous
+
+* **deps:** update docker/login-action digest to 371161b ([#370](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/370)) ([7530e25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7530e25004d4615a097854d1fe7fcd8f7222123e))
+* **deps:** update docker/login-action digest to dbcb813 ([#372](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/372)) ([9e00151](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9e00151b1dbae312020aafaa6b93644f6ab5baef))
+* **deps:** update rust crate lzma-rust2 to 0.18.0 ([#373](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/373)) ([3e2c0e8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3e2c0e8db2fb558afb21be9cccc6f994484c1292))
+
 ## [0.13.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.13.3...v0.13.4) (2026-07-27)
 
 
