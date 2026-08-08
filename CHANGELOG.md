@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.14.1...v0.14.2) (2026-08-08)
+
+
+### Miscellaneous
+
+* **deps:** update github/codeql-action action to v4.37.6 ([#394](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/394)) ([5532627](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5532627e05879e06514d7df94ec232c28fa32678))
+* **deps:** update rust crate lzma-rust2 to v0.18.1 ([#399](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/399)) ([fe89c69](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fe89c69e8de721947b5d0cffcbeb0ea1b7ffb7e3))
+* **deps:** update rust:1.97-slim docker digest to 3b28790 ([#398](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/398)) ([c4fc9a1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c4fc9a14456c682f76db486e17087d7450aea56f))
+* **deps:** update step-security/harden-runner action to v2.20.1 ([#397](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/397)) ([d358edf](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d358edf87a8287693832e3e8c9f1d320d75a745d))
+
 ## [0.14.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.14.0...v0.14.1) (2026-08-07)
 
 
