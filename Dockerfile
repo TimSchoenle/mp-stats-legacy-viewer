@@ -88,13 +88,21 @@ FROM converter_builder AS data-optimizer
 ARG DATA_INPUT_DIRECTORY=data
 
 # The converter is deterministic with respect to its input, so we keep a
-# persistent build cache (`CONVERTER_CACHE_DIR`) and let it skip re-processing
-# editions whose input is byte-for-byte unchanged. This prevents useless
-# re-calculation of the data artifacts across image rebuilds.
+# persistent build cache and let it skip re-processing editions whose input is
+# byte-for-byte unchanged. This prevents useless re-calculation of the data
+# artifacts across image rebuilds.
+#
+# The converter takes no arguments: every path comes from the layered
+# configuration (see `docs/CONFIGURATION.md`). Here it is the environment layer
+# rather than a TOML file, because these three paths are build-stage scaffolding
+# - `/app/data` is a bind mount and `/app/.converter_cache` a cache mount, both
+# of which exist only for the duration of this RUN.
 RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
     --mount=type=cache,id=converter-cache,target=/app/.converter_cache,sharing=locked \
-    CONVERTER_CACHE_DIR=/app/.converter_cache \
-    converter /app/data /app/data-dist
+    MP_STATS_CONVERTER__INPUT_DIR=/app/data \
+    MP_STATS_CONVERTER__OUTPUT_DIR=/app/data-dist \
+    MP_STATS_CONVERTER__CACHE__DIR=/app/.converter_cache \
+    converter
 
 # Dependencies for the target architecture. Layered on top of `host_cacher` so
 # that a native build (target == build architecture) reuses those artifacts
@@ -164,6 +172,13 @@ COPY --from=backend_builder /server /server
 COPY --from=frontend /app/apps/frontend/dist /dist
 COPY --from=data-optimizer /app/data-dist /dist/data
 
+# The image describes itself: the layout inside it is a property of the image,
+# not something an operator should have to re-state on every `docker run`. It
+# stays overridable - a bind mount over /config.toml replaces it, a different
+# MP_STATS_CONFIG points elsewhere, and MP_STATS_SERVER__* wins over both.
+COPY deploy/config.toml /config.toml
+ENV MP_STATS_CONFIG=/config.toml
+
 EXPOSE 8080
 USER ${USER_ID}:${GROUP_ID}
-ENTRYPOINT ["/server", "--dir", "/dist", "--data-dir", "/dist/data"]
+ENTRYPOINT ["/server"]

@@ -16,6 +16,7 @@ The project is built entirely in Rust and is structured as a Cargo workspace con
 
 *   **Core** (`crates/core`): Contains the core data models, parsing logic, and business rules shared across all applications.
 *   **Common** (`crates/common`): Provides common utilities and helper functions.
+*   **Config** (`crates/config`): The typed configuration surface both binaries deserialize, and this repository's dialect of the layered [terrace-config](https://github.com/TimSchoenle/terrace-config) loader.
 
 ## Technology Stack
 
@@ -44,14 +45,20 @@ To build and run the project locally, you will need the following tools installe
     npm install
     ```
 
-2.  **Start the Backend Server**
+2.  **Configure (optional)**
+    Copy the annotated example and edit what you need; every key has a working default, so this step can be skipped entirely:
+    ```sh
+    cp config.example.toml config.toml
+    ```
+
+3.  **Start the Backend Server**
     Run the Axum server from the workspace root:
     ```sh
     cargo run -p mp-stats-server
     ```
-    *(Note: Depending on configuration, ensure you have the required data files in the expected directories.)*
+    *(It reads `config.toml` from the working directory. Ensure the required data files are in the configured directories - see [Configuration](#configuration).)*
 
-3.  **Start the Frontend Client**
+4.  **Start the Frontend Client**
     In a separate terminal, use Trunk to serve the frontend application:
     ```sh
     cd apps/frontend
@@ -72,15 +79,40 @@ The easiest way to run the entire stack (Frontend, Backend, and Data processing)
     ```
     The web interface will be accessible at `http://localhost:8080`.
 
+    The image ships its own configuration at `/config.toml` (from [`deploy/config.toml`](deploy/config.toml)) and needs no arguments. Override a single key with `-e MP_STATS_SERVER__BIND_ADDR=…`, or replace the whole file with `-v ./my-config.toml:/config.toml:ro`.
+
+## Configuration
+
+Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. Neither takes command-line arguments.
+
+```toml
+[server]
+bind_addr = "0.0.0.0:8080"
+dist_dir = "dist"
+data_dir = "data"
+
+[converter]
+input_dir = "data"
+output_dir = "target/converted_data"
+```
+
+A key supplied by more than one of the last three layers fails the boot rather than being resolved by precedence, so a stale environment variable cannot silently shadow a mounted file. [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) is the full reference; [`config.example.toml`](config.example.toml) is every key with its default.
+
 ## Data Conversion
 
 To process raw statistical data into the optimized format used by the server, use the converter utility:
 
 ```sh
-cargo run -p mp-stats-converter -- [options]
+cargo run -p mp-stats-converter
 ```
 
-Please refer to the internal documentation within the `apps/converter` crate for detailed usage instructions and supported data formats.
+It reads `converter.input_dir`, `converter.output_dir` and the incremental cache settings from the configuration described above, so a one-off run is a matter of overriding a key:
+
+```sh
+MP_STATS_CONVERTER__INPUT_DIR=data-test cargo run -p mp-stats-converter
+```
+
+Please refer to the internal documentation within the `apps/converter` crate for detailed information on supported data formats.
 
 ## License
 

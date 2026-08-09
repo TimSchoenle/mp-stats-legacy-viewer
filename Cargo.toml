@@ -10,6 +10,7 @@ publish = false
 members = [
     "crates/core",
     "crates/common",
+    "crates/config",
     "apps/frontend",
     "apps/server",
     "apps/converter",
@@ -35,7 +36,6 @@ axum = "0.8.8"
 tokio = { version = "1.49.0", features = ["full"] }
 tower = "0.5.3"
 tower-http = { version = "0.7.0", features = ["fs", "trace"] }
-clap = { version = "4.5.60", features = ["derive"] }
 walkdir = "2.5.0"
 rayon = "1.11.0"
 web-sys = { version = "0.3.87", features = ["HtmlElement", "HtmlInputElement", "HtmlSelectElement", "Window", "Document", "console"] }
@@ -45,7 +45,13 @@ tar = "0.4.44"
 thiserror = "2.0.18"
 futures = "0.3.31"
 gloo-timers = "0.4.0"
+# Pinned by tag, not branch: `Cargo.lock` records the resolved revision either way, but a branch
+# dependency lets `cargo update` move silently across arbitrary commits, whereas a tag makes every
+# bump a deliberate manifest edit that shows up in review.
+terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = "v0.2.0", default-features = false, features = ["loader"] }
+figment = { version = "0.10.19", default-features = false }
 
 # Internal crates
 mp-stats-core = { path = "crates/core" }
 mp-stats-common = { path = "crates/common" }
+mp-stats-config = { path = "crates/config" }

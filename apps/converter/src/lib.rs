@@ -3,6 +3,7 @@ pub mod models;
 pub mod pipeline;
 
 use anyhow::Result;
+use mp_stats_config::ConverterConfig;
 use mp_stats_core::models::{IdMap, PlatformEdition};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -45,8 +46,13 @@ pub struct Converter {
 }
 
 impl Converter {
-    pub fn new(input_dir: PathBuf, output_dir: PathBuf) -> Result<Self> {
-        Self::with_cache(input_dir, output_dir, ConversionCache::from_env())
+    /// Build a converter from its configuration block.
+    pub fn from_config(config: &ConverterConfig) -> Result<Self> {
+        Self::with_cache(
+            config.input_dir.clone(),
+            config.output_dir.clone(),
+            ConversionCache::from_config(&config.cache),
+        )
     }
 
     pub fn with_cache(

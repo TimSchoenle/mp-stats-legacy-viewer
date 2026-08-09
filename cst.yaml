@@ -1,12 +1,21 @@
 schemaVersion: 2.0.0
 
 metadataTest:
-  entrypoint: [ "/server", "--dir", "/dist", "--data-dir", "/dist/data" ]
+  # No arguments: the server reads its layout from the config file below.
+  entrypoint: [ "/server" ]
   workdir: ''
   exposedPorts: [ '8080' ]
   user: '1001:1001'
+  envVars:
+    - key: MP_STATS_CONFIG
+      value: /config.toml
 
 fileExistenceTests:
   - name: executable present
     path: /server
+    shouldExist: true
+  # Without it the server falls back to struct defaults, whose relative paths do not exist in
+  # a `scratch` image - so the container would fail to start rather than serve the wrong tree.
+  - name: baked configuration present
+    path: /config.toml
     shouldExist: true
