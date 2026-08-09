@@ -135,6 +135,33 @@ mod tests {
         });
     }
 
+    /// The `[server.csp.cloudflare]` block is the deepest nesting this configuration has, and
+    /// `__` is the separator at every level of it — the spelling `docs/CONFIGURATION.md`
+    /// documents, and the one an operator enabling a Cloudflare product actually types.
+    #[test]
+    // `figment::Jail::expect_with` fixes the closure's error type to the large `figment::Error`.
+    #[expect(
+        clippy::result_large_err,
+        reason = "figment::Jail::expect_with fixes the closure's error type"
+    )]
+    fn the_csp_block_nests_three_deep() {
+        figment::Jail::expect_with(|jail| {
+            jail.clear_env();
+            jail.create_file("config.toml", "[server.csp.cloudflare]\nturnstile = true\n")?;
+            jail.set_env("MP_STATS_SERVER__CSP__CLOUDFLARE__SCRIPT_NONCE", "true");
+
+            let config: Sample = load().map_err(|e| e.to_string()).unwrap();
+
+            assert!(config.server.csp.cloudflare.script_nonce);
+            assert!(config.server.csp.cloudflare.turnstile);
+            // A partial table leaves the rest of the block on its defaults: the policy is sent,
+            // and no concession is made that was not asked for.
+            assert!(config.server.csp.enabled);
+            assert!(!config.server.csp.cloudflare.web_analytics);
+            Ok(())
+        });
+    }
+
     /// One key supplied by both the environment and a mounted file fails the boot instead of
     /// being resolved by precedence — the layer that makes a half-migrated deployment loud.
     #[test]

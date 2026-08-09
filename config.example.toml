@@ -14,6 +14,29 @@ dist_dir = "dist"
 # The converter's output, served under `/data`.
 data_dir = "data"
 
+[server.csp]
+# Attach a `Content-Security-Policy` to every document served. The policy itself is not
+# configurable: it is derived from `dist_dir/index.html` at startup, hashing every inline
+# `<script>` in it, so it cannot drift from the frontend build. Turn this off only when
+# something in front of this server already sets the header.
+enabled = true
+
+# Concessions to the Cloudflare products running in front of this deployment. All off: each one
+# widens the policy, and only for a product that is actually switched on.
+[server.csp.cloudflare]
+# Reserve a per-response nonce in `script-src`, and serve documents `Cache-Control: no-cache`.
+# Needed by the products that inject an inline script at the edge - Bot Fight Mode, JavaScript
+# Detections, the challenge platform - which no hash can cover because they run after the shell
+# was hashed. Also requires that no Cloudflare Cache Rule caches the shell; see
+# `docs/CONFIGURATION.md`.
+script_nonce = false
+# Admit `https://challenges.cloudflare.com` in `script-src` and `frame-src`, for a Turnstile
+# widget rendered in a page this server serves.
+turnstile = false
+# Admit the Web Analytics beacon and the endpoint it reports to. For the manual snippet only -
+# the automatic edge injection needs `script_nonce` instead.
+web_analytics = false
+
 [converter]
 # Raw per-edition data dumps.
 input_dir = "data"

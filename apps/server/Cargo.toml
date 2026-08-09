@@ -14,3 +14,11 @@ tokio = { workspace = true }
 tower-http = { workspace = true }
 serde = { workspace = true }
 anyhow = { workspace = true }
+# The Content-Security-Policy, derived from the shell in `dist_dir` at startup rather than
+# written out here. `cloudflare` is the feature carrying the presets and the per-response nonce
+# that `[server.csp.cloudflare]` switches on.
+csp-shell = { workspace = true }
+
+[dev-dependencies]
+# `ServiceExt::oneshot` drives the router through the CSP middleware without binding a port.
+tower = { workspace = true, features = ["util"] }

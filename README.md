@@ -91,12 +91,23 @@ bind_addr = "0.0.0.0:8080"
 dist_dir = "dist"
 data_dir = "data"
 
+[server.csp.cloudflare]
+script_nonce = false
+turnstile = false
+web_analytics = false
+
 [converter]
 input_dir = "data"
 output_dir = "target/converted_data"
 ```
 
 A key supplied by more than one of the last three layers fails the boot rather than being resolved by precedence, so a stale environment variable cannot silently shadow a mounted file. [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) is the full reference; [`config.example.toml`](config.example.toml) is every key with its default.
+
+## Content-Security-Policy
+
+The server sends a `Content-Security-Policy` on every document it serves, and the policy is derived from the shell rather than written down anywhere: at startup it reads the `index.html` in `dist_dir` and computes a `'sha256-…'` for each inline `<script>` in it, using [csp-shell](https://github.com/TimSchoenle/csp-shell). Trunk regenerates the inline WASM bootstrap on every frontend build, so a hand-maintained hash would go stale silently — the header would still look correct while the browser refused the script and rendered a blank page. An unreadable shell fails the boot instead, before the listener binds.
+
+Configuration decides only what the policy has to make room for. `[server.csp.cloudflare]` carries one key per Cloudflare product, all off by default: `turnstile` and `web_analytics` admit the origins those products load from, and `script_nonce` reserves the per-response nonce the edge-injected bot-detection script needs — which also obliges the deployment to keep Cloudflare from caching the shell. See [§6 of the configuration reference](docs/CONFIGURATION.md#6-the-content-security-policy).
 
 ## Data Conversion
 

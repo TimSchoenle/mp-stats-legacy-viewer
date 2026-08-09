@@ -1,4 +1,5 @@
 mod config;
+mod csp;
 
 use crate::config::Config;
 use anyhow::{Context, Result};
@@ -36,14 +37,17 @@ async fn serve() -> Result<()> {
         )
     })?;
 
+    // Before the bind, because it reads that same index.html: a shell whose inline scripts
+    // cannot be hashed would otherwise take the port and then serve a blank page.
+    let router = csp::attach(router(&server, &index_path), &server.csp, &index_path)
+        .context("assembling the Content-Security-Policy")?;
+
     let listener = tokio::net::TcpListener::bind(server.bind_addr)
         .await
         .with_context(|| format!("binding {}", server.bind_addr))?;
     println!("Listening on http://{}", server.bind_addr);
 
-    axum::serve(listener, router(&server, &index_path))
-        .await
-        .context("serving")
+    axum::serve(listener, router).await.context("serving")
 }
 
 /// Health probes, the converter's output under `/data`, and the SPA everywhere else.
