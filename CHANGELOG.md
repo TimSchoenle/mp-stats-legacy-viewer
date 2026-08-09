@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.15.0...v0.16.0) (2026-08-09)
+
+
+### Features
+
+* **server:** derive the Content-Security-Policy from the served shell ([#402](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/402)) ([bb389f6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/bb389f6f785ec07478ceac2922f6b57a18861340))
+
 ## [0.15.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.14.1...v0.15.0) (2026-08-09)
 
 
