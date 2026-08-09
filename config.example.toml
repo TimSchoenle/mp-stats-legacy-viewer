@@ -1,0 +1,26 @@
+# Every key both binaries read, with its default. Copy to `config.toml` - which is read from
+# the working directory without anything being set, and is git-ignored - and edit.
+#
+# Every value here is optional: with no file at all, these are exactly the defaults compiled
+# into the structs. The full reference, including the environment spelling of each key and the
+# file-backed layers, is `docs/CONFIGURATION.md`.
+
+[server]
+# Address the HTTP listener binds.
+bind_addr = "0.0.0.0:8080"
+# The built frontend (`trunk build` output). The server refuses to start if it holds no
+# index.html.
+dist_dir = "dist"
+# The converter's output, served under `/data`.
+data_dir = "data"
+
+[converter]
+# Raw per-edition data dumps.
+input_dir = "data"
+# Where the optimized output is written. Must differ from `input_dir`.
+output_dir = "target/converted_data"
+
+[converter.cache]
+# Reuse a previous run's output for editions whose input is byte-for-byte unchanged.
+enabled = true
+dir = "target/converter_cache"

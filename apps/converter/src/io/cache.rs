@@ -1,5 +1,6 @@
 use crate::io::{copy_dir_all, link_or_copy_dir_all};
 use anyhow::{Context, Result};
+use mp_stats_config::CacheConfig;
 use rayon::prelude::*;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -47,21 +48,16 @@ impl ConversionCache {
         }
     }
 
-    /// Resolve the cache configuration from the environment.
+    /// Build the cache described by a [`CacheConfig`].
     ///
-    /// * `CONVERTER_NO_CACHE` (any non-empty value) disables caching entirely.
-    /// * `CONVERTER_CACHE_DIR` overrides the cache location.
-    /// * Otherwise defaults to `target/converter_cache`.
-    pub fn from_env() -> Self {
-        if std::env::var_os("CONVERTER_NO_CACHE").is_some_and(|v| !v.is_empty()) {
-            return Self::disabled();
+    /// A disabled cache is a no-op restore/store rather than a missing directory, so the
+    /// pipeline below stays identical either way.
+    pub fn from_config(config: &CacheConfig) -> Self {
+        if config.enabled {
+            Self::new(config.dir.clone())
+        } else {
+            Self::disabled()
         }
-
-        let root = std::env::var_os("CONVERTER_CACHE_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("target/converter_cache"));
-
-        Self::new(root)
     }
 
     pub fn is_enabled(&self) -> bool {

@@ -91,3 +91,8 @@ fabric.properties
 # Node
 node_modules/
 dist/
+
+# Local configuration. `config.toml` in the working directory is the default TOML layer, so a
+# developer's own copy of `config.example.toml` must never be committed; `deploy/config.toml`
+# is the image's baked config and is tracked.
+/config.toml

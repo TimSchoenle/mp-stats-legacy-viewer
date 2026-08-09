@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 mp-stats-core = { workspace = true }
 mp-stats-common = { workspace = true }
+mp-stats-config = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 smol_str = { workspace = true }

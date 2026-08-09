@@ -8,7 +8,9 @@ name = "server"
 path = "src/main.rs"
 
 [dependencies]
+mp-stats-config = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
 tower-http = { workspace = true }
-clap = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }

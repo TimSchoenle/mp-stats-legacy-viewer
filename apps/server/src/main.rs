@@ -1,58 +1,61 @@
+mod config;
+
+use crate::config::Config;
+use anyhow::{Context, Result};
 use axum::Router;
 use axum::http::StatusCode;
 use axum::routing::get;
-use clap::Parser;
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use mp_stats_config::ServerConfig;
+use std::path::Path;
 use tower_http::services::{ServeDir, ServeFile};
 
-#[derive(Parser, Debug)]
-struct Opt {
-    /// Directory where static assets (dist) are located
-    #[clap(short, long, default_value = "dist")]
-    dir: PathBuf,
-    /// Directory where data is located
-    #[clap(long, default_value = "data")]
-    data_dir: PathBuf,
-}
-
-fn main() {
+fn main() -> Result<()> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(8 * 1024 * 1024)
         .build()
-        .expect("Failed to build Tokio runtime");
+        .context("building the Tokio runtime")?;
 
-    runtime.block_on(async_main());
+    runtime.block_on(serve())
 }
 
-async fn async_main() {
-    let opt = Opt::parse();
+async fn serve() -> Result<()> {
+    // Layered: struct defaults, then `$MP_STATS_CONFIG`, then `MP_STATS_*`. See
+    // `docs/CONFIGURATION.md`.
+    let config: Config = mp_stats_config::load().context("loading configuration")?;
+    let server = config.server;
 
-    let dist_dir = opt.dir.clone();
-
-    let index_path = dist_dir.join("index.html");
-    std::fs::metadata(&index_path).unwrap_or_else(|_| {
-        panic!(
-            "CRITICAL ERROR: Failed to start server! index.html was not found in {:?}",
-            dist_dir
+    // Checked before anything binds: a dist directory without an entry point answers every
+    // route with a 404 that looks like a routing bug, so refusing to start names the cause
+    // once instead.
+    let index_path = server.index_path();
+    std::fs::metadata(&index_path).with_context(|| {
+        format!(
+            "no index.html at {} - `server.dist_dir` must point at a built frontend",
+            index_path.display()
         )
-    });
+    })?;
 
-    let spa_service = ServeDir::new(&dist_dir).not_found_service(ServeFile::new(&index_path));
+    let listener = tokio::net::TcpListener::bind(server.bind_addr)
+        .await
+        .with_context(|| format!("binding {}", server.bind_addr))?;
+    println!("Listening on http://{}", server.bind_addr);
 
-    let app = Router::new()
+    axum::serve(listener, router(&server, &index_path))
+        .await
+        .context("serving")
+}
+
+/// Health probes, the converter's output under `/data`, and the SPA everywhere else.
+fn router(config: &ServerConfig, index_path: &Path) -> Router {
+    let spa_service = ServeDir::new(&config.dist_dir).not_found_service(ServeFile::new(index_path));
+
+    Router::new()
         .route("/health/startup", get(startup_probe))
         .route("/health/live", get(liveness_probe))
         .route("/health/ready", get(readiness_probe))
-        .nest_service("/data", ServeDir::new(opt.data_dir))
-        .fallback_service(spa_service);
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    println!("Listening on http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+        .nest_service("/data", ServeDir::new(&config.data_dir))
+        .fallback_service(spa_service)
 }
 
 async fn startup_probe() -> StatusCode {

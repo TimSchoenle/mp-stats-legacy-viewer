@@ -1,0 +1,16 @@
+# The configuration baked into the container image at `/config.toml`, read because the image
+# sets `MP_STATS_CONFIG` to point at it.
+#
+# It describes the layout *inside the image* and nothing else: no host paths, no ports an
+# operator would want to change per deployment, no secrets. Anything site-specific belongs in a
+# mounted file or an `MP_STATS_*` variable, both of which outrank this one.
+#
+# The full key reference is `docs/CONFIGURATION.md`.
+
+[server]
+# The container's own port. Publish it elsewhere with `docker run -p`, rather than moving it
+# here - `EXPOSE`, the health probes and this value have to agree.
+bind_addr = "0.0.0.0:8080"
+# Where the image puts the built frontend and the converter's output.
+dist_dir = "/dist"
+data_dir = "/dist/data"

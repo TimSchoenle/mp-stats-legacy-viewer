@@ -1,25 +1,22 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
+use mp_stats_config::ConverterConfig;
 use mp_stats_converter::Converter;
-use std::path::PathBuf;
+use serde::Deserialize;
+
+/// Everything the converter reads.
+///
+/// One block, `[converter]`, so the same `config.toml` can also carry the server's `[server]`
+/// block without either binary having to know about the other's keys.
+#[derive(Debug, Deserialize)]
+struct Config {
+    #[serde(default)]
+    converter: ConverterConfig,
+}
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
+    // Layered: struct defaults, then `$MP_STATS_CONFIG`, then `MP_STATS_*`. See
+    // `docs/CONFIGURATION.md`.
+    let config: Config = mp_stats_config::load().context("loading configuration")?;
 
-    // Usage: converter [input_dir] [output_dir]
-    let input_dir = if args.len() > 1 {
-        PathBuf::from(&args[1])
-    } else {
-        PathBuf::from("data")
-    };
-
-    let output_dir = if args.len() > 2 {
-        PathBuf::from(&args[2])
-    } else {
-        PathBuf::from("target/converted_data")
-    };
-
-    let converter = Converter::new(input_dir, output_dir)?;
-    converter.convert()?;
-
-    Ok(())
+    Converter::from_config(&config.converter)?.convert()
 }
