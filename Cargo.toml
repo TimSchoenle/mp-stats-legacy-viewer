@@ -50,6 +50,10 @@ gloo-timers = "0.4.0"
 # bump a deliberate manifest edit that shows up in review.
 terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = "v0.2.0", default-features = false, features = ["loader"] }
 figment = { version = "0.10.19", default-features = false }
+# Pinned by tag for the same reason as `terrace-config` above. The `cloudflare` feature is
+# `presets` and `nonce` together: the origin tables the Cloudflare products load from, and the
+# per-response nonce slot the edge-injected ones need.
+csp-shell = { git = "https://github.com/TimSchoenle/csp-shell", tag = "csp-shell-v0.2.0", features = ["cloudflare"] }
 
 # Internal crates
 mp-stats-core = { path = "crates/core" }

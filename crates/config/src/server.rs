@@ -1,5 +1,6 @@
 //! The HTTP server's block: where it listens and which directories it serves.
 
+use crate::CspConfig;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -21,6 +22,11 @@ pub struct ServerConfig {
     /// Directory holding the converter's output, mounted at `/data`.
     #[serde(default = "ServerConfig::default_data_dir")]
     pub data_dir: PathBuf,
+    /// The `Content-Security-Policy` attached to every document the server answers with. The
+    /// policy is derived from `dist_dir`'s `index.html` at startup; these keys only decide what
+    /// it makes room for.
+    #[serde(default)]
+    pub csp: CspConfig,
 }
 
 impl ServerConfig {
@@ -49,6 +55,7 @@ impl Default for ServerConfig {
             bind_addr: Self::default_bind_addr(),
             dist_dir: Self::default_dist_dir(),
             data_dir: Self::default_data_dir(),
+            csp: CspConfig::default(),
         }
     }
 }
