@@ -16,6 +16,10 @@ use serde::Deserialize;
 
 /// Whether the server attaches a `Content-Security-Policy`, and what it makes room for.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(serde::Serialize, terrace_config::schema::Describe)
+)]
 pub struct CspConfig {
     /// Send the header at all.
     ///
@@ -29,6 +33,7 @@ pub struct CspConfig {
     pub enabled: bool,
     /// Concessions to the Cloudflare products running in front of this deployment.
     #[serde(default)]
+    #[cfg_attr(feature = "config-schema", config(nested))]
     pub cloudflare: CloudflareConfig,
 }
 
@@ -53,6 +58,10 @@ impl Default for CspConfig {
 /// actually runs these products, and a policy that admits what it does not need is a policy that
 /// permits what it does not need.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(serde::Serialize, terrace_config::schema::Describe)
+)]
 pub struct CloudflareConfig {
     /// Reserve a per-response nonce in `script-src`.
     ///

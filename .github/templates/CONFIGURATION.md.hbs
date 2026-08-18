@@ -18,7 +18,7 @@ loader, so one file can describe the whole platform.
 
 Layered, lowest precedence first. The layering is
 [`terrace-config`](https://github.com/TimSchoenle/terrace-config), pinned at
-`v0.5.0`; which variable names *this* deployment spells is
+`{{terrace_config_tag}}`; which variable names *this* deployment spells is
 [`crates/config/src/loader.rs`](../crates/config/src/loader.rs); the typed blocks are the rest of
 [`crates/config`](../crates/config/src/lib.rs).
 
@@ -54,11 +54,7 @@ below, which match a workspace checkout.
 
 ## 2. Where the file comes from
 
-| Variable | Role | Default | Purpose |
-|---|---|---|---|
-| `MP_STATS_CONFIG` | config | `config.toml` | Names the TOML layer: a file, or a directory whose `*.toml` files are all merged in name order. |
-| `MP_STATS_SECRETS_DIR` | secrets dir | — | Names a directory of key-named files — a mounted Kubernetes `Secret` volume. Each file supplies the key its name spells. |
-| `MP_STATS_EXPLAIN` | reserved | — | Read directly from the environment before the layered config exists, so no file may supply it. |
+{{> config/loader-variables }}
 
 `MP_STATS_CONFIG` and `MP_STATS_SECRETS_DIR` are read to decide what the other layers *are*, so
 neither can itself be supplied by a file; `terrace-config` reserves them and refuses an attempt
@@ -84,24 +80,11 @@ For a local checkout, copy [`config.example.toml`](../config.example.toml) to `c
 
 ### `[server]` — consumed by `mp-stats-server`
 
-| TOML | Type | Environment | Default | Flags | Purpose |
-|---|---|---|---|---|---|
-| `server.bind_addr` | `SocketAddr` | `MP_STATS_SERVER__BIND_ADDR` | `0.0.0.0:8080` | — | Address the HTTP listener binds. |
-| `server.dist_dir` | `PathBuf` | `MP_STATS_SERVER__DIST_DIR` | `dist` | — | Directory holding the built frontend. |
-| `server.data_dir` | `PathBuf` | `MP_STATS_SERVER__DATA_DIR` | `data` | — | Directory holding the converter's output, mounted at `/data`. |
-| `server.csp.enabled` | `bool` | `MP_STATS_SERVER__CSP__ENABLED` | `true` | — | Send the header at all. |
-| `server.csp.cloudflare.script_nonce` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__SCRIPT_NONCE` | `false` | — | Reserve a per-response nonce in `script-src`. |
-| `server.csp.cloudflare.turnstile` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__TURNSTILE` | `false` | — | Admit `https://challenges.cloudflare.com` in `script-src` **and** `frame-src`. |
-| `server.csp.cloudflare.web_analytics` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__WEB_ANALYTICS` | `false` | — | Admit Cloudflare Web Analytics: the beacon script, and the endpoint it reports to. |
+{{> config/server-keys }}
 
 ### `[converter]` — consumed by `mp-stats-converter`
 
-| TOML | Type | Environment | Default | Flags | Purpose |
-|---|---|---|---|---|---|
-| `converter.input_dir` | `PathBuf` | `MP_STATS_CONVERTER__INPUT_DIR` | `data` | — | Directory holding the raw per-edition data dumps. Must exist; the converter refuses to start otherwise. |
-| `converter.output_dir` | `PathBuf` | `MP_STATS_CONVERTER__OUTPUT_DIR` | `target/converted_data` | — | Directory the optimized output is written to. Must differ from the input directory. |
-| `converter.cache.enabled` | `bool` | `MP_STATS_CONVERTER__CACHE__ENABLED` | `true` | — | Restore from and store into the cache directory. |
-| `converter.cache.dir` | `PathBuf` | `MP_STATS_CONVERTER__CACHE__DIR` | `target/converter_cache` | — | Where cached output and its input fingerprints live. |
+{{> config/converter-keys }}
 
 Each key is also readable from a file: `MP_STATS_<KEY>_FILE` naming a path, or a file named
 after the key in the secrets directory ([§4](#4-file-backed-layers)) — `server.data_dir` is
@@ -148,7 +131,7 @@ positional arguments are likewise replaced by `converter.input_dir` and
 
 The header the server sends is **derived, not configured**. At startup the server reads the
 `index.html` it is about to serve and computes a `'sha256-…'` for every inline `<script>` in it,
-using [`csp-shell`](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.0`;
+using [`csp-shell`](https://github.com/TimSchoenle/csp-shell), pinned at `{{csp_shell_tag}}`;
 those hashes go into `script-src` alongside the rest of a WebAssembly-SPA policy. There is
 deliberately no key that spells the policy out, because a policy written in a config file drifts
 from the bundle the moment anyone rebuilds the frontend, and the browser reports that drift by

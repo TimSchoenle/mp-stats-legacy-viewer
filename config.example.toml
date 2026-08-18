@@ -1,49 +1,99 @@
-# Every key both binaries read, with its default. Copy to `config.toml` - which is read from
-# the working directory without anything being set, and is git-ignored - and edit.
+# Configuration for a service reading MP_STATS_-prefixed keys.
 #
-# Every value here is optional: with no file at all, these are exactly the defaults compiled
-# into the structs. The full reference, including the environment spelling of each key and the
-# file-backed layers, is `docs/CONFIGURATION.md`.
+# Generated from the configuration type, so it lists every key that type can carry and nothing
+# else. Each key shows the value it already has, commented out: a commented key and a deleted key
+# mean the same thing to the loader, so uncomment one only to change it. A key that is not
+# commented out has no default, and nothing loads until something supplies it.
+#
+# Three layers can supply any key below, and all three win over this file: the environment
+# variable named above the key, a file named by that variable plus `_FILE`, and a key-named file
+# in the secrets directory. A secret belongs in one of those — this file is usually committed.
+#
+# Read before this file exists:
+#
+#   MP_STATS_CONFIG — config, default `config.toml`
+#     Names the TOML layer: a file, or a directory whose `*.toml` files are all merged in name
+#     order.
+#
+#   MP_STATS_SECRETS_DIR — secrets dir
+#     Names a directory of key-named files — a mounted Kubernetes `Secret` volume. Each file
+#     supplies the key its name spells.
+#
+#   MP_STATS_EXPLAIN — reserved
+#     Read directly from the environment before the layered config exists, so no file may supply
+#     it.
 
 [server]
 # Address the HTTP listener binds.
-bind_addr = "0.0.0.0:8080"
-# The built frontend (`trunk build` output). The server refuses to start if it holds no
-# index.html.
-dist_dir = "dist"
-# The converter's output, served under `/data`.
-data_dir = "data"
+# Type: SocketAddr
+# Also from: MP_STATS_SERVER__BIND_ADDR, MP_STATS_SERVER__BIND_ADDR_FILE=/path/to/file,
+#   server__bind_addr in the secrets directory
+# bind_addr = "0.0.0.0:8080"
+
+# Directory holding the built frontend.
+# Type: PathBuf
+# Also from: MP_STATS_SERVER__DIST_DIR, MP_STATS_SERVER__DIST_DIR_FILE=/path/to/file,
+#   server__dist_dir in the secrets directory
+# dist_dir = "dist"
+
+# Directory holding the converter's output, mounted at `/data`.
+# Type: PathBuf
+# Also from: MP_STATS_SERVER__DATA_DIR, MP_STATS_SERVER__DATA_DIR_FILE=/path/to/file,
+#   server__data_dir in the secrets directory
+# data_dir = "data"
 
 [server.csp]
-# Attach a `Content-Security-Policy` to every document served. The policy itself is not
-# configurable: it is derived from `dist_dir/index.html` at startup, hashing every inline
-# `<script>` in it, so it cannot drift from the frontend build. Turn this off only when
-# something in front of this server already sets the header.
-enabled = true
+# Send the header at all.
+# Type: bool
+# Also from: MP_STATS_SERVER__CSP__ENABLED, MP_STATS_SERVER__CSP__ENABLED_FILE=/path/to/file,
+#   server__csp__enabled in the secrets directory
+# enabled = true
 
-# Concessions to the Cloudflare products running in front of this deployment. All off: each one
-# widens the policy, and only for a product that is actually switched on.
 [server.csp.cloudflare]
-# Reserve a per-response nonce in `script-src`, and serve documents `Cache-Control: no-cache`.
-# Needed by the products that inject an inline script at the edge - Bot Fight Mode, JavaScript
-# Detections, the challenge platform - which no hash can cover because they run after the shell
-# was hashed. Also requires that no Cloudflare Cache Rule caches the shell; see
-# `docs/CONFIGURATION.md`.
-script_nonce = false
-# Admit `https://challenges.cloudflare.com` in `script-src` and `frame-src`, for a Turnstile
-# widget rendered in a page this server serves.
-turnstile = false
-# Admit the Web Analytics beacon and the endpoint it reports to. For the manual snippet only -
-# the automatic edge injection needs `script_nonce` instead.
-web_analytics = false
+# Reserve a per-response nonce in `script-src`.
+# Type: bool
+# Also from: MP_STATS_SERVER__CSP__CLOUDFLARE__SCRIPT_NONCE,
+#   MP_STATS_SERVER__CSP__CLOUDFLARE__SCRIPT_NONCE_FILE=/path/to/file,
+#   server__csp__cloudflare__script_nonce in the secrets directory
+# script_nonce = false
+
+# Admit `https://challenges.cloudflare.com` in `script-src` **and** `frame-src`.
+# Type: bool
+# Also from: MP_STATS_SERVER__CSP__CLOUDFLARE__TURNSTILE,
+#   MP_STATS_SERVER__CSP__CLOUDFLARE__TURNSTILE_FILE=/path/to/file,
+#   server__csp__cloudflare__turnstile in the secrets directory
+# turnstile = false
+
+# Admit Cloudflare Web Analytics: the beacon script, and the endpoint it reports to.
+# Type: bool
+# Also from: MP_STATS_SERVER__CSP__CLOUDFLARE__WEB_ANALYTICS,
+#   MP_STATS_SERVER__CSP__CLOUDFLARE__WEB_ANALYTICS_FILE=/path/to/file,
+#   server__csp__cloudflare__web_analytics in the secrets directory
+# web_analytics = false
 
 [converter]
-# Raw per-edition data dumps.
-input_dir = "data"
-# Where the optimized output is written. Must differ from `input_dir`.
-output_dir = "target/converted_data"
+# Directory holding the raw per-edition data dumps. Must exist; the converter refuses to start otherwise.
+# Type: PathBuf
+# Also from: MP_STATS_CONVERTER__INPUT_DIR, MP_STATS_CONVERTER__INPUT_DIR_FILE=/path/to/file,
+#   converter__input_dir in the secrets directory
+# input_dir = "data"
+
+# Directory the optimized output is written to. Must differ from the input directory.
+# Type: PathBuf
+# Also from: MP_STATS_CONVERTER__OUTPUT_DIR, MP_STATS_CONVERTER__OUTPUT_DIR_FILE=/path/to/file,
+#   converter__output_dir in the secrets directory
+# output_dir = "target/converted_data"
 
 [converter.cache]
-# Reuse a previous run's output for editions whose input is byte-for-byte unchanged.
-enabled = true
-dir = "target/converter_cache"
+# Restore from and store into the cache directory.
+# Type: bool
+# Also from: MP_STATS_CONVERTER__CACHE__ENABLED,
+#   MP_STATS_CONVERTER__CACHE__ENABLED_FILE=/path/to/file, converter__cache__enabled in the
+#   secrets directory
+# enabled = true
+
+# Where cached output and its input fingerprints live.
+# Type: PathBuf
+# Also from: MP_STATS_CONVERTER__CACHE__DIR, MP_STATS_CONVERTER__CACHE__DIR_FILE=/path/to/file,
+#   converter__cache__dir in the secrets directory
+# dir = "target/converter_cache"

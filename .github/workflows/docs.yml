@@ -1,0 +1,186 @@
+name: Docs
+
+# `README.md`, `docs/CONFIGURATION.md` and `config.example.toml` are generated. This workflow is
+# what makes that claim true in both directions.
+#
+# On a pull request it regenerates all three and commits what changed back to the branch, so no
+# key, default or environment spelling in the documentation is ever typed by hand: the commit
+# that adds a configuration key is the commit its documentation arrives with. The same holds for
+# the two pinned dependency tags the pages quote, which is what keeps a Renovate bump from
+# leaving the README advertising a version this repository no longer builds against.
+#
+# Everywhere it cannot commit - a push to `main`, a pull request from a fork - it verifies
+# instead, writing nothing and failing when a committed file is stale. Without that, editing
+# `README.md` directly would appear to work right up until the next pull request silently
+# reverted it.
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+# Shared with update-files.yaml rather than scoped to this workflow: both commit to the pull
+# request branch, and the API call that makes a verified commit rejects one whose parent has
+# moved. Two writers racing would leave one of them failing for no reason a reader could act on,
+# so they queue instead. `cancel-in-progress: false` for the same reason - a cancelled run here
+# means a branch left holding half of a regeneration.
+concurrency:
+  group: branch-writes-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: { }
+
+jobs:
+  render:
+    name: Render
+    # Forks get no secrets, so the App token would be empty and the commit could not be pushed to
+    # their branch anyway. `verify` below picks those pull requests up instead.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    environment:
+      name: ci
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # the write happens with the App token below, not with GITHUB_TOKEN
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      # An App installation token, so the commit is verified and - unlike one made with
+      # `GITHUB_TOKEN` - re-triggers the checks on the branch it lands on.
+      - name: Generate Bot Token
+        id: generate_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
+          permission-contents: write
+
+      # The head of the branch, not the merge commit: the render has to read the `Cargo.toml` and
+      # the structs the pull request proposes, and the commit has to land on top of what is there
+      # now.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+
+      - name: Generate the configuration tables and example
+        run: bash .github/scripts/config-docs.sh
+
+      - name: Collect template variables
+        id: variables
+        # Invoked through `bash` rather than executed: the repository is authored on Windows,
+        # where git does not record the executable bit.
+        run: echo "json=$(bash .github/scripts/docs-variables.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Render and commit the README
+        id: readme
+        uses: TimSchoenle/actions/actions/common/render-template-and-commit@15d83f02081c9dc8a844646199c63792dcccdfa8 # tag=actions-common-render-template-and-commit-v1.1.3
+        with:
+          template: .github/templates/README.md.hbs
+          output: README.md
+          partials-dir: target/config-docs
+          variables: ${{ steps.variables.outputs.json }}
+          token: ${{ steps.generate_token.outputs.token }}
+          commit_message: 'docs: render README from template'
+
+      - name: Render and commit the configuration reference
+        id: reference
+        uses: TimSchoenle/actions/actions/common/render-template-and-commit@15d83f02081c9dc8a844646199c63792dcccdfa8 # tag=actions-common-render-template-and-commit-v1.1.3
+        with:
+          template: .github/templates/CONFIGURATION.md.hbs
+          output: docs/CONFIGURATION.md
+          partials-dir: target/config-docs
+          variables: ${{ steps.variables.outputs.json }}
+          token: ${{ steps.generate_token.outputs.token }}
+          commit_message: 'docs: render configuration reference from template'
+
+      # Not a render: nothing templates it, so it is committed straight from the generator's
+      # output. `file_pattern` keeps this commit to that one file - the partials the two steps
+      # above rendered from live under `target/`, but a dirty working tree must not ride along in
+      # a documentation commit.
+      - name: Commit the example configuration
+        id: example
+        uses: TimSchoenle/actions/actions/common/commit-changes@0a6ad3014d13b1baa2e6ab1966603fe88ed5887b # tag=actions-common-commit-changes-v1.3.1
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          commit_message: 'docs: regenerate config.example.toml'
+          file_pattern: 'config.example.toml'
+
+      - name: Summarise
+        env:
+          README: ${{ steps.readme.outputs.changes_detected }}
+          REFERENCE: ${{ steps.reference.outputs.changes_detected }}
+          EXAMPLE: ${{ steps.example.outputs.changes_detected }}
+        run: |
+          regenerated=""
+          if [ "${README}" = "true" ]; then regenerated="${regenerated} README.md"; fi
+          if [ "${REFERENCE}" = "true" ]; then regenerated="${regenerated} docs/CONFIGURATION.md"; fi
+          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml"; fi
+
+          if [ -n "${regenerated}" ]; then
+            echo "Regenerated and committed:${regenerated}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Every generated file already matched its source." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  verify:
+    name: Docs are current
+    # The complement of `render`: it covers the pushes to `main` that no pull request rendered,
+    # and the fork pull requests that could not be committed to. Between the two conditions every
+    # event this workflow sees is handled by exactly one job.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+
+      - name: Generate the configuration tables and example
+        run: bash .github/scripts/config-docs.sh
+
+      - name: Collect template variables
+        id: variables
+        run: echo "json=$(bash .github/scripts/docs-variables.sh)" >> "$GITHUB_OUTPUT"
+
+      # Writes nothing; fails with the first differing line when the committed file is stale.
+      - name: Verify README.md is current
+        uses: TimSchoenle/actions/actions/common/render-template@3b7d152374ee63e720e7c16bed8b088b40554911 # tag=actions-common-render-template-v1.1.1
+        with:
+          template: .github/templates/README.md.hbs
+          output: README.md
+          partials-dir: target/config-docs
+          variables: ${{ steps.variables.outputs.json }}
+          check: true
+
+      - name: Verify docs/CONFIGURATION.md is current
+        uses: TimSchoenle/actions/actions/common/render-template@3b7d152374ee63e720e7c16bed8b088b40554911 # tag=actions-common-render-template-v1.1.1
+        with:
+          template: .github/templates/CONFIGURATION.md.hbs
+          output: docs/CONFIGURATION.md
+          partials-dir: target/config-docs
+          variables: ${{ steps.variables.outputs.json }}
+          check: true
+
+      # The generator wrote over the committed copy in the step above, so the diff is the check.
+      - name: Verify config.example.toml is current
+        run: git diff --exit-code -- config.example.toml
