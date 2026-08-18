@@ -6,16 +6,32 @@ edition.workspace = true
 # reusable library.
 publish = false
 
+[features]
+# The documentation surface: `Describe` on every block, `Serialize` so the generator can read
+# the observed defaults out of a `Default` value, and the `#[config(...)]` helper attributes
+# that annotate both. Off by default, and taken only by the `config-schema` example - a service
+# shipping in a `scratch` image has no reason to link `serde_json` and the derive's expansion
+# for a table it will never print.
+config-schema = ["terrace-config/schema", "serde/derive"]
+
 [dependencies]
 serde = { workspace = true }
-# The layering itself. `loader` only: the reload supervisor would link notify and
-# tokio-util into every consumer of a config struct, and nothing here is rotated
-# while the process runs - the server serves files off disk, the converter is a
-# one-shot batch job.
+# The layering itself. `loader` and `explain` only, from the workspace pin: the reload
+# supervisor would link notify and tokio-util into every consumer of a config struct, and
+# nothing here is rotated while the process runs - the server serves files off disk, the
+# converter is a one-shot batch job.
 terrace-config = { workspace = true }
 
 [dev-dependencies]
-# `figment::Jail` sets and restores `MP_STATS_*` and moves into a scratch
-# directory, which is how the dialect tests avoid `env::set_var`. The same
-# figment `terrace-config` resolves, plus its `test` feature.
-figment = { workspace = true, features = ["test"] }
+# `testing::Harness` is the same layers this crate loads through, arranged: a scratch working
+# directory, a secrets volume, `MP_STATS_*` set and restored. It replaces a hand-rolled
+# `figment::Jail` fixture that spelled the variable names out by hand - the harness derives
+# every one of them from `loader::terrace()`, so a test cannot go on passing against a name the
+# loader has stopped reading.
+terrace-config = { workspace = true, features = ["testing"] }
+
+# The generator behind `config-schema`, declared so `cargo clippy --all-targets` keeps it
+# compiling rather than letting it rot until the next documentation run.
+[[example]]
+name = "config-schema"
+required-features = ["config-schema"]

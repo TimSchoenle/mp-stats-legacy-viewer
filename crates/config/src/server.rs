@@ -10,13 +10,21 @@ use std::path::PathBuf;
 /// Every field has a working default, so a checkout with no `config.toml` at all runs against
 /// the layout `trunk build` and the converter produce.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(serde::Serialize, terrace_config::schema::Describe)
+)]
 pub struct ServerConfig {
-    /// Address the HTTP listener binds. Deserialised as a `SocketAddr`, so an unparseable
-    /// value fails at boot rather than at `bind` time.
+    /// Address the HTTP listener binds.
+    ///
+    /// Deserialised as a `SocketAddr`, so an unparseable value fails at boot rather than at
+    /// `bind` time.
     #[serde(default = "ServerConfig::default_bind_addr")]
     pub bind_addr: SocketAddr,
-    /// Directory holding the built frontend. Its `index.html` is both the SPA entry point and
-    /// the fallback for unknown routes; the server refuses to start without it.
+    /// Directory holding the built frontend.
+    ///
+    /// Its `index.html` is both the SPA entry point and the fallback for unknown routes; the
+    /// server refuses to start without it.
     #[serde(default = "ServerConfig::default_dist_dir")]
     pub dist_dir: PathBuf,
     /// Directory holding the converter's output, mounted at `/data`.
@@ -26,6 +34,7 @@ pub struct ServerConfig {
     /// policy is derived from `dist_dir`'s `index.html` at startup; these keys only decide what
     /// it makes room for.
     #[serde(default)]
+    #[cfg_attr(feature = "config-schema", config(nested))]
     pub csp: CspConfig,
 }
 

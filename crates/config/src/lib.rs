@@ -9,7 +9,14 @@
 //!
 //! Each binary owns the aggregate it deserialises and reads only its own block, so one
 //! `config.toml` can describe the whole platform without either binary having to parse the
-//! other's section.
+//! other's section. `MP_STATS_EXPLAIN=1` makes either of them report which layer supplied each
+//! key before it does anything with the values.
+//!
+//! The blocks below are also the source the documentation is generated from. Under the
+//! `config-schema` feature every struct here derives `Describe`, and
+//! `examples/config-schema.rs` renders the tables in `README.md` and `docs/CONFIGURATION.md`
+//! and the whole of `config.example.toml` out of them — which is why each field's `///` comment
+//! opens with the sentence an operator needs: the first paragraph is the cell.
 
 mod converter;
 mod csp;

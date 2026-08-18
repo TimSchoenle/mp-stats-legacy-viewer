@@ -3,9 +3,14 @@
 on:
   pull_request:
 
+# Shared with docs.yml, not scoped to this workflow: both commit to the pull request branch, and
+# the API call that makes a verified commit rejects one whose parent has moved. Two writers
+# racing would leave one of them failing for no reason a reader could act on, so they queue
+# instead. `cancel-in-progress: false` for the same reason - a cancelled run here means a branch
+# left holding a half-updated file.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: branch-writes-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions: { }
 

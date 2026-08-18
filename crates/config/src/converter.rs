@@ -5,16 +5,24 @@ use std::path::PathBuf;
 
 /// Input, output and cache settings for one converter run.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(serde::Serialize, terrace_config::schema::Describe)
+)]
 pub struct ConverterConfig {
-    /// Directory holding the raw per-edition data dumps.
+    /// Directory holding the raw per-edition data dumps. Must exist; the converter refuses to
+    /// start otherwise.
     #[serde(default = "ConverterConfig::default_input_dir")]
     pub input_dir: PathBuf,
-    /// Directory the optimized output is written to. Must differ from [`Self::input_dir`],
-    /// which the converter verifies before it starts.
+    /// Directory the optimized output is written to. Must differ from the input directory.
+    ///
+    /// Both constraints are checked before the first file is read, so a run that would convert
+    /// [`Self::input_dir`] into itself fails immediately rather than half way through.
     #[serde(default = "ConverterConfig::default_output_dir")]
     pub output_dir: PathBuf,
     /// Incremental output cache.
     #[serde(default)]
+    #[cfg_attr(feature = "config-schema", config(nested))]
     pub cache: CacheConfig,
 }
 
@@ -44,8 +52,15 @@ impl Default for ConverterConfig {
 /// unchanged can be restored verbatim instead of re-converted. This is what keeps a Docker
 /// rebuild that touched only unrelated source code from re-running the whole pipeline.
 #[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(serde::Serialize, terrace_config::schema::Describe)
+)]
 pub struct CacheConfig {
-    /// Restore from and store into [`Self::dir`]. When `false` every run is a full conversion.
+    /// Restore from and store into the cache directory.
+    ///
+    /// When `false` every run is a full conversion, and [`Self::dir`] is neither read nor
+    /// written.
     #[serde(default = "default_true")]
     pub enabled: bool,
     /// Where cached output and its input fingerprints live.
