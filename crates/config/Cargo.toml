@@ -12,7 +12,14 @@ publish = false
 # that annotate both. Off by default, and taken only by the `config-schema` example - a service
 # shipping in a `scratch` image has no reason to link `serde_json` and the derive's expansion
 # for a table it will never print.
-config-schema = ["terrace-config/schema", "serde/derive"]
+#
+# `schema-cli` rather than `schema`: it is `schema` with the generator *program* on top - the
+# `--format` vocabulary, the argument parsing and the dispatch across the renderings, which
+# `examples/config-schema.rs` used to spell out by hand and which every repository with a
+# generator spelled out slightly differently. It pulls no dependency `schema` did not already,
+# and is a feature of its own only so that a consumer rendering a table at runtime does not also
+# compile an argument parser it will never call.
+config-schema = ["terrace-config/schema-cli", "serde/derive"]
 
 [dependencies]
 serde = { workspace = true }

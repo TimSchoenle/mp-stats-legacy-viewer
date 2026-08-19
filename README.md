@@ -5,8 +5,8 @@ not match its template fails the `docs` check.
 
 Two kinds of value are injected, and neither is a fact anyone should type twice:
 
-  - scalars, from .github/scripts/docs-variables.sh, which reads the pinned tags out of Cargo.toml
-  - table partials, from .github/scripts/config-docs.sh, which reads the configuration structs
+  - scalars, from `just docs-variables`, which reads the pinned tags out of Cargo.toml
+  - table partials, from `just regenerate`, which reads the configuration structs
 
 A dependency bump moves the first and a new configuration key moves the second, so the
 documentation arrives on the branch that changed it rather than a release later.
@@ -96,7 +96,7 @@ The easiest way to run the entire stack (Frontend, Backend, and Data processing)
 
 ## Configuration
 
-Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config), pinned at `v0.6.0`. Neither binary takes command-line arguments.
+Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config), pinned at `v0.9.0`. Neither binary takes command-line arguments.
 
 Read before any of those layers exists:
 
@@ -157,11 +157,11 @@ Please refer to the internal documentation within the `apps/converter` crate for
 
 Three files are generated and must not be edited directly: this `README.md`, [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) and [`config.example.toml`](config.example.toml). Edit the source instead — the prose lives in [`.github/templates`](.github/templates), and every key, default and environment spelling comes from the structs in [`crates/config`](crates/config/src/lib.rs) by way of [`crates/config/examples/config-schema.rs`](crates/config/examples/config-schema.rs).
 
-Both halves run locally, and are what CI runs:
+Both halves run locally, and are what CI runs — `just` with no arguments lists everything there is:
 
 ```sh
-bash .github/scripts/config-docs.sh    # the tables and config.example.toml, from the structs
-bash .github/scripts/docs-variables.sh # the pinned dependency tags, from Cargo.toml
+just regenerate     # the tables, config.example.toml, the contract and the Dockerfile's LABEL region
+just docs-variables # the pinned dependency tags, from Cargo.toml
 ```
 
 A pull request that leaves any of the three stale has the rendered version committed back onto its branch by the `docs` workflow; a push to `main` that does not match fails it.

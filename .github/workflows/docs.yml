@@ -71,14 +71,19 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
 
-      - name: Generate the configuration tables and example
-        run: bash .github/scripts/config-docs.sh
+      # `just` rather than a script under `.github/scripts/`, so that the command a README
+      # quotes, the command CI runs and the command a developer types are one string.
+      - name: Install just
+        uses: taiki-e/install-action@288e746965032cfcc232e09af2daf5f23c14d780 # v2.86.1
+        with:
+          tool: just
+
+      - name: Regenerate everything the configuration types own
+        run: just regenerate
 
       - name: Collect template variables
         id: variables
-        # Invoked through `bash` rather than executed: the repository is authored on Windows,
-        # where git does not record the executable bit.
-        run: echo "json=$(bash .github/scripts/docs-variables.sh)" >> "$GITHUB_OUTPUT"
+        run: echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
 
       - name: Render and commit the README
         id: readme
@@ -113,13 +118,18 @@ jobs:
       # own; regenerating and committing it puts the new version on the same branch that raised
       # it, and a configuration change still arrives as a reviewable diff in the pull request
       # that caused it. `verify` below is what keeps that true where nothing can be committed.
+      #
+      # The Dockerfile is in the pattern because its `LABEL` region is part of the contract:
+      # `just regenerate` rewrites it between the `terrace-config:labels` markers, and a region
+      # left uncommitted here is one the `Config Contract` job would fail on for a drift this
+      # job had already fixed in the working tree and thrown away.
       - name: Commit the example configuration and the contract
         id: example
         uses: TimSchoenle/actions/actions/common/commit-changes@76719ba61e9b9cf1ffafdc3cb895308055a7f3bd # tag=actions-common-commit-changes-v1.3.2
         with:
           token: ${{ steps.generate_token.outputs.token }}
           commit_message: 'docs: regenerate config.example.toml and the config contract'
-          file_pattern: 'config.example.toml docs/config.contract.json'
+          file_pattern: 'config.example.toml docs/config.contract.json Dockerfile'
 
       - name: Summarise
         env:
@@ -130,7 +140,7 @@ jobs:
           regenerated=""
           if [ "${README}" = "true" ]; then regenerated="${regenerated} README.md"; fi
           if [ "${REFERENCE}" = "true" ]; then regenerated="${regenerated} docs/CONFIGURATION.md"; fi
-          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml docs/config.contract.json"; fi
+          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml docs/config.contract.json Dockerfile"; fi
 
           if [ -n "${regenerated}" ]; then
             echo "Regenerated and committed:${regenerated}" >> "$GITHUB_STEP_SUMMARY"
@@ -162,12 +172,17 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
 
-      - name: Generate the configuration tables and example
-        run: bash .github/scripts/config-docs.sh
+      - name: Install just
+        uses: taiki-e/install-action@288e746965032cfcc232e09af2daf5f23c14d780 # v2.86.1
+        with:
+          tool: just
+
+      - name: Regenerate everything the configuration types own
+        run: just regenerate
 
       - name: Collect template variables
         id: variables
-        run: echo "json=$(bash .github/scripts/docs-variables.sh)" >> "$GITHUB_OUTPUT"
+        run: echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
 
       # Writes nothing; fails with the first differing line when the committed file is stale.
       - name: Verify README.md is current
@@ -188,8 +203,12 @@ jobs:
           variables: ${{ steps.variables.outputs.json }}
           check: true
 
-      # The generator wrote over both committed copies in the step above, so the diff is the
-      # check. Both at once rather than one step each: a branch that regenerated neither should
-      # be told about both rather than about whichever came first.
-      - name: Verify config.example.toml and the config contract are current
-        run: git diff --exit-code -- config.example.toml docs/config.contract.json
+      # `just regenerate` wrote over all three committed copies in the step above, so the diff
+      # is the check. All at once rather than one step each: a branch that regenerated none of
+      # them should be told about all three rather than about whichever came first.
+      #
+      # Not the `config-contract` action, although it would check two of these: it does not
+      # know about `config.example.toml`, so this job would still need the diff and would then
+      # be reporting the same drift from two places.
+      - name: Verify config.example.toml, the contract and the LABEL region are current
+        run: git diff --exit-code -- config.example.toml docs/config.contract.json Dockerfile

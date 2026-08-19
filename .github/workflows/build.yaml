@@ -33,9 +33,9 @@ jobs:
       - name: Run Check
         uses: TimSchoenle/actions/actions/rust/cargo-check@5798c7bd8d1d98a0c7360114e91a0ac3b86bf145 # tag=actions-rust-cargo-check-v1.1.5
 
-  # The `LABEL` block in the Dockerfile, against the contract it claims to point at.
+  # The `LABEL` region in the Dockerfile, against the contract it claims to point at.
   #
-  # The block is hand-carried, because a `LABEL` key cannot be interpolated from a generator, so
+  # The region is hand-carried, because a `LABEL` key cannot be interpolated from a generator, so
   # it can be wrong in ways nothing else here would notice. This catches a prefix change one step
   # before the image is built; the check on the built image in `Docker Build and Test` catches
   # what a source diff cannot see at all.
@@ -64,16 +64,21 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
 
-      - name: Check the Dockerfile's label block against the contract
-        run: |
-          set -euo pipefail
-          cargo run -q -p mp-stats-config --features config-schema \
-            --example config-schema -- --format dockerfile > "${RUNNER_TEMP}/labels.expected"
-          grep -A2 '^LABEL dev\.terrace\.config' Dockerfile > "${RUNNER_TEMP}/labels.actual"
-          if ! diff -u "${RUNNER_TEMP}/labels.expected" "${RUNNER_TEMP}/labels.actual"; then
-            echo "::error file=Dockerfile::The Dockerfile's dev.terrace.config.* LABEL block is not the one this contract publishes. Paste the output of \`--format dockerfile\`." >&2
-            exit 1
-          fi
+      # The generator renders the region and the action diffs it, cut at the
+      # `terrace-config:labels` markers rather than by line count: the `grep -A2` this step used
+      # to do reads correctly right up until a fourth label is added, and then compares two of
+      # three lines and passes.
+      #
+      # `contract` is emptied for the reason the job comment gives, and `image` because there is
+      # no image on this runner - which is what makes this the cheap half, running on every pull
+      # request without waiting for a build.
+      - name: Verify the configuration contract
+        uses: TimSchoenle/actions/actions/rust/config-contract@99c83581b3486a8a9f28e43226b8f02025fcdf9a # tag=actions-rust-config-contract-v1.1.0
+        with:
+          package: mp-stats-config
+          features: config-schema
+          contract: ''
+          image: ''
 
   test:
     name: Test
@@ -244,21 +249,47 @@ jobs:
             VERSION=test
           cache-from: type=gha
 
-      # The check the hand-written `LABEL` block needs and that no source diff
-      # can give. Both platforms, because the labels are per-manifest; every
-      # violation before it exits, because a build that names one missing label
-      # and hides two is a second round trip.
-      - name: Verify both images carry the contract labels
-        run: |
-          set -euo pipefail
-          status=0
-          for entry in 'image:test linux/amd64' 'image:test-arm64 linux/arm64'; do
-            set -- ${entry}
-            docker inspect --format '{{json .Config.Labels}}' "$1" > "${RUNNER_TEMP}/labels.json"
-            bash .github/scripts/check-image-labels.sh \
-              "${RUNNER_TEMP}/labels.json" contract-out/out/contract.labels "$1 ($2)" || status=1
-          done
-          exit "${status}"
+      # The check the hand-written `LABEL` region needs and that no source diff
+      # can give: the action renders the labels from the configuration types
+      # itself and compares them with what the image's own config blob carries.
+      #
+      # The toolchain is here rather than at the top of the job because only the
+      # two steps below need it, and `cache: false` because this job builds
+      # images: a restored cache is writable by any branch, and caching in a job
+      # that produces a runtime artefact is the cache-poisoning path zizmor
+      # flags. The only thing compiled is the contract generator, so there is
+      # nearly nothing to save.
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        with:
+          cache: false
+
+      # One step per platform, because the action inspects one image and the
+      # labels live in each manifest's own config blob - a build argument or a
+      # differing base can leave one architecture carrying them and another not,
+      # and only inspecting both can see that. A failure on amd64 now hides
+      # arm64 until the next run, which the loop this replaced did not; the
+      # trade is one implementation of the check instead of six.
+      #
+      # `dockerfile` and `contract` are emptied: the `Config Contract` job above
+      # owns both, and repeating them here would report the same drift twice.
+      - name: Verify the linux/amd64 image carries the contract labels
+        uses: TimSchoenle/actions/actions/rust/config-contract@99c83581b3486a8a9f28e43226b8f02025fcdf9a # tag=actions-rust-config-contract-v1.1.0
+        with:
+          package: mp-stats-config
+          features: config-schema
+          dockerfile: ''
+          contract: ''
+          image: image:test
+
+      - name: Verify the linux/arm64 image carries the contract labels
+        uses: TimSchoenle/actions/actions/rust/config-contract@99c83581b3486a8a9f28e43226b8f02025fcdf9a # tag=actions-rust-config-contract-v1.1.0
+        with:
+          package: mp-stats-config
+          features: config-schema
+          dockerfile: ''
+          contract: ''
+          image: image:test-arm64
 
       # The cross-check the dropped hash label would have bought, and the build
       # is the one place that gets it for free because it holds both copies. A
