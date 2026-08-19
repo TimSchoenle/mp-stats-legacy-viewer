@@ -188,7 +188,8 @@ jobs:
           # `.manifests` is absent when the pushed digest is a single manifest
           # rather than an index; `unknown/unknown` are the provenance and SBOM
           # attestations, which are not images and carry none of this.
-          platforms="$(oras manifest fetch "${IMAGE}@${DIGEST}" \
+          platforms="$(bash .github/scripts/retry-registry-read.sh \
+            oras manifest fetch "${IMAGE}@${DIGEST}" \
             | jq -r '(.manifests // [])[] | select((.platform.os // "unknown") != "unknown")
                      | "\(.digest) \(.platform.os)/\(.platform.architecture)"')"
           if [ -z "${platforms}" ]; then
@@ -198,7 +199,8 @@ jobs:
           status=0
           while read -r manifest platform; do
             [ -n "${manifest}" ] || continue
-            oras manifest fetch-config "${IMAGE}@${manifest}" \
+            bash .github/scripts/retry-registry-read.sh \
+              oras manifest fetch-config "${IMAGE}@${manifest}" \
               | jq -c '.config.Labels' > "${RUNNER_TEMP}/labels.json"
             bash .github/scripts/check-image-labels.sh \
               "${RUNNER_TEMP}/labels.json" contract-out/out/contract.labels \
@@ -222,7 +224,8 @@ jobs:
           ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
         run: |
           set -euo pipefail
-          existing="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
+          existing="$(bash .github/scripts/retry-registry-read.sh \
+            oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
             "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // []) | length')"
           if [ "${existing}" -gt 0 ]; then
             echo "a contract is already attached to ${IMAGE}@${DIGEST}; leaving it alone"
@@ -252,7 +255,8 @@ jobs:
             if [ "${attempt}" -gt 1 ]; then
               sleep $(( (attempt - 1) * 5 ))
             fi
-            referrer="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
+            referrer="$(bash .github/scripts/retry-registry-read.sh \
+              oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
               "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // [])[0].digest // ""')"
             if [ -n "${referrer}" ]; then
               break
