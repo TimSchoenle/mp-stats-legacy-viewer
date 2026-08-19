@@ -242,10 +242,24 @@ jobs:
           ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
         run: |
           set -euo pipefail
-          referrer="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
-            "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // [])[0].digest // ""')"
+          # Polled rather than read once. Docker Hub's referrers index is eventually consistent:
+          # the attach above returns as soon as the referrer manifest is stored, but
+          # `/v2/.../referrers/<digest>` keeps answering with an empty index for seconds
+          # afterwards. Reading it a single time is what failed v0.17.0 — the contract was
+          # attached, and this step could not see it 200ms later.
+          referrer=""
+          for attempt in 1 2 3 4 5 6; do
+            if [ "${attempt}" -gt 1 ]; then
+              sleep $(( (attempt - 1) * 5 ))
+            fi
+            referrer="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
+              "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // [])[0].digest // ""')"
+            if [ -n "${referrer}" ]; then
+              break
+            fi
+          done
           if [ -z "${referrer}" ]; then
-            echo "::error::nothing of type ${ARTIFACT_TYPE} is attached to ${IMAGE}@${DIGEST}, so there is no contract to sign" >&2
+            echo "::error::nothing of type ${ARTIFACT_TYPE} is attached to ${IMAGE}@${DIGEST} 75s after attaching it, so there is no contract to sign" >&2
             exit 1
           fi
           cosign sign --yes "${IMAGE}@${referrer}"
