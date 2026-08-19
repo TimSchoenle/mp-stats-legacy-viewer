@@ -28,9 +28,10 @@
 //! ```
 //!
 //! The document and the labels are produced by one run of this generator in one builder stage,
-//! which is the only arrangement in which the two cannot disagree. `docs/config.contract.json`
-//! is the committed copy the `Config Contract` job regenerates and diffs, so a renamed key shows
-//! up in the pull request that renamed it rather than in the deployment that breaks on it.
+//! which is the only arrangement in which the two cannot disagree. `docs/config.contract.json` is
+//! the committed copy [`.github/scripts/config-docs.sh`](../../../.github/scripts/config-docs.sh)
+//! writes and the documentation workflow commits, so a renamed key shows up in the pull request
+//! that renamed it rather than in the deployment that breaks on it.
 
 use std::process::ExitCode;
 
