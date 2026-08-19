@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.0...v0.17.1) (2026-08-19)
+
+
+### Bug Fixes
+
+* **ci:** poll for the contract referrer instead of reading it once ([#427](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/427)) ([5ee95d0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5ee95d0e81f52ed5697dfc683c7c40bb3d162326))
+
 ## [0.17.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.16.1...v0.17.0) (2026-08-19)
 
 
