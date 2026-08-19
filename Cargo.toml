@@ -39,7 +39,7 @@ tower-http = { version = "0.7.0", features = ["fs", "trace"] }
 walkdir = "2.5.0"
 rayon = "1.11.0"
 web-sys = { version = "0.3.87", features = ["HtmlElement", "HtmlInputElement", "HtmlSelectElement", "Window", "Document", "console"] }
-lzma-rust2 = "0.18.0"
+lzma-rust2 = "0.19.0"
 binary-layout = "4.0.2"
 tar = "0.4.44"
 thiserror = "2.0.18"
