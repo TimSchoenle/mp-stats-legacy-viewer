@@ -18,7 +18,7 @@ loader, so one file can describe the whole platform.
 
 Layered, lowest precedence first. The layering is
 [`terrace-config`](https://github.com/TimSchoenle/terrace-config), pinned at
-`v0.5.0`; which variable names *this* deployment spells is
+`v0.6.0`; which variable names *this* deployment spells is
 [`crates/config/src/loader.rs`](../crates/config/src/loader.rs); the typed blocks are the rest of
 [`crates/config`](../crates/config/src/lib.rs).
 
@@ -221,3 +221,42 @@ Which of those a running deployment actually read:
 ```bash
 MP_STATS_EXPLAIN=1 cargo run -p mp-stats-server
 ```
+
+---
+
+## 8. The contract the image publishes
+
+Everything above is for a human. The same surface is published in a form a deployment pipeline
+reads, so that a chart rendering a `config.toml` full of keys this binary stopped reading fails
+its own CI instead of starting a pod that quietly runs on a compiled default — `serde` ignores an
+unknown key by design, which is what makes that failure invisible everywhere else.
+
+The document is [`docs/config.contract.json`](config.contract.json), generated from the same
+types these tables come from:
+
+```bash
+cargo run -p mp-stats-config --features config-schema --example config-schema -- --format contract
+```
+
+The committed copy is a gate, not documentation: the `Config Contract` job regenerates it and
+fails on a diff, so a renamed key shows up in the pull request that renamed it. It covers the
+`[server]` block alone — the runtime image runs `/server` and nothing else, and claiming it reads
+`[converter]` would tell a validator to accept a table the server drops.
+
+Each released image carries the same document three ways:
+
+| Carrier | What reads it |
+|---|---|
+| `/config/contract.json` inside the image | an exported tarball, an air-gapped mirror, an in-cluster reader — no registry needed |
+| an OCI referrer on the pushed digest, `application/vnd.terrace.config-schema.v1+json` | [`TimSchoenle/helm-charts`](https://github.com/TimSchoenle/helm-charts), which pins that digest |
+| the `dev.terrace.config.*` image labels | anything, to discover the other two without pulling a layer |
+
+The three labels — the envelope version, the in-image path, and the loader's `MP_STATS_` prefix —
+are constants, so the `Dockerfile` writes them out by hand. Two checks are what make that safe:
+the `Config Contract` job diffs the block against `--format dockerfile`, and the Docker job checks
+the labels **of both built images** against the generator's own output, because a label a source
+diff can see is not the same thing as a label the image carries.
+
+A pod running this image needs `enableServiceLinks: false`. Kubernetes injects a
+`MP_STATS_LEGACY_VIEWER_*` variable per service in the namespace, those names fall inside the
+loader's own prefix, and a contract may not exempt its own namespace from the check that owns it.

@@ -33,6 +33,62 @@ jobs:
       - name: Run Check
         uses: TimSchoenle/actions/actions/rust/cargo-check@5798c7bd8d1d98a0c7360114e91a0ac3b86bf145 # tag=actions-rust-cargo-check-v1.1.5
 
+  # The reverse gate on the configuration contract, one step earlier than the check on the built
+  # image. `docs/config.contract.json` is what a deployment pipeline reads to decide whether what
+  # a chart renders is what this image loads, so it has to be the contract these types produce:
+  # regenerating and diffing makes a configuration change visible in the pull request that makes
+  # it, with a removed key showing up next to the chart it is about to break.
+  #
+  # A gate rather than a render-and-commit like the README and the example file. Those two are
+  # documentation and a stale one is a stale page; this one is consumed by another repository's
+  # CI, and a copy that arrives one commit late is a gate passing against the wrong document.
+  #
+  # `--revision` and `--created` are deliberately not passed: they move between builds of the same
+  # source, so the committed copy carries neither and the published one may carry both. The
+  # configuration half is what this diff is about.
+  contract:
+    name: Config Contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Required to checkout the code
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+
+      - name: Check the committed contract against the types
+        run: |
+          set -euo pipefail
+          cargo run -q -p mp-stats-config --features config-schema \
+            --example config-schema -- --format contract > docs/config.contract.json
+          if ! git diff --exit-code -- docs/config.contract.json; then
+            echo "::error file=docs/config.contract.json::The configuration surface changed and the committed contract did not. Regenerate it with the command in this step and commit the result." >&2
+            exit 1
+          fi
+
+      # The half a source diff can see. The `LABEL` block is hand-carried because a `LABEL` key
+      # cannot be interpolated from a generator, so this catches a prefix change one step before
+      # the image is built - and the check on the built image catches the rest.
+      - name: Check the Dockerfile's label block against the contract
+        run: |
+          set -euo pipefail
+          cargo run -q -p mp-stats-config --features config-schema \
+            --example config-schema -- --format dockerfile > "${RUNNER_TEMP}/labels.expected"
+          grep -A2 '^LABEL dev\.terrace\.config' Dockerfile > "${RUNNER_TEMP}/labels.actual"
+          if ! diff -u "${RUNNER_TEMP}/labels.expected" "${RUNNER_TEMP}/labels.actual"; then
+            echo "::error file=Dockerfile::The Dockerfile's dev.terrace.config.* LABEL block is not the one this contract publishes. Paste the output of \`--format dockerfile\`." >&2
+            exit 1
+          fi
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -155,18 +211,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # `load: true` cannot export a multi-platform image, so the arm64 variant is
-      # built without being exported - enough to verify the cross-compilation
-      # path. The architecture-independent stages (frontend, data conversion) are
-      # reused from the amd64 build above, so only the server binary and its
-      # dependencies are actually recompiled.
+      # `load: true` cannot export a multi-platform *index*, but it exports a
+      # single-platform image of any architecture perfectly well - the daemon
+      # only refuses to run one, and nothing here runs it. Loading the arm64
+      # variant instead of discarding it is what lets its labels be read: they
+      # live in each platform's own config blob, so a build argument or a
+      # differing base can make one architecture carry them and another not, and
+      # only inspecting both can see that.
+      #
+      # The architecture-independent stages (frontend, data conversion, the
+      # contract) are reused from the amd64 build above, so only the server
+      # binary and its dependencies are actually recompiled.
       - name: Build Docker image (linux/arm64 cross-compile)
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           platforms: linux/arm64
           push: false
-          outputs: type=cacheonly
+          load: true
+          tags: image:test-arm64
           build-args: |
             DATA_INPUT_DIRECTORY=data-test
             version=test
@@ -175,6 +238,67 @@ jobs:
             VERSION=test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The document and the labels the two builds above put in their images, on
+      # the host where they can be compared against them. One export of the
+      # `contract-export` stage rather than a second full build: everything it
+      # needs is already in the cache the amd64 build just wrote.
+      - name: Export the generated contract and labels
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          target: contract-export
+          outputs: type=local,dest=contract-out
+          build-args: |
+            DATA_INPUT_DIRECTORY=data-test
+            version=test
+            release=test
+            vendor=Tim Schönle
+            VERSION=test
+          cache-from: type=gha
+
+      # The check the hand-written `LABEL` block needs and that no source diff
+      # can give. Both platforms, because the labels are per-manifest; every
+      # violation before it exits, because a build that names one missing label
+      # and hides two is a second round trip.
+      - name: Verify both images carry the contract labels
+        run: |
+          set -euo pipefail
+          status=0
+          for entry in 'image:test linux/amd64' 'image:test-arm64 linux/arm64'; do
+            set -- ${entry}
+            docker inspect --format '{{json .Config.Labels}}' "$1" > "${RUNNER_TEMP}/labels.json"
+            bash .github/scripts/check-image-labels.sh \
+              "${RUNNER_TEMP}/labels.json" contract-out/out/contract.labels "$1 ($2)" || status=1
+          done
+          exit "${status}"
+
+      # The cross-check the dropped hash label would have bought, and the build
+      # is the one place that gets it for free because it holds both copies. A
+      # stale in-image document is exactly the failure nothing downstream can
+      # see: the chart repository fetches the registry copy, and would compare
+      # it against this one only if the image were pulled apart layer by layer.
+      #
+      # `FROM scratch` has no shell, but `docker cp` needs none - it reads the
+      # container's filesystem from the daemon, and the container is created and
+      # never started.
+      - name: Compare the contract inside the image with the exported copy
+        run: |
+          set -euo pipefail
+          trap 'docker rm -f contract-probe >/dev/null 2>&1 || true' EXIT
+          status=0
+          for entry in 'image:test linux/amd64' 'image:test-arm64 linux/arm64'; do
+            set -- ${entry}
+            docker rm -f contract-probe >/dev/null 2>&1 || true
+            docker create --platform "$2" --name contract-probe "$1" >/dev/null
+            docker cp contract-probe:/config/contract.json "${RUNNER_TEMP}/from-image.json"
+            if ! cmp "${RUNNER_TEMP}/from-image.json" contract-out/out/contract.json; then
+              echo "::error::$1 ($2) carries a /config/contract.json that is not the document this build generated, so the image and its contract came from different builds" >&2
+              status=1
+            fi
+          done
+          exit "${status}"
 
       # The server takes no arguments - it reads the `/config.toml` the image bakes in - so it
       # cannot be smoke-tested by passing it a flag: an unknown argument is ignored, the server

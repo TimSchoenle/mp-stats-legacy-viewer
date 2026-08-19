@@ -19,3 +19,9 @@ fileExistenceTests:
   - name: baked configuration present
     path: /config.toml
     shouldExist: true
+  # The offline copy of the configuration contract, at the path the image's own
+  # `dev.terrace.config.contract.path` label claims it is at. A label pointing at
+  # nothing is an image that says it is self-describing and is not.
+  - name: configuration contract present
+    path: /config/contract.json
+    shouldExist: true

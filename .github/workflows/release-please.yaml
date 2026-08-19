@@ -71,8 +71,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # Pinned to the version `TimSchoenle/helm-charts` verifies with, so a
+      # signature this job mints and the check that reads it are never one
+      # client release apart. The pin lives in that repository's `justfile`.
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
 
       # No QEMU setup on purpose: the Dockerfile cross-compiles every artifact
       # from the runner's native architecture. Should a target-architecture
@@ -128,6 +133,122 @@ jobs:
           # `--recursive` also signs the per-architecture images referenced by
           # the multi-arch manifest list, not just the list itself.
           cosign sign --yes --recursive ${images}
+
+      # ── the configuration contract ──────────────────────────────────────────
+      # Everything below publishes the document that lets `TimSchoenle/helm-charts`
+      # check a rendered `config.toml` against what this image actually loads. The
+      # order is the whole design: the labels are verified against the image that
+      # was really built, and only then is anything attached or signed.
+
+      # The bytes the builder stage generated, on the runner. One export of the
+      # `contract-export` stage rather than a second full build - everything it
+      # needs is already in the cache the push above read from - and the same
+      # bytes the runtime stage COPYed to `/config/contract.json`.
+      - name: Export the generated contract and labels
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          target: contract-export
+          outputs: type=local,dest=contract-out
+          cache-from: type=gha
+          build-args: |
+            version=${{ needs.release-please.outputs.tag_name }}
+            release=${{ needs.release-please.outputs.tag_name }}
+            vendor=Tim Schönle
+            VERSION=${{ needs.release-please.outputs.tag_name }}
+
+      # Pinned to what the consuming repository pins, so the two halves of the
+      # protocol are exercised by the same client: `TimSchoenle/helm-charts`
+      # carries `oras_version` in its `justfile` and installs it exactly this way.
+      - name: Install oras
+        env:
+          ORAS_VERSION: '1.3.3'
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin oras
+          oras version
+
+      # The checkpoint the whole scheme rests on, and the reason the `LABEL` block
+      # in the Dockerfile is allowed to be hand-written. It reads the pushed index
+      # the way the chart repository will: every platform manifest under it, each
+      # one's own config blob, `.config.Labels`. Labels live per manifest, so a
+      # differing base or a per-platform build argument can leave one architecture
+      # carrying them and another not - and only reading both can see that.
+      #
+      # The floating tag is briefly unverified here. That is acceptable because
+      # charts pin digests and nothing is attached or signed until this passes.
+      - name: Verify every platform carries the contract labels
+        env:
+          IMAGE: docker.io/${{ env.DOCKER_REPO }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          # `.manifests` is absent when the pushed digest is a single manifest
+          # rather than an index; `unknown/unknown` are the provenance and SBOM
+          # attestations, which are not images and carry none of this.
+          platforms="$(oras manifest fetch "${IMAGE}@${DIGEST}" \
+            | jq -r '(.manifests // [])[] | select((.platform.os // "unknown") != "unknown")
+                     | "\(.digest) \(.platform.os)/\(.platform.architecture)"')"
+          if [ -z "${platforms}" ]; then
+            platforms="${DIGEST} the-pushed-manifest"
+          fi
+
+          status=0
+          while read -r manifest platform; do
+            [ -n "${manifest}" ] || continue
+            oras manifest fetch-config "${IMAGE}@${manifest}" \
+              | jq -c '.config.Labels' > "${RUNNER_TEMP}/labels.json"
+            bash .github/scripts/check-image-labels.sh \
+              "${RUNNER_TEMP}/labels.json" contract-out/out/contract.labels \
+              "${IMAGE}@${DIGEST} (${platform})" || status=1
+          done <<< "${platforms}"
+          exit "${status}"
+
+      # Attached to the digest, never to a tag: a tag can be moved, and the
+      # referrer subject is what ties the document to the exact build a chart
+      # pins. Verbatim bytes - the ones the generator wrote, with nothing added
+      # afterwards - because the attachment *is* the tie and there is no digest
+      # field to fill in.
+      #
+      # Skipped when one is already there. A re-run of this workflow would
+      # otherwise leave two referrers of the same artifact type on one digest,
+      # which the chart repository refuses rather than picks between.
+      - name: Attach the contract to the image digest
+        env:
+          IMAGE: docker.io/${{ env.DOCKER_REPO }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
+        run: |
+          set -euo pipefail
+          existing="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
+            "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // []) | length')"
+          if [ "${existing}" -gt 0 ]; then
+            echo "a contract is already attached to ${IMAGE}@${DIGEST}; leaving it alone"
+            exit 0
+          fi
+          oras attach --artifact-type "${ARTIFACT_TYPE}" "${IMAGE}@${DIGEST}" \
+            contract-out/out/contract.json:application/json
+
+      # Signed from `release-please.yaml` on `refs/heads/main`, which is the
+      # workflow identity the chart repository's `contract_signer` regexp admits.
+      # Moving this step to another workflow or another ref breaks the vendoring
+      # step over there with a signature error nobody would connect to it.
+      - name: Sign the attached contract
+        env:
+          IMAGE: docker.io/${{ env.DOCKER_REPO }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
+        run: |
+          set -euo pipefail
+          referrer="$(oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
+            "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // [])[0].digest // ""')"
+          if [ -z "${referrer}" ]; then
+            echo "::error::nothing of type ${ARTIFACT_TYPE} is attached to ${IMAGE}@${DIGEST}, so there is no contract to sign" >&2
+            exit 1
+          fi
+          cosign sign --yes "${IMAGE}@${referrer}"
 
   helm-release:
     name: Helm Release

@@ -96,7 +96,7 @@ The easiest way to run the entire stack (Frontend, Backend, and Data processing)
 
 ## Configuration
 
-Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config), pinned at `v0.5.0`. Neither binary takes command-line arguments.
+Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config), pinned at `v0.6.0`. Neither binary takes command-line arguments.
 
 Read before any of those layers exists:
 
