@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.1...v0.17.2) (2026-08-19)
+
+
+### Bug Fixes
+
+* **ci:** retry registry reads in the release contract steps ([#429](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/429)) ([22c438d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/22c438dcbc3ec96f01d644a5ac26b943bb530958))
+
 ## [0.17.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.0...v0.17.1) (2026-08-19)
 
 
