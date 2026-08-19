@@ -232,9 +232,16 @@ COPY --from=contract-builder /out/contract.json /config/contract.json
 # generator run. `--format dockerfile` emits exactly this block, and the `Config
 # Contract` job diffs the two so the copy here cannot drift from the document it
 # points at.
+
+# The markers are terrace-config's own, and cutting the region at them is
+# what the shared check does. The line-count cut this repository used -
+# `grep -A2 '^LABEL dev\.terrace\.config'` - reads correctly right up until
+# a fourth label is added, and then compares two of three lines and passes.
+# terrace-config:labels:begin
 LABEL dev.terrace.config.contract.version="1" \
       dev.terrace.config.contract.path="/config/contract.json" \
       dev.terrace.config.prefix="MP_STATS_"
+# terrace-config:labels:end
 
 EXPOSE 8080
 USER ${USER_ID}:${GROUP_ID}
