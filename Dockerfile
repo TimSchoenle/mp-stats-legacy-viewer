@@ -104,6 +104,40 @@ RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
     MP_STATS_CONVERTER__CACHE__DIR=/app/.converter_cache \
     converter
 
+# The configuration contract: the document a deployment pipeline reads to check
+# that what it renders is what this image loads - every key in every spelling,
+# the same keys as a JSON Schema, and the variables outside the `MP_STATS_`
+# namespace this container tolerates.
+#
+# On `host_cacher` and pinned to the build platform, not on `backend_builder`:
+# the document describes types, not machine code, so it is identical for every
+# target architecture and building it once is what keeps the two platforms of a
+# multi-arch image carrying the same bytes. Nothing the `config-schema` feature
+# links - `serde_json`, `syn`, the derive - reaches the binary the runtime stage
+# copies.
+#
+# Both files come out of one invocation pair in one stage, which is the only
+# arrangement in which the labels and the document cannot disagree: two runs at
+# different times can, and the labels are what a consumer finds the document by.
+FROM host_cacher AS contract-builder
+ARG BUILDARCH
+COPY . .
+RUN set -eux; \
+    target="$(rust-target "${BUILDARCH}")"; \
+    mkdir -p /out; \
+    cargo run -q --locked --release --target "${target}" \
+      -p mp-stats-config --features config-schema --example config-schema \
+      -- --format contract > /out/contract.json; \
+    cargo run -q --locked --release --target "${target}" \
+      -p mp-stats-config --features config-schema --example config-schema \
+      -- --format labels > /out/contract.labels
+
+# The two files alone, so `--output type=local` hands the host `contract.json`
+# and `contract.labels` rather than exporting the whole Rust toolchain image the
+# stage above is built on.
+FROM scratch AS contract-export
+COPY --from=contract-builder /out /out
+
 # Dependencies for the target architecture. Layered on top of `host_cacher` so
 # that a native build (target == build architecture) reuses those artifacts
 # instead of compiling the same dependency set twice.
@@ -178,6 +212,29 @@ COPY --from=data-optimizer /app/data-dist /dist/data
 # MP_STATS_CONFIG points elsewhere, and MP_STATS_SERVER__* wins over both.
 COPY deploy/config.toml /config.toml
 ENV MP_STATS_CONFIG=/config.toml
+
+# The offline copy of the contract: what makes the image self-describing with no
+# registry at all - an exported tarball, an air-gapped mirror, an initContainer
+# reading it in-cluster. The canonical copy is the OCI referrer attached to the
+# pushed digest; this one costs a few kilobytes and needs nothing to fetch it.
+COPY --from=contract-builder /out/contract.json /config/contract.json
+
+# How anything finds that document without pulling a layer. All three values are
+# constants for this service - the envelope version, where the file was COPYed,
+# and the loader's prefix - so the block is written out rather than interpolated:
+# a `LABEL` key cannot be interpolated at all, and feeding `--label` from the
+# generator would mean running it a second time on the host, where the builder
+# stage that produced the document is out of reach.
+#
+# Hand-carried means it can be wrong in ways a source diff cannot see - a line
+# dropped on a branch nobody diffed, a base image contributing its own - so the
+# check is on the built image instead, against `contract.labels` from the same
+# generator run. `--format dockerfile` emits exactly this block, and the `Config
+# Contract` job diffs the two so the copy here cannot drift from the document it
+# points at.
+LABEL dev.terrace.config.contract.version="1" \
+      dev.terrace.config.contract.path="/config/contract.json" \
+      dev.terrace.config.prefix="MP_STATS_"
 
 EXPOSE 8080
 USER ${USER_ID}:${GROUP_ID}
