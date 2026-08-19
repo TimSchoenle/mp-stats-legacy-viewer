@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.17.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.16.1...v0.17.0) (2026-08-19)
+
+
+### Features
+
+* **config:** adopt terrace-config 0.5.0 and generate the documentation ([#423](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/423)) ([3cc1f8a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3cc1f8a7b414c83fdb509eddbf05486c3846d496))
+* **config:** publish a configuration contract with the image ([#425](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/425)) ([cb2802b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cb2802b44b695d8b1c7378738fb56aba16b3ce65))
+
+
+### Bug Fixes
+
+* **ci:** regenerate the config contract instead of gating on it ([#426](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/426)) ([39f2242](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/39f22429509ae600ed9d49782813ecadc8134e8d))
+
+
+### Miscellaneous
+
+* **deps:** update step-security/harden-runner action to v2.21.0 ([#422](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/422)) ([dc56518](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dc56518e1c26d7057957ca6f64891a231412c822))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.3.2 ([#424](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/424)) ([4fdc008](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4fdc008fb32b47c759c6bd0fe4a3106d7d7b0707))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.6.3 ([#420](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/420)) ([ce787c5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ce787c57787a0a1e24b597da3545c383c04c38fe))
+
 ## [0.16.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.16.0...v0.16.1) (2026-08-17)
 
 
