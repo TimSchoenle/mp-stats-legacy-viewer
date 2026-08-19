@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Regenerates everything the configuration types are the source of truth for: the Markdown tables
-# the documentation templates inject, and `config.example.toml`.
+# the documentation templates inject, `config.example.toml`, and the configuration contract the
+# image publishes.
 #
 # Run it yourself after changing a key, or let the documentation workflow run it - it renders the
 # templates against whatever this produces and commits the result back to the branch:
@@ -30,3 +31,13 @@ generate --format markdown --only converter >"${partials}/config/converter-keys.
 
 # Not a partial: nothing renders it, and an operator copies it to `config.toml` as it stands.
 generate --format toml >config.example.toml
+
+# Nor is this one: it is read by a machine, not by a person. The committed copy is what makes a
+# configuration change reviewable - a removed key shows up in the pull request that removed it,
+# next to the deployment it is about to break - while the copy a deployment trusts is the one the
+# image build generates and attaches to its own digest.
+#
+# `--revision` and `--created` are deliberately not passed. They move between builds of one source
+# tree, so the committed copy carries neither; `app.version` is here because it moves with
+# `Cargo.toml`, which is a source change like any other and belongs in the diff.
+generate --format contract >docs/config.contract.json

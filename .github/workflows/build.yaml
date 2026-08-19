@@ -33,19 +33,18 @@ jobs:
       - name: Run Check
         uses: TimSchoenle/actions/actions/rust/cargo-check@5798c7bd8d1d98a0c7360114e91a0ac3b86bf145 # tag=actions-rust-cargo-check-v1.1.5
 
-  # The reverse gate on the configuration contract, one step earlier than the check on the built
-  # image. `docs/config.contract.json` is what a deployment pipeline reads to decide whether what
-  # a chart renders is what this image loads, so it has to be the contract these types produce:
-  # regenerating and diffing makes a configuration change visible in the pull request that makes
-  # it, with a removed key showing up next to the chart it is about to break.
+  # The `LABEL` block in the Dockerfile, against the contract it claims to point at.
   #
-  # A gate rather than a render-and-commit like the README and the example file. Those two are
-  # documentation and a stale one is a stale page; this one is consumed by another repository's
-  # CI, and a copy that arrives one commit late is a gate passing against the wrong document.
+  # The block is hand-carried, because a `LABEL` key cannot be interpolated from a generator, so
+  # it can be wrong in ways nothing else here would notice. This catches a prefix change one step
+  # before the image is built; the check on the built image in `Docker Build and Test` catches
+  # what a source diff cannot see at all.
   #
-  # `--revision` and `--created` are deliberately not passed: they move between builds of the same
-  # source, so the committed copy carries neither and the published one may carry both. The
-  # configuration half is what this diff is about.
+  # The committed `docs/config.contract.json` is *not* checked here. It carries `app.version` out
+  # of `Cargo.toml`, so a release pull request bumping the version makes it stale through no
+  # change to the configuration at all - and a gate that only the release bot can trip, and cannot
+  # itself clear, blocks every release. `docs.yml` regenerates and commits it instead, beside
+  # `config.example.toml`, and verifies it wherever it cannot commit.
   contract:
     name: Config Contract
     runs-on: ubuntu-latest
@@ -65,19 +64,6 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
 
-      - name: Check the committed contract against the types
-        run: |
-          set -euo pipefail
-          cargo run -q -p mp-stats-config --features config-schema \
-            --example config-schema -- --format contract > docs/config.contract.json
-          if ! git diff --exit-code -- docs/config.contract.json; then
-            echo "::error file=docs/config.contract.json::The configuration surface changed and the committed contract did not. Regenerate it with the command in this step and commit the result." >&2
-            exit 1
-          fi
-
-      # The half a source diff can see. The `LABEL` block is hand-carried because a `LABEL` key
-      # cannot be interpolated from a generator, so this catches a prefix change one step before
-      # the image is built - and the check on the built image catches the rest.
       - name: Check the Dockerfile's label block against the contract
         run: |
           set -euo pipefail

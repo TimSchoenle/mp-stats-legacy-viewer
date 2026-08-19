@@ -102,17 +102,24 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           commit_message: 'docs: render configuration reference from template'
 
-      # Not a render: nothing templates it, so it is committed straight from the generator's
-      # output. `file_pattern` keeps this commit to that one file - the partials the two steps
-      # above rendered from live under `target/`, but a dirty working tree must not ride along in
-      # a documentation commit.
-      - name: Commit the example configuration
+      # Not renders: nothing templates either of them, so both are committed straight from the
+      # generator's output. `file_pattern` keeps this commit to those two files - the partials the
+      # two steps above rendered from live under `target/`, but a dirty working tree must not ride
+      # along in a documentation commit.
+      #
+      # The contract is here rather than behind a `git diff` gate because it carries the version
+      # out of `Cargo.toml`, and a release pull request bumps that without regenerating anything.
+      # A gate turned every release into a red check that the release bot could not clear on its
+      # own; regenerating and committing it puts the new version on the same branch that raised
+      # it, and a configuration change still arrives as a reviewable diff in the pull request
+      # that caused it. `verify` below is what keeps that true where nothing can be committed.
+      - name: Commit the example configuration and the contract
         id: example
         uses: TimSchoenle/actions/actions/common/commit-changes@76719ba61e9b9cf1ffafdc3cb895308055a7f3bd # tag=actions-common-commit-changes-v1.3.2
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          commit_message: 'docs: regenerate config.example.toml'
-          file_pattern: 'config.example.toml'
+          commit_message: 'docs: regenerate config.example.toml and the config contract'
+          file_pattern: 'config.example.toml docs/config.contract.json'
 
       - name: Summarise
         env:
@@ -123,7 +130,7 @@ jobs:
           regenerated=""
           if [ "${README}" = "true" ]; then regenerated="${regenerated} README.md"; fi
           if [ "${REFERENCE}" = "true" ]; then regenerated="${regenerated} docs/CONFIGURATION.md"; fi
-          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml"; fi
+          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml docs/config.contract.json"; fi
 
           if [ -n "${regenerated}" ]; then
             echo "Regenerated and committed:${regenerated}" >> "$GITHUB_STEP_SUMMARY"
@@ -181,6 +188,8 @@ jobs:
           variables: ${{ steps.variables.outputs.json }}
           check: true
 
-      # The generator wrote over the committed copy in the step above, so the diff is the check.
-      - name: Verify config.example.toml is current
-        run: git diff --exit-code -- config.example.toml
+      # The generator wrote over both committed copies in the step above, so the diff is the
+      # check. Both at once rather than one step each: a branch that regenerated neither should
+      # be told about both rather than about whichever came first.
+      - name: Verify config.example.toml and the config contract are current
+        run: git diff --exit-code -- config.example.toml docs/config.contract.json
