@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.18.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.2...v0.18.0) (2026-08-22)
+
+
+### Features
+
+* **config:** take terrace-config v0.9.0, the shared check and a justfile ([#431](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/431)) ([ea3c841](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ea3c8415687cd93b155c1ffd9d1558f0f1bb5038))
+
+
+### Miscellaneous
+
+* **deps:** update docker/setup-buildx-action digest to 37fe631 ([#436](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/436)) ([fa63ea1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fa63ea1ab3f61857f6bb3a6cd8bd0bb69a486928))
+* **deps:** update rust crate lzma-rust2 to 0.19.0 ([#433](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/433)) ([fc6a92e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fc6a92e275280cea87e037842fb474cb48445637))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.21 ([#434](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/434)) ([77eb01f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/77eb01f53d0db5afc6204ef9fb2af246c1f0c3a9))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.32 ([#435](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/435)) ([0caf187](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0caf1870c24d5fa69298106784bb333f88df404f))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#419](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/419)) ([50f7d47](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/50f7d47557acb8665db3ed4f50919c2a0682c8d1))
+
 ## [0.17.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.1...v0.17.2) (2026-08-19)
 
 
