@@ -24,12 +24,13 @@ Historical Minecraft server statistics, converted to sharded binary chunks and q
 The server these statistics came from no longer runs. What is left is a directory of dumps, and
 this repository is the three programs that turn it into a site.
 
-`apps/converter` is a batch job. It shards players by the first three characters of their UUID and
-of their name, writes each leaderboard as a raw array of big-endian `i64` carrying no field names
-and no header, and LZMA-compresses everything it emits. `apps/server` is an Axum binary that
-serves that tree and the built frontend as static files; the only routes it registers are three
-health probes. `apps/frontend` is a Yew client compiled to WebAssembly that fetches the chunks a
-page needs and decodes them in the browser.
+`apps/converter` is a batch job. It reads the raw dumps and writes an LZMA-compressed tree, split
+so that a page of the site costs a few files rather than one index of everyone.
+
+`apps/server` is an Axum binary that serves that tree and the built frontend as static files. The
+only routes it registers are three health probes. `apps/frontend` is a Yew client compiled to
+WebAssembly, and it is where the work happens: it fetches the files a page needs, decompresses
+them and reads the records out of them in the browser.
 
 Nothing answers a query, so there is no API to keep in step with the layout on disk. Both halves
 link `crates/core`, where every data path is a function rather than a string, and
@@ -61,10 +62,11 @@ so it takes no arguments and needs no volume.
 
 ## Features
 
-- A leaderboard chunk is 10,000 big-endian `int64` values and nothing else: no JSON, no strings,
-  no file header. The client reads the rank it wants by offset instead of parsing a document.
-- Player records are sharded on the first three characters of the UUID and of the name, so a
-  lookup fetches one shard rather than an index of everything.
+- A leaderboard chunk is a raw array of big-endian `u64` pairs, a player id and a score, with no
+  strings and no header in the file. Rank is not stored: it follows from the chunk number and the
+  offset. [`data/README.md`](data/README.md) is the format.
+- Profile shards are keyed on the first three characters of a player's UUID and the name index on
+  the first three of the name, so a lookup fetches one file rather than an index of everyone.
 - **The converter is incremental.** It fingerprints its input and skips an edition whose files are
   byte-for-byte unchanged. The Docker build keeps that cache in a BuildKit cache mount, restored
   from and saved back to the Actions cache between runs.
