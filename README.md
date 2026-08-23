@@ -1,102 +1,166 @@
 <!--
-Generated from .github/templates/README.md.hbs - edit that file, not README.md. CI renders it on
-every pull request and commits the result back to the branch; a push to main whose README.md does
-not match its template fails the `docs` check.
+Generated from .github/templates/README.md.hbs - edit that file, not README.md.
 
-Two kinds of value are injected, and neither is a fact anyone should type twice:
+The payload is two sources merged. `TimSchoenle/actions/actions/common/readme-variables` derives
+the name, description, licence, release tag, edition and documentation index from Cargo.toml and
+docs/. `just docs-variables` supplies the two pinned dependency tags on top of it, and the tables
+below are Handlebars partials `just regenerate` writes out of the structs in crates/config.
 
-  - scalars, from `just docs-variables`, which reads the pinned tags out of Cargo.toml
-  - table partials, from `just regenerate`, which reads the configuration structs
-
-A dependency bump moves the first and a new configuration key moves the second, so the
-documentation arrives on the branch that changed it rather than a release later.
+The `Render` job in .github/workflows/docs.yml renders this on every pull request and commits the
+result back to the branch. Where it cannot commit - a push to main, a pull request from a fork -
+`Docs are current` renders the same template with `check: true` and fails on the first line that
+differs.
 -->
-# MP Legacy Stats Viewer
+# mp-stats-legacy-viewer
 
-This project provides a comprehensive platform for parsing, converting, and viewing historical statistics for a legacy Minecraft-Server. The platform consists of a backend data server, a frontend web application, and data conversion utilities.
+Historical Minecraft server statistics, converted to sharded binary chunks and queried in the browser by a Yew client.
 
-## Architecture
+[![Release](https://img.shields.io/github/v/release/TimSchoenle/mp-stats-legacy-viewer?sort=semver)](https://github.com/TimSchoenle/mp-stats-legacy-viewer/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/TimSchoenle/mp-stats-legacy-viewer/build.yaml?branch=main)](https://github.com/TimSchoenle/mp-stats-legacy-viewer/actions/workflows/build.yaml)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-The project is built entirely in Rust and is structured as a Cargo workspace containing the following components:
+## What this is
 
-### Applications
+The server these statistics came from no longer runs. What is left is a directory of dumps, and
+this repository is the three programs that turn it into a site.
 
-*   **Frontend** (`apps/frontend`): A WebAssembly-based client application built with Yew. It provides a responsive interface for searching players and viewing their statistics.
-*   **Server** (`apps/server`): A REST API backend built with Axum. It serves the processed statistical data to the frontend application.
-*   **Converter** (`apps/converter`): A command-line utility for processing, parsing, and converting raw binary data dumps into an optimized format suitable for efficient querying.
+`apps/converter` is a batch job. It shards players by the first three characters of their UUID and
+of their name, writes each leaderboard as a raw array of big-endian `i64` carrying no field names
+and no header, and LZMA-compresses everything it emits. `apps/server` is an Axum binary that
+serves that tree and the built frontend as static files; the only routes it registers are three
+health probes. `apps/frontend` is a Yew client compiled to WebAssembly that fetches the chunks a
+page needs and decodes them in the browser.
 
-### Shared Libraries
+Nothing answers a query, so there is no API to keep in step with the layout on disk. Both halves
+link `crates/core`, where every data path is a function rather than a string, and
+[`crates/core/src/routes.rs`](crates/core/src/routes.rs) is the only file that spells one.
 
-*   **Core** (`crates/core`): Contains the core data models, parsing logic, and business rules shared across all applications.
-*   **Common** (`crates/common`): Provides common utilities and helper functions.
-*   **Config** (`crates/config`): The typed configuration surface both binaries deserialize, and this repository's dialect of the layered [terrace-config](https://github.com/TimSchoenle/terrace-config) loader.
+The statistics were collected with [StatsApi](https://github.com/TimSchoenle/StatsApi).
 
-## Technology Stack
+## Quick start
 
-*   **Language:** Rust
-*   **Backend Server:** Axum
-*   **Frontend Framework:** Yew, WebAssembly (wasm-bindgen)
-*   **Styling:** Tailwind CSS
-*   **Data Processing:** Postcard, Serde, Rayon
+```bash
+docker run --rm -p 8080:8080 timschoenle/mp-stats-legacy-viewer:v0.17.2
+```
 
-## Getting Started
+Then open <http://localhost:8080>. The image carries the converted data and its own `/config.toml`,
+so it takes no arguments and needs no volume.
 
-### Prerequisites
+## Table of contents
 
-To build and run the project locally, you will need the following tools installed:
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Operations](#operations)
+- [Compatibility](#compatibility)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
 
-*   [Rust Toolchain](https://rustup.rs/) (edition 2024 support)
-*   [Trunk](https://trunkrs.dev/) (for building the WebAssembly frontend)
-*   [Node.js](https://nodejs.org/) (required for Tailwind CSS processing)
+## Features
 
-### Local Development
+- A leaderboard chunk is 10,000 big-endian `int64` values and nothing else: no JSON, no strings,
+  no file header. The client reads the rank it wants by offset instead of parsing a document.
+- Player records are sharded on the first three characters of the UUID and of the name, so a
+  lookup fetches one shard rather than an index of everything.
+- **The converter is incremental.** It fingerprints its input and skips an edition whose files are
+  byte-for-byte unchanged. The Docker build keeps that cache in a BuildKit cache mount, restored
+  from and saved back to the Actions cache between runs.
+- Java and Bedrock are converted and browsed separately, from the same dump layout.
+- The `Content-Security-Policy` is computed from the frontend that was actually built, not
+  written down. See [Content-Security-Policy](#content-security-policy).
+- Configuration is file-first and layered five deep, and a key supplied by two of the last three
+  layers fails the boot rather than being resolved by precedence.
+- The image describes its own configuration surface. `/config/contract.json` and three OCI labels
+  ship inside it, and the release attaches a signed copy to the pushed digest, which is what lets
+  the Helm chart check a rendered `config.toml` against what this image really loads.
 
-1.  **Prepare the Frontend**
-    Navigate to the frontend directory and install the required npm dependencies:
-    ```sh
-    cd apps/frontend
-    npm install
-    ```
+## Installation
 
-2.  **Configure (optional)**
-    Copy the annotated example and edit what you need; every key has a working default, so this step can be skipped entirely:
-    ```sh
-    cp config.example.toml config.toml
-    ```
+### Docker
 
-3.  **Start the Backend Server**
-    Run the Axum server from the workspace root:
-    ```sh
-    cargo run -p mp-stats-server
-    ```
-    *(It reads `config.toml` from the working directory. Ensure the required data files are in the configured directories - see [Configuration](#configuration).)*
+```bash
+docker pull timschoenle/mp-stats-legacy-viewer:v0.17.2
+```
 
-4.  **Start the Frontend Client**
-    In a separate terminal, use Trunk to serve the frontend application:
-    ```sh
-    cd apps/frontend
-    trunk serve
-    ```
+A multi-platform manifest for `linux/amd64` and `linux/arm64`. Every release is signed with
+cosign against its GitHub OIDC identity. Pin by digest in production. The chart below does.
 
-### Docker Setup
+### Helm
 
-The easiest way to run the entire stack (Frontend, Backend, and Data processing) without needing Rust or Node.js locally is via Docker.
+```bash
+helm repo add timschoenle https://timschoenle.github.io/helm-charts
+helm install mp-stats-legacy-viewer timschoenle/mp-stats-legacy-viewer
+```
 
-1.  **Place Data Files**
-    Ensure your raw data files are placed in a directory (e.g., `data/`) at the workspace root before building or use build arguments to adjust the data directory.
+The chart pins the image by digest and validates the `config.toml` it renders against the
+contract that image publishes, so a key this build does not read is caught there rather than at
+boot. Its values are documented in
+[TimSchoenle/helm-charts](https://github.com/TimSchoenle/helm-charts/tree/main/charts/mp-stats-legacy-viewer).
 
-2.  **Build and Run the Container**
-    ```sh
-    docker build -t mp-stats-viewer .
-    docker run -p 8080:8080 mp-stats-viewer
-    ```
-    The web interface will be accessible at `http://localhost:8080`.
+### From source
 
-    The image ships its own configuration at `/config.toml` (from [`deploy/config.toml`](deploy/config.toml)) and needs no arguments. Override a single key with `-e MP_STATS_SERVER__BIND_ADDR=…`, or replace the whole file with `-v ./my-config.toml:/config.toml:ro`.
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk just --locked
+git clone https://github.com/TimSchoenle/mp-stats-legacy-viewer.git
+cd mp-stats-legacy-viewer
+```
+
+Node.js is required as well: `apps/frontend` builds its Tailwind stylesheet through
+`@tailwindcss/cli` and copies its self-hosted fonts out of `node_modules`.
+
+## Usage
+
+Build the frontend first. The server reads `index.html` out of `server.dist_dir` at startup to
+hash the inline scripts for its `Content-Security-Policy`, and a missing one fails the boot before
+the listener binds.
+
+```bash
+cd apps/frontend
+npm install
+trunk build
+```
+
+Then convert a data directory. The converter takes no arguments; every path is a configuration
+key, so a one-off run is a matter of overriding one:
+
+```bash
+MP_STATS_CONVERTER__INPUT_DIR=data-test cargo run -p mp-stats-converter
+```
+
+Run the server on `8081` and point it at both outputs, because `apps/frontend/Trunk.json` proxies
+`/data/` there:
+
+```bash
+MP_STATS_SERVER__BIND_ADDR=127.0.0.1:8081 \
+MP_STATS_SERVER__DIST_DIR=apps/frontend/dist \
+MP_STATS_SERVER__DATA_DIR=target/converted_data \
+  cargo run -p mp-stats-server
+```
+
+Then, in a second terminal:
+
+```bash
+cd apps/frontend && trunk serve
+```
+
+`trunk serve` holds <http://localhost:8080> and forwards every `/data/` request to the server.
+Run the checks CI runs with one recipe, and `just` with no arguments lists the rest:
+
+```bash
+just verify
+```
 
 ## Configuration
 
-Both binaries read the same layered configuration, lowest precedence first: the defaults compiled into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent), `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE` indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config), pinned at `v0.9.0`. Neither binary takes command-line arguments.
+Both binaries read the same layered configuration, lowest precedence first: the defaults compiled
+into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent),
+`MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE`
+indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config),
+pinned at `v0.9.0`. Neither binary takes command-line arguments.
 
 Read before any of those layers exists:
 
@@ -127,62 +191,102 @@ Read before any of those layers exists:
 | `converter.cache.enabled` | `bool` | `MP_STATS_CONVERTER__CACHE__ENABLED` | `true` | — | Restore from and store into the cache directory. |
 | `converter.cache.dir` | `PathBuf` | `MP_STATS_CONVERTER__CACHE__DIR` | `target/converter_cache` | — | Where cached output and its input fingerprints live. |
 
-A key supplied by more than one of the last three layers fails the boot rather than being resolved by precedence, so a stale environment variable cannot silently shadow a mounted file. `MP_STATS_EXPLAIN=1` writes the layer each value came from to stderr — including when the boot is the one that failed.
+A key supplied by more than one of the last three layers fails the boot rather than being resolved
+by precedence, so a stale environment variable cannot silently shadow a mounted file.
+`MP_STATS_EXPLAIN=1` writes the layer each value came from to stderr, including when the boot is
+the one that failed.
 
-[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) is the full reference; [`config.example.toml`](config.example.toml) is the same keys as a file to copy.
+[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) is the full reference;
+[`config.example.toml`](config.example.toml) is the same keys as a file to copy.
 
-## Content-Security-Policy
+### Content-Security-Policy
 
-The server sends a `Content-Security-Policy` on every document it serves, and the policy is derived from the shell rather than written down anywhere: at startup it reads the `index.html` in `dist_dir` and computes a `'sha256-…'` for each inline `<script>` in it, using [csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.0`. Trunk regenerates the inline WASM bootstrap on every frontend build, so a hand-maintained hash would go stale silently — the header would still look correct while the browser refused the script and rendered a blank page. An unreadable shell fails the boot instead, before the listener binds.
+The server sends a `Content-Security-Policy` on every document it serves, and the policy is
+derived from the shell rather than written down anywhere: at startup it reads the `index.html` in
+`dist_dir` and computes a `'sha256-…'` for each inline `<script>` in it, using
+[csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.0`. Trunk
+regenerates the inline WASM bootstrap on every frontend build, so a hand-maintained hash would go
+stale silently: the header would still look correct while the browser refused the script and
+rendered a blank page. An unreadable shell fails the boot instead, before the listener binds.
 
-Configuration decides only what the policy has to make room for. `[server.csp.cloudflare]` carries one key per Cloudflare product, all off by default: `turnstile` and `web_analytics` admit the origins those products load from, and `script_nonce` reserves the per-response nonce the edge-injected bot-detection script needs — which also obliges the deployment to keep Cloudflare from caching the shell. See [§6 of the configuration reference](docs/CONFIGURATION.md#6-the-content-security-policy).
+Configuration decides only what the policy has to make room for. `[server.csp.cloudflare]` carries
+one key per Cloudflare product, all off by default. `turnstile` and `web_analytics` admit the
+origins those products load from, and `script_nonce` reserves the per-response nonce the
+edge-injected bot-detection script needs, which also obliges the deployment to keep Cloudflare
+from caching the shell. See
+[§6 of the configuration reference](docs/CONFIGURATION.md#6-the-content-security-policy).
 
-## Data Conversion
+## Operations
 
-To process raw statistical data into the optimized format used by the server, use the converter utility:
+### Probes
 
-```sh
-cargo run -p mp-stats-converter
-```
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health/startup` | Startup: the process has begun answering |
+| `GET /health/live` | Liveness: failure restarts the container |
+| `GET /health/ready` | Readiness: failure removes the pod from the Service endpoints |
 
-It reads `converter.input_dir`, `converter.output_dir` and the incremental cache settings from the configuration described above, so a one-off run is a matter of overriding a key:
+All three answer `200` unconditionally. What they report is that the boot got past its own checks:
+the frontend was found, its inline scripts hashed and the address bound, each of which aborts the
+process rather than degrading it.
 
-```sh
-MP_STATS_CONVERTER__INPUT_DIR=data-test cargo run -p mp-stats-converter
-```
+### The image
 
-Please refer to the internal documentation within the `apps/converter` crate for detailed information on supported data formats.
+`FROM scratch` with no shell and no package manager, `EXPOSE 8080`, running as numeric non-root
+`1001:1001`. It carries the built frontend, the converted data and `deploy/config.toml` at
+`/config.toml`, and needs no writable filesystem. Override one key with
+`-e MP_STATS_SERVER__BIND_ADDR=…`, or replace the file with
+`-v ./my-config.toml:/config.toml:ro`.
 
-## Generated Documentation
+### The configuration contract
 
-Three files are generated and must not be edited directly: this `README.md`, [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) and [`config.example.toml`](config.example.toml). Edit the source instead — the prose lives in [`.github/templates`](.github/templates), and every key, default and environment spelling comes from the structs in [`crates/config`](crates/config/src/lib.rs) by way of [`crates/config/examples/config-schema.rs`](crates/config/examples/config-schema.rs).
+`/config/contract.json` is every key in every spelling, generated from the same structs the
+binaries deserialize. The release attaches it to the pushed digest as an OCI referrer of type
+`application/vnd.terrace.config-schema.v1+json` and signs that with cosign, so a consumer can
+fetch the contract for an exact image without pulling a layer. Three `dev.terrace.config.*` labels
+say where the in-image copy lives and which prefix the loader reads; CI verifies them against the
+generator on both platforms of the manifest.
 
-Both halves run locally, and are what CI runs — `just` with no arguments lists everything there is:
+## Compatibility
 
-```sh
-just regenerate     # the tables, config.example.toml, the contract and the Dockerfile's LABEL region
-just docs-variables # the pinned dependency tags, from Cargo.toml
-```
+| | Supported |
+| --- | --- |
+| Rust | edition 2024 |
+| Platforms | `linux/amd64`, `linux/arm64` |
+| Container port | 8080 |
 
-A pull request that leaves any of the three stale has the rendered version committed back onto its branch by the `docs` workflow; a push to `main` that does not match fails it.
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Configuration reference](docs/CONFIGURATION.md) | Every key the platform reads, what it does, its default, and which binary consumes it. |
+| [docs/config.contract.json](docs/config.contract.json) | — |
+
+## Contributing
+
+Issues and pull requests are welcome. Commit subjects follow Conventional Commits, because
+release-please reads them to raise the release pull request and to write `CHANGELOG.md`.
+`just verify` runs the format, lint and test steps a pull request is going to run anyway.
+
+Five things here are generated and will be overwritten if edited directly: `README.md`,
+[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md), [`config.example.toml`](config.example.toml),
+[`docs/config.contract.json`](docs/config.contract.json) and the `LABEL` region of the
+[`Dockerfile`](Dockerfile). The prose for the first two lives in
+[`.github/templates`](.github/templates); every key, default and environment spelling in any of
+them comes from the structs in [`crates/config`](crates/config/src/lib.rs) by way of
+[`crates/config/examples/config-schema.rs`](crates/config/examples/config-schema.rs). Run
+`just regenerate` before pushing, or let the `Render` job commit it back onto the branch.
+
+## Security
+
+Do not open a public issue for a vulnerability. [SECURITY.md](SECURITY.md) has the reporting
+instructions and the supported versions.
 
 ## License
 
-This project uses a dual-license structure:
+The source code is `MIT`. [LICENSE](LICENSE) has the terms.
 
-### Source Code
-All source code (including applications, crates, and build configurations) is licensed under the **MIT License**. See the [LICENSE](LICENSE) file in the project root for details.
-
-You are free to use, modify, and distribute the code under the terms of the MIT License.
-
-### Data Files
-The contents of the `/data` and `/data-test` directories are **proprietary** and subject to separate, restrictive licenses:
-
-- `/data/LICENSE` - Proprietary license for production data
-- `/data-test/LICENSE` - Proprietary license for test data
-
-These data files are NOT open source and may NOT be used, copied, modified, or distributed without explicit written permission from the project maintainers.
-
-## Acknowledgements
-
-The historical data used and viewed in this project was originally collected utilizing the [StatsApi](https://github.com/TimSchoenle/StatsApi) utility.
+The contents of [`data/`](data/LICENSE) and [`data-test/`](data-test/LICENSE) are not. Both
+directories carry their own proprietary licence, which grants nothing: the statistics may not be
+used, copied, modified or redistributed without written permission. A container image built from
+this repository contains that data, so publishing one publishes the data with it.

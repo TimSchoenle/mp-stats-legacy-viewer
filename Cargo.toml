@@ -1,9 +1,17 @@
 [workspace.package]
 edition = "2024"
 
+# The root package holds no code - `src/lib.rs` is a placeholder release-please needs a version
+# on - but it is the manifest `actions/common/readme-variables` reads, so every field the README
+# quotes lives here. `edition` is spelled out rather than inherited: the reader takes a
+# field value and treats `edition.workspace = true` as an absence, and the compatibility table
+# has to come from the payload rather than from a number typed into the template.
 [package]
 name = "mp-stats-platform"
 version = "0.17.2"
+description = "Historical Minecraft server statistics, converted to sharded binary chunks and queried in the browser by a Yew client."
+license = "MIT"
+edition = "2024"
 publish = false
 
 [workspace]

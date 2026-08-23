@@ -81,9 +81,26 @@ jobs:
       - name: Regenerate everything the configuration types own
         run: just regenerate
 
-      - name: Collect template variables
+      # The two pinned dependency tags, straight out of `Cargo.toml`. They are the only scalars
+      # this repository still has to produce itself: the name, the description, the licence, the
+      # release tag, the edition and the documentation index are all derived from the manifest
+      # and from `docs/` by the action below, and merged with these.
+      - name: Generate the dependency-tag payload
+        id: config
+        run: |
+          set -euo pipefail
+          echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+
+      # `branch` is pinned rather than left to its default. That default is `github.ref_name`,
+      # which on a `pull_request` event is `<number>/merge`, so `render` would write that into
+      # every badge and permanent link while `verify` on `main` wrote `main` - a drift failure on
+      # the merge commit with nothing in the diff to explain it.
+      - name: Collect the README payload
         id: variables
-        run: echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+        uses: TimSchoenle/actions/actions/common/readme-variables@b5b5c9e047f00ffa00b7772536c8bdb4f158f706 # tag=actions-common-readme-variables-v1.1.0
+        with:
+          branch: ${{ github.event.repository.default_branch }}
+          extra: ${{ steps.config.outputs.json }}
 
       - name: Render and commit the README
         id: readme
@@ -92,7 +109,7 @@ jobs:
           template: .github/templates/README.md.hbs
           output: README.md
           partials-dir: target/config-docs
-          variables: ${{ steps.variables.outputs.json }}
+          variables: ${{ steps.variables.outputs.variables }}
           token: ${{ steps.generate_token.outputs.token }}
           commit_message: 'docs: render README from template'
 
@@ -103,7 +120,7 @@ jobs:
           template: .github/templates/CONFIGURATION.md.hbs
           output: docs/CONFIGURATION.md
           partials-dir: target/config-docs
-          variables: ${{ steps.variables.outputs.json }}
+          variables: ${{ steps.variables.outputs.variables }}
           token: ${{ steps.generate_token.outputs.token }}
           commit_message: 'docs: render configuration reference from template'
 
@@ -180,9 +197,26 @@ jobs:
       - name: Regenerate everything the configuration types own
         run: just regenerate
 
-      - name: Collect template variables
+      # The two pinned dependency tags, straight out of `Cargo.toml`. They are the only scalars
+      # this repository still has to produce itself: the name, the description, the licence, the
+      # release tag, the edition and the documentation index are all derived from the manifest
+      # and from `docs/` by the action below, and merged with these.
+      - name: Generate the dependency-tag payload
+        id: config
+        run: |
+          set -euo pipefail
+          echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+
+      # `branch` is pinned rather than left to its default. That default is `github.ref_name`,
+      # which on a `pull_request` event is `<number>/merge`, so `render` would write that into
+      # every badge and permanent link while `verify` on `main` wrote `main` - a drift failure on
+      # the merge commit with nothing in the diff to explain it.
+      - name: Collect the README payload
         id: variables
-        run: echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+        uses: TimSchoenle/actions/actions/common/readme-variables@b5b5c9e047f00ffa00b7772536c8bdb4f158f706 # tag=actions-common-readme-variables-v1.1.0
+        with:
+          branch: ${{ github.event.repository.default_branch }}
+          extra: ${{ steps.config.outputs.json }}
 
       # Writes nothing; fails with the first differing line when the committed file is stale.
       - name: Verify README.md is current
@@ -191,7 +225,7 @@ jobs:
           template: .github/templates/README.md.hbs
           output: README.md
           partials-dir: target/config-docs
-          variables: ${{ steps.variables.outputs.json }}
+          variables: ${{ steps.variables.outputs.variables }}
           check: true
 
       - name: Verify docs/CONFIGURATION.md is current
@@ -200,7 +234,7 @@ jobs:
           template: .github/templates/CONFIGURATION.md.hbs
           output: docs/CONFIGURATION.md
           partials-dir: target/config-docs
-          variables: ${{ steps.variables.outputs.json }}
+          variables: ${{ steps.variables.outputs.variables }}
           check: true
 
       # `just regenerate` wrote over all three committed copies in the step above, so the diff
