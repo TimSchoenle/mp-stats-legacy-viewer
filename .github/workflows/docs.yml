@@ -89,7 +89,8 @@ jobs:
         id: config
         run: |
           set -euo pipefail
-          echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+          json="$(just docs-variables)"
+          echo "json=${json}" >> "$GITHUB_OUTPUT"
 
       # `branch` is pinned rather than left to its default. That default is `github.ref_name`,
       # which on a `pull_request` event is `<number>/merge`, so `render` would write that into
@@ -205,7 +206,8 @@ jobs:
         id: config
         run: |
           set -euo pipefail
-          echo "json=$(just docs-variables)" >> "$GITHUB_OUTPUT"
+          json="$(just docs-variables)"
+          echo "json=${json}" >> "$GITHUB_OUTPUT"
 
       # `branch` is pinned rather than left to its default. That default is `github.ref_name`,
       # which on a `pull_request` event is `<number>/merge`, so `render` would write that into
