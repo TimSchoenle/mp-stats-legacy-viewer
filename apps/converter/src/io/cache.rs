@@ -231,9 +231,8 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dest);
     }
 
-    /// The schema version is part of the fingerprint, so two otherwise-identical
-    /// inputs must hash differently across schema versions. We verify the
-    /// version contributes by recomputing the hash with and without it.
+    /// Recomputing the hash without the schema version gives a different number, which is what
+    /// makes a schema change miss the cache rather than restore a tree in the previous shape.
     #[test]
     fn fingerprint_includes_schema_version() {
         use std::hash::{Hash, Hasher};

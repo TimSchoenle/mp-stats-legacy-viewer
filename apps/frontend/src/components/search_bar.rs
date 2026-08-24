@@ -25,7 +25,7 @@ pub struct SearchBarProps {
 enum Suggestion {
     /// A player the names index matched, by edition, name and UUID.
     Player(PlatformEdition, String, String),
-    /// What the typed text looks like a UUID and neither index was consulted: an offer to open
+    /// When the typed text looks like a UUID and neither index was consulted: an offer to open
     /// that profile in one edition or the other.
     UuidAction(PlatformEdition, String),
 }
