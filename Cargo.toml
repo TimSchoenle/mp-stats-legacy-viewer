@@ -41,8 +41,9 @@ incremental = false
 missing_docs = "warn"
 
 [workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-# Already inside `pedantic`, and named again so the next reader can see they are deliberate.
+# `pedantic` is deliberately not taken here. It is not part of the documentation gate, and turning
+# it on in this repository reports 102 findings that have nothing to do with doc comments. The two
+# lints below live inside `pedantic` and are named individually, which enables them without it.
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 # An identifier written outside backticks renders as prose and then cannot be searched for.
