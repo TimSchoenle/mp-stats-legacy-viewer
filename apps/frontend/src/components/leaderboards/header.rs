@@ -1,16 +1,23 @@
+//! The title block of the leaderboard page.
+
 use crate::Route;
 use crate::hooks::use_theme;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// Where in the tree the reader currently is.
 #[derive(Properties, PartialEq)]
 pub struct HeaderProps {
+    /// The edition, which is both a crumb and the theme.
     pub edition: PlatformEdition,
+    /// The game's directory name, shown as-is.
     pub game: String,
+    /// The category's directory name. Underscores become spaces before it is shown.
     pub stat: String,
 }
 
+/// The breadcrumb trail and title above a leaderboard.
 #[function_component(LeaderboardHeader)]
 pub fn leaderboard_header(props: &HeaderProps) -> Html {
     let theme_color = use_theme();

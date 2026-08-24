@@ -1,3 +1,5 @@
+//! One edition's game list.
+
 use crate::hooks::use_theme;
 use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
@@ -6,11 +8,14 @@ use yew::platform::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// Which edition to list.
 #[derive(Properties, PartialEq, Clone)]
 pub struct JavaLandingProps {
+    /// The platform whose games are listed.
     pub edition: PlatformEdition,
 }
 
+/// One edition's games, grouped by first letter.
 #[function_component(JavaLanding)]
 pub fn java_landing(props: &JavaLandingProps) -> Html {
     let games = use_state(Vec::new);

@@ -1,3 +1,8 @@
+//! The converter's entry point: load the configuration, run one conversion, exit.
+//!
+//! Everything it does is [`mp_stats_converter`]. This binary exists so the pipeline can be linked
+//! by the integration tests without being run.
+
 use anyhow::{Context, Result};
 use mp_stats_config::ConverterConfig;
 use mp_stats_converter::Converter;

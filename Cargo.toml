@@ -28,6 +28,42 @@ resolver = "2"
 [profile.dev]
 incremental = false
 
+# The documentation gate, declared once and inherited by every member through `[lints] workspace =
+# true`, so the converter cannot be held to a looser standard than the crate whose format it
+# writes. `missing_docs` is what the `doc` job in `build.yaml` turns into an error: rustdoc runs
+# rustc's lints, and `RUSTDOCFLAGS: -D warnings` is what makes an undocumented `pub` item fail the
+# merge rather than scroll past in a log.
+#
+# `clippy::missing_docs_in_private_items` is deliberately absent. A private helper whose body is
+# six obvious lines has nothing to say; the private constant whose value came out of a page size
+# has everything to say, and no lint tells those apart.
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+# `pedantic` is deliberately not taken here. It is not part of the documentation gate, and turning
+# it on in this repository reports 102 findings that have nothing to do with doc comments. The two
+# lints below live inside `pedantic` and are named individually, which enables them without it.
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+# An identifier written outside backticks renders as prose and then cannot be searched for.
+doc_markdown = "warn"
+# The missing blank line after the summary, which makes the whole comment the index entry.
+too_long_first_doc_paragraph = "warn"
+doc_link_with_quotes = "warn"
+doc_broken_link = "warn"
+doc_include_without_cfg = "warn"
+
+[workspace.lints.rustdoc]
+# Denied rather than warned: a broken link renders as the literal `[`Foo`]` on the page, so it is
+# invisible to the reader and visible only to whoever no longer needs it.
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "warn"
+unescaped_backticks = "warn"
+
+[lints]
+workspace = true
+
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"

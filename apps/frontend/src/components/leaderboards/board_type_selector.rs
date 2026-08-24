@@ -1,3 +1,5 @@
+//! The all-time and periodic board tabs.
+
 use crate::Route;
 use crate::hooks::use_theme;
 use crate::pages::java::leaderboard::SnapshotQuery;
@@ -5,15 +7,26 @@ use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// Which boards exist for this category, and which one is open.
 #[derive(Properties, PartialEq, Clone)]
 pub struct BoardTypeSelectorProps {
+    /// The edition every link stays inside.
     pub edition: PlatformEdition,
+    /// The game every link stays inside.
     pub game: String,
+    /// The category every link stays inside.
     pub stat: String,
+    /// The board currently being viewed, matched against `boards` by exact string.
     pub current_board: String,
+    /// The boards to offer, in any order.
     pub boards: Vec<String>,
 }
 
+/// Orders boards by window, longest first: all-time, yearly, monthly, weekly, daily, then anything
+/// unrecognised alphabetically.
+///
+/// The tree stores them in a map, so without this the tabs would move between renders.
+#[must_use]
 pub fn sorted_board_types(mut boards: Vec<String>) -> Vec<String> {
     fn get_rank(board: &str) -> u8 {
         match board.to_lowercase().as_str() {
@@ -36,6 +49,7 @@ pub fn sorted_board_types(mut boards: Vec<String>) -> Vec<String> {
     boards
 }
 
+/// The row of board tabs. Each is a link, so a board is a URL and can be shared.
 #[function_component(BoardTypeSelector)]
 pub fn board_type_selector(props: &BoardTypeSelectorProps) -> Html {
     let sorted_boards = sorted_board_types(props.boards.clone());

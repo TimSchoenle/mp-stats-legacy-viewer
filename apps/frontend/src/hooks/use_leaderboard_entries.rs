@@ -1,3 +1,5 @@
+//! The leaderboard page's data: one page of one board, current or archived.
+
 use crate::Api;
 use crate::models::LeaderboardEntry;
 use mp_stats_core::HistoricalSnapshot;
@@ -5,13 +7,22 @@ use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 
+/// What a leaderboard page has to render from.
 #[derive(Clone, PartialEq)]
 pub struct UseLeaderboardEntriesResult {
+    /// The rows, in rank order. Empty while loading, and also for a page past the end of the
+    /// board, which is how the table draws its own empty state.
     pub entries: Vec<LeaderboardEntry>,
+    /// A fetch is in flight.
     pub loading: bool,
+    /// Why the page could not be loaded. A page that simply does not exist is not an error here.
     pub error: Option<String>,
 }
 
+/// Fetches one page of a board, from the current standings or from an archived snapshot.
+///
+/// `page` is 1-based and becomes the zero-based chunk number. Nothing is fetched until `snapshot`
+/// is known, since the game metadata that names the snapshots arrives first.
 #[hook]
 pub fn use_leaderboard_entries(
     edition: PlatformEdition,

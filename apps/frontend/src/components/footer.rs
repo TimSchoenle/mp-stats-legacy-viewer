@@ -1,5 +1,8 @@
+//! The page footer.
+
 use yew::prelude::*;
 
+/// The rule at the bottom of every page. It carries no content yet.
 #[function_component(Footer)]
 pub fn footer() -> Html {
     html! {

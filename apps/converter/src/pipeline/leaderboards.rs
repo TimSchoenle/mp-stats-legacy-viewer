@@ -1,3 +1,5 @@
+//! Step 3: the dumps' id-and-score buffers, re-paged and re-ranked into columnar pages.
+
 use crate::models::leaderboard::binary_leaderboard;
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, read_lzma_raw, write_lzma_bin};
@@ -13,7 +15,15 @@ use walkdir::WalkDir;
 
 const LEADERBOARD_SIZE: usize = crate::models::leaderboard::BINARY_LEADERBOARD_SIZE;
 
-/// Process all Java leaderboards
+/// Converts every board under `java_in`, in parallel, one board at a time.
+///
+/// A board that fails is dropped silently and the rest of the run continues, so a missing output
+/// directory is a partial conversion rather than a failed one.
+///
+/// # Errors
+///
+/// Never. The walk cannot fail and every per-board failure is swallowed; the result type matches
+/// the other steps.
 pub fn process_java_leaderboards(
     platform: &PlatformEdition,
     java_in: &Path,
@@ -25,7 +35,7 @@ pub fn process_java_leaderboards(
     let walker = WalkDir::new(&lb_in).into_iter();
     // Filter for .../latest directories
     let latest_dirs: Vec<PathBuf> = walker
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| e.file_type().is_dir() && e.file_name() == "latest")
         .map(|e| e.path().to_path_buf())
         .collect();
@@ -42,7 +52,7 @@ pub fn process_java_leaderboards(
     Ok(())
 }
 
-/// Process a single leaderboard directory
+/// Converts one `<board>/<game>/<stat>` directory: its current pages, then its history archive.
 fn process_single_leaderboard(
     platform: &PlatformEdition,
     latest_in: &Path,
@@ -79,7 +89,10 @@ fn process_single_leaderboard(
     Ok(())
 }
 
-/// Process latest leaderboard chunks
+/// Converts the current snapshot, copying the dump's `_meta.json` beside the pages.
+///
+/// The chunks are sorted by name before they are read, because ranking is a running count across
+/// all of them and reading them out of order would number the whole board wrongly.
 fn process_latest_chunks(
     latest_in: &Path,
     out_latest: &Path,
@@ -113,7 +126,7 @@ fn process_latest_chunks(
                 Some(data)
             }
             Err(e) => {
-                eprintln!("Failed to decompress chunk {:?}: {}", path, e);
+                eprintln!("Failed to decompress chunk {path:?}: {e}");
                 None
             }
         })
@@ -125,7 +138,14 @@ fn process_latest_chunks(
     Ok(())
 }
 
-/// Shared logic to process binary chunks and convert to rich format
+/// Turns a run of dump chunks into numbered pages, and returns how many pages were written and
+/// how many entries went into them.
+///
+/// `chunks` has to be in board order: ranks are assigned as the entries stream past, and one page
+/// is closed every [`ENTRIES_PER_PAGE`] entries. Entries whose player id is zero or is not in
+/// `lookup_map` are dropped rather than written unnamed, so a page can hold fewer entries than the
+/// dump chunk it came from — and a page that fails to write is not counted, which shifts every
+/// page after it down by one.
 fn process_binary_chunks(
     chunks: &[Vec<u8>],
     output_dir: &Path,
@@ -166,7 +186,7 @@ fn process_binary_chunks(
             let score = view.score().read();
 
             if pid == 0 {
-                eprintln!("Invalid player ID: {}", pid);
+                eprintln!("Invalid player ID: {pid}");
                 continue;
             }
 
@@ -187,10 +207,10 @@ fn process_binary_chunks(
 
                 // If page full, write it
                 if current_page.ranks.len() >= ENTRIES_PER_PAGE {
-                    let dest_name = format!("chunk_{:04}.bin.xz", output_index);
+                    let dest_name = format!("chunk_{output_index:04}.bin.xz");
                     let dest_path = output_dir.join(dest_name);
                     if let Err(e) = write_lzma_bin(&dest_path, &current_page) {
-                        eprintln!("Failed to write page {:?}: {}", dest_path, e);
+                        eprintln!("Failed to write page {dest_path:?}: {e}");
                     } else {
                         output_index += 1;
                     }
@@ -203,17 +223,17 @@ fn process_binary_chunks(
                     };
                 }
             } else {
-                eprintln!("Failed to resolve player ID: {}", pid_str);
+                eprintln!("Failed to resolve player ID: {pid_str}");
             }
         }
     }
 
     // Write remaining entries
     if !current_page.ranks.is_empty() {
-        let dest_name = format!("chunk_{:04}.bin.xz", output_index);
+        let dest_name = format!("chunk_{output_index:04}.bin.xz");
         let dest_path = output_dir.join(dest_name);
         if let Err(e) = write_lzma_bin(&dest_path, &current_page) {
-            eprintln!("Failed to write final page {:?}: {}", dest_path, e);
+            eprintln!("Failed to write final page {dest_path:?}: {e}");
         } else {
             output_index += 1;
         }
@@ -228,7 +248,12 @@ fn process_binary_chunks(
     Ok((output_index, total_entries_written))
 }
 
-/// Process historical leaderboard data using rich format (same as latest)
+/// Converts every archived snapshot in the board's `history.tar.xz` into its own directory of
+/// pages.
+///
+/// The archive is solid: the chunks inside it are uncompressed and LZMA covers the whole tarball
+/// at once, so it has to be expanded in memory before any snapshot can be read. A board with no
+/// archive is not an error.
 fn process_history(
     stat_dir: &Path,
     out_stat_dir: &Path,
@@ -246,7 +271,7 @@ fn process_history(
     println!("Extracting history archive: {}", history_in.display());
 
     // Decompress the .xz file first
-    let decompressed_tar = read_lzma_raw(&*history_in)?;
+    let decompressed_tar = read_lzma_raw(&history_in)?;
 
     // Now extract the tar archive
     let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
@@ -269,7 +294,7 @@ fn process_history(
                 entry.read_to_end(&mut contents)?;
                 snapshot_data
                     .entry(snapshot_name)
-                    .or_insert_with(|| Vec::new())
+                    .or_default()
                     .push(contents);
             }
         }
@@ -285,25 +310,24 @@ fn process_history(
         .for_each(|(snapshot_name, chunks)| {
             let snapshot_out = history_out.join(snapshot_name);
             if let Err(e) = fs::create_dir_all(&snapshot_out) {
-                eprintln!("Failed to create directory {:?}: {}", snapshot_out, e);
+                eprintln!("Failed to create directory {snapshot_out:?}: {e}");
                 return;
             }
 
-            println!("Processing history snapshot: {}", snapshot_name);
+            println!("Processing history snapshot: {snapshot_name}");
 
             // Process chunks using shared logic
             let (output_index, total_entries_written) =
                 match process_binary_chunks(chunks, &snapshot_out, lookup_map) {
                     Ok(result) => result,
                     Err(e) => {
-                        eprintln!("Failed to process chunks for {}: {}", snapshot_name, e);
+                        eprintln!("Failed to process chunks for {snapshot_name}: {e}");
                         return;
                     }
                 };
 
             println!(
-                "  {} - Wrote {} pages with {} total entries",
-                snapshot_name, output_index, total_entries_written
+                "  {snapshot_name} - Wrote {output_index} pages with {total_entries_written} total entries"
             );
         });
 

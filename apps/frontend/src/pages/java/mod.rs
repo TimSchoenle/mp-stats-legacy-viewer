@@ -1,3 +1,6 @@
+//! The four pages that take an edition, which despite the module name serve Bedrock as well as
+//! Java.
+
 pub use self::game::GameView;
 pub use self::landing::JavaLanding;
 pub use self::player::PlayerView;

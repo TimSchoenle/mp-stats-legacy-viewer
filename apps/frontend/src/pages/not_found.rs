@@ -1,7 +1,10 @@
+//! The page for a URL that matches no route.
+
 use crate::Route;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// The 404 page, reached for any URL the router does not match.
 #[function_component(NotFound)]
 pub fn not_found() -> Html {
     html! {

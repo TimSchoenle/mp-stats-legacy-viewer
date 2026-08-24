@@ -1,3 +1,5 @@
+//! Choosing which archived state of a board to look at.
+
 use crate::hooks::use_theme;
 use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
 use web_sys::js_sys::Date;
@@ -5,14 +7,24 @@ use web_sys::js_sys::Intl::DateTimeFormatOptions;
 use web_sys::wasm_bindgen::JsValue;
 use yew::prelude::*;
 
+/// Which snapshots this board has, and which one is open.
 #[derive(Properties, PartialEq, Clone)]
 pub struct SnapshotSelectorProps {
+    /// The edition, which decides the theme this is drawn in.
     pub edition: PlatformEdition,
+    /// The snapshot being viewed, either an archived id or the literal `latest`.
     pub current_snapshot: String,
+    /// The board's metadata. Absent or empty renders nothing at all, which is how a board with no
+    /// history hides the control.
     pub meta: Option<LeaderboardMeta>,
+    /// Called with the chosen snapshot id.
     pub on_change: Callback<String>,
 }
 
+/// A timeline of every snapshot of this board, with a dropdown under it.
+///
+/// Ticks are placed by timestamp rather than evenly, so a decade of dumps taken at irregular
+/// intervals reads as the gaps it really has. Dates are formatted in the browser's locale.
 #[function_component(SnapshotSelector)]
 pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
     let theme_color = use_theme();

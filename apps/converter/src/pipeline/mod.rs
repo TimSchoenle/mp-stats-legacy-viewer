@@ -1,3 +1,8 @@
+//! The four steps of a conversion, in the order [`crate::Converter::convert`] runs them.
+//!
+//! Each is a free function over paths rather than a method, so a step can be run on its own
+//! against a fixture. What forces their order is documented at the crate root.
+
 pub mod games;
 pub mod leaderboards;
 pub mod metadata;

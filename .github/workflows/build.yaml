@@ -127,10 +127,54 @@ jobs:
       - name: Run Clippy
         uses: TimSchoenle/actions/actions/rust/clippy@dcfb46a6a17ad8565db74057ce60278953056ad5 # tag=actions-rust-clippy-v1.1.9
 
+  # The half of the documentation standard a linter can hold. `missing_docs` and the rustdoc lint
+  # tables are declared on the workspace and inherited by every member, but rustdoc's own lints
+  # never run under `cargo check` or `cargo clippy`, so without this job an undocumented `pub fn`
+  # and a broken intra-doc link both merge green.
+  #
+  # What it cannot catch is a comment that restates its signature. That one is a review criterion,
+  # and pretending otherwise would produce comments written to pass a linter.
+  doc:
+    name: Doc
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Required to checkout the code
+    env:
+      RUSTDOCFLAGS: '-D warnings'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+
+      # `--no-deps`, because the only crates whose documentation this gate is about are the ones in
+      # this workspace, and a dependency's warnings are not ours to fix.
+      - name: Render the documentation
+        run: cargo doc --workspace --all-features --no-deps
+
+      # `mp-stats-config`'s `config-schema` feature changes which items exist, so the run above is
+      # the only one that renders them. This one proves the crate still documents cleanly without
+      # it, which is how it is actually built.
+      - name: Render it again without the schema feature
+        run: cargo doc --workspace --no-deps
+
+      - name: Run the doctests
+        run: cargo test --doc --workspace --all-features
+
   docker-build-test:
     name: Docker Build and Test
     runs-on: ubuntu-latest
-    needs: check
+    # `doc` as well as `check`, so a documentation failure stops the merge rather than going red on
+    # `main` and staying there. It costs a minute in front of a build that takes many.
+    needs: [ check, doc ]
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-docker
       cancel-in-progress: true

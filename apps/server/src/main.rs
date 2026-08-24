@@ -1,3 +1,14 @@
+//! A static file server with a `Content-Security-Policy` on it.
+//!
+//! There is no API. The converted tree is mounted at `/data` and the built frontend everywhere
+//! else, and the client does its own querying by fetching files out of the tree, so nothing here
+//! knows what a leaderboard is. The three health probes are the only routes this binary registers,
+//! and everything else is [`ServeDir`].
+//!
+//! Two things are checked before the listener binds, because both fail as a working server serving
+//! a broken site: the shell has to exist, and its inline scripts have to be hashable into the
+//! policy. See [`csp`].
+
 mod config;
 mod csp;
 
@@ -62,6 +73,9 @@ fn router(config: &ServerConfig, index_path: &Path) -> Router {
         .fallback_service(spa_service)
 }
 
+// All three answer unconditionally. A process that has bound the port has already proved the two
+// things this server can be wrong about — the shell is readable and the policy renders — and it
+// holds no connection, cache or upstream whose health could change afterwards.
 async fn startup_probe() -> StatusCode {
     StatusCode::OK
 }

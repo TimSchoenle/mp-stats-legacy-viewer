@@ -1,3 +1,5 @@
+//! One player's profile.
+
 use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_player_profile, use_theme};
@@ -6,12 +8,16 @@ use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// Whose profile to open.
 #[derive(Properties, PartialEq, Clone)]
 pub struct PlayerProps {
+    /// The platform the profile belongs to.
     pub edition: PlatformEdition,
+    /// The player's UUID, or on Bedrock the name standing in for one.
     pub uuid: String,
 }
 
+/// One player's standings, with the summary counted over them.
 #[function_component(PlayerView)]
 pub fn player_view(props: &PlayerProps) -> Html {
     let profile_req = use_player_profile(props.edition.clone(), props.uuid.clone());
@@ -173,12 +179,11 @@ struct NoProfileProps {
     uuid: String,
 }
 
-/// Rich empty state shown when a player has no archived profile data.
+/// What a profile page shows for a player the archive has nothing on.
 ///
-/// In this archival mirror a player profile only materialises if the player was
-/// captured inside the *latest page* of a game's leaderboard at snapshot time.
-/// Anyone ranked below that cut-off (or who never placed) leaves no trace here,
-/// so we explain that clearly instead of surfacing a raw error.
+/// A profile exists only for players the dumps caught on the all-time board, so a UUID that is
+/// perfectly valid and belongs to a real player can still have no page. Saying so is the whole
+/// point of this component: the alternative reads as a fault, and readers report it as one.
 #[function_component(NoProfileData)]
 fn no_profile_data(props: &NoProfileProps) -> Html {
     html! {

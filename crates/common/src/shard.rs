@@ -1,29 +1,43 @@
+//! Which file a UUID, a name or a player id belongs in.
+
 use crate::error::{DataError, Result};
 use crate::formats::raw;
 
-/// Calculate shard key from UUID (first 3 characters, uppercase)
+/// The profile shard a UUID belongs in: its first
+/// [`MIN_PREFIX_LENGTH`](raw::MIN_PREFIX_LENGTH) characters, uppercased.
+///
+/// # Errors
+///
+/// [`DataError::Validation`] when the UUID is shorter than that, which leaves the player with no
+/// shard to be found in.
 pub fn uuid_shard(uuid: &str) -> Result<String> {
     if uuid.len() < raw::MIN_PREFIX_LENGTH {
         return Err(DataError::Validation(format!(
-            "UUID too short for sharding: '{}'",
-            uuid
+            "UUID too short for sharding: '{uuid}'"
         )));
     }
     Ok(uuid[..raw::MIN_PREFIX_LENGTH].to_uppercase())
 }
 
-/// Calculate shard key from player name (first 3 characters, lowercase)
+/// The search index shard a name belongs in: its first
+/// [`MIN_NAME_LENGTH`](raw::MIN_NAME_LENGTH) characters, lowercased.
+///
+/// # Errors
+///
+/// [`DataError::Validation`] when the name is shorter than that. Such a name is also shorter than
+/// the shortest query the search accepts, so it is unreachable either way.
 pub fn name_shard(name: &str) -> Result<String> {
     if name.len() < raw::MIN_NAME_LENGTH {
         return Err(DataError::Validation(format!(
-            "Name too short for sharding: '{}'",
-            name
+            "Name too short for sharding: '{name}'"
         )));
     }
     Ok(name[..raw::MIN_NAME_LENGTH].to_lowercase())
 }
 
-/// Calculate dictionary chunk ID from player ID
+/// The dictionary file a player id was dumped in, by integer division against
+/// [`DICTIONARY_CHUNK_SIZE`](raw::DICTIONARY_CHUNK_SIZE).
+#[must_use]
 pub fn player_id_chunk(player_id: i32) -> i32 {
     player_id / raw::DICTIONARY_CHUNK_SIZE
 }

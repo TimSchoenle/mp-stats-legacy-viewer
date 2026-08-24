@@ -1,3 +1,5 @@
+//! Reusing a previous run's output when the dumps it was made from have not moved.
+
 use crate::io::{copy_dir_all, link_or_copy_dir_all};
 use anyhow::{Context, Result};
 use mp_stats_config::CacheConfig;
@@ -8,31 +10,29 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 use walkdir::WalkDir;
 
-/// Incremental conversion cache.
+/// A directory of previous outputs, one entry per edition, each beside a fingerprint of the input
+/// it was made from.
 ///
-/// The converter is fully deterministic for a given input directory, so its
-/// output can be reused verbatim whenever the input is unchanged. This avoids
-/// re-running the expensive decompression/parsing/recompression pipeline (for
-/// example on Docker rebuilds where only unrelated source code changed).
-///
-/// Outputs are cached per logical key (one per platform edition) alongside a
-/// fingerprint of the corresponding input directory.
+/// Reuse is sound because the conversion is deterministic: the same dumps produce the same bytes,
+/// which the integration tests assert by comparing a cached run against an uncached one. A
+/// disabled cache answers every restore with a miss and stores nothing, so the pipeline around it
+/// is the same code either way.
 pub struct ConversionCache {
     root: PathBuf,
     enabled: bool,
 }
 
-/// Version of the converter's *output* schema/format.
+/// Bumped by hand whenever the written records change shape.
 ///
-/// This is mixed into every input fingerprint so that a change to the
-/// serialized data model (e.g. adding fields to `GameLeaderboardData` or
-/// `LeaderboardMeta`) invalidates previously cached output, even when the raw
-/// input data is byte-for-byte unchanged. Bump this whenever the produced
-/// binaries change in a way that older readers/newer code cannot consume.
+/// It is hashed into every fingerprint, so raising it invalidates every stored output even though
+/// no dump moved. Nothing derives it: a field added to a record the converter writes is a change
+/// this constant has to be told about, and forgetting serves the old bytes to a reader that
+/// cannot decode them.
 const OUTPUT_SCHEMA_VERSION: u64 = 3;
 
 impl ConversionCache {
-    /// Create an enabled cache rooted at `root`.
+    /// An enabled cache storing its entries under `root`, which is created on the first store.
+    #[must_use]
     pub fn new(root: PathBuf) -> Self {
         Self {
             root,
@@ -40,7 +40,8 @@ impl ConversionCache {
         }
     }
 
-    /// Create a disabled cache (no-op restore/store).
+    /// A cache that misses on every restore and keeps nothing, so a run always converts in full.
+    #[must_use]
     pub fn disabled() -> Self {
         Self {
             root: PathBuf::new(),
@@ -48,10 +49,8 @@ impl ConversionCache {
         }
     }
 
-    /// Build the cache described by a [`CacheConfig`].
-    ///
-    /// A disabled cache is a no-op restore/store rather than a missing directory, so the
-    /// pipeline below stays identical either way.
+    /// Builds the cache the `[converter.cache]` block asks for.
+    #[must_use]
     pub fn from_config(config: &CacheConfig) -> Self {
         if config.enabled {
             Self::new(config.dir.clone())
@@ -60,12 +59,23 @@ impl ConversionCache {
         }
     }
 
+    /// Whether restores and stores do anything.
+    #[must_use]
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    /// Compute a stable fingerprint of an input directory from the relative
-    /// path, byte length and modification time of every file it contains.
+    /// Hashes an input directory into the number a stored output is matched against.
+    ///
+    /// It covers the relative path, byte length and whole-second modification time of every file,
+    /// sorted so filesystem traversal order cannot change it, plus the output schema version.
+    /// Contents are never read, so a file edited within the same second and back to the same
+    /// length fingerprints the same as before it was touched.
+    ///
+    /// # Errors
+    ///
+    /// Never. An unreadable file is skipped rather than failing the walk, and the result type is
+    /// here for the callers that thread one.
     pub fn fingerprint_dir(input: &Path) -> Result<u64> {
         // Collect the file paths in a single walk, then read their metadata in
         // parallel. The per-file `stat` syscalls dominate the cost for large
@@ -74,9 +84,9 @@ impl ConversionCache {
         // is a large win over a sequential walk.
         let paths: Vec<PathBuf> = WalkDir::new(input)
             .into_iter()
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|e| e.file_type().is_file())
-            .map(|e| e.into_path())
+            .map(walkdir::DirEntry::into_path)
             .collect();
 
         let mut files: Vec<(String, u64, u64)> = paths
@@ -94,8 +104,7 @@ impl ConversionCache {
                     .modified()
                     .ok()
                     .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0);
+                    .map_or(0, |d| d.as_secs());
 
                 Some((rel, len, mtime))
             })
@@ -131,8 +140,15 @@ impl ConversionCache {
             .and_then(|raw| raw.trim().parse::<u64>().ok())
     }
 
-    /// Restore a cached output for `key` into `dest` when the stored
-    /// fingerprint matches `fingerprint`. Returns `true` on a cache hit.
+    /// Materializes the stored output for `key` at `dest` and returns `true`, or returns `false`
+    /// and writes nothing.
+    ///
+    /// A miss is the answer for a disabled cache, an absent entry and a fingerprint that does not
+    /// match, and the caller cannot tell which — all three mean the same thing to it.
+    ///
+    /// # Errors
+    ///
+    /// If the entry matches and cannot be linked or copied to `dest`.
     pub fn restore(&self, key: &str, fingerprint: u64, dest: &Path) -> Result<bool> {
         if !self.enabled {
             return Ok(false);
@@ -148,7 +164,13 @@ impl ConversionCache {
         Ok(true)
     }
 
-    /// Persist `src` as the cached output for `key`, recording `fingerprint`.
+    /// Replaces the stored output for `key` with a copy of `src`, and records `fingerprint`
+    /// beside it.
+    ///
+    /// # Errors
+    ///
+    /// If the copy fails or the fingerprint cannot be written. The caller treats both as a
+    /// warning: a run whose output could not be cached has still produced its output.
     pub fn store(&self, key: &str, fingerprint: u64, src: &Path) -> Result<()> {
         if !self.enabled {
             return Ok(());
@@ -209,9 +231,8 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dest);
     }
 
-    /// The schema version is part of the fingerprint, so two otherwise-identical
-    /// inputs must hash differently across schema versions. We verify the
-    /// version contributes by recomputing the hash with and without it.
+    /// Recomputing the hash without the schema version gives a different number, which is what
+    /// makes a schema change miss the cache rather than restore a tree in the previous shape.
     #[test]
     fn fingerprint_includes_schema_version() {
         use std::hash::{Hash, Hasher};
@@ -224,7 +245,10 @@ mod tests {
 
         // Recompute the same hash but without the version component.
         let mut files: Vec<(String, u64, u64)> = Vec::new();
-        for entry in WalkDir::new(&input).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(&input)
+            .into_iter()
+            .filter_map(std::result::Result::ok)
+        {
             if !entry.file_type().is_file() {
                 continue;
             }
@@ -239,8 +263,7 @@ mod tests {
                 .modified()
                 .ok()
                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs())
-                .unwrap_or(0);
+                .map_or(0, |d| d.as_secs());
             files.push((rel, meta.len(), mtime));
         }
         files.sort();

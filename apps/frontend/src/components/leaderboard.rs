@@ -1,10 +1,17 @@
+//! An unused early sketch of the leaderboard table.
+
 use yew::prelude::*;
 
+/// The heading above the table.
 #[derive(Properties, PartialEq)]
 pub struct Props {
+    /// What the table is a leaderboard of.
     pub title: AttrValue,
 }
 
+/// A leaderboard table that renders a permanent loading row.
+// A placeholder from before the page was built, mounted by nothing. The table that is really used
+// is `components::leaderboards::leaderboard_table`.
 #[function_component(Leaderboard)]
 pub fn leaderboard(props: &Props) -> Html {
     html! {

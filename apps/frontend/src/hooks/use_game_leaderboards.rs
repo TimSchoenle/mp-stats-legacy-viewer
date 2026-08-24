@@ -1,17 +1,30 @@
+//! The game page's data: one game's boards, and the names its ids resolve to.
+
 use crate::Api;
 use crate::models::{GameLeaderboardData, IdMap};
 use mp_stats_core::models::PlatformEdition;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 
+/// What a game page has to render from.
 #[derive(Clone, PartialEq)]
 pub struct UseGameLeaderboardsResult {
+    /// The game's categories and boards, absent until the fetch lands and after it fails.
     pub data: Option<GameLeaderboardData>,
+    /// The name tables. Absent while loading, and also when only that half of the pair failed —
+    /// the page still renders, with numeric ids where names would be.
     pub id_map: Option<IdMap>,
+    /// A fetch is in flight.
     pub loading: bool,
+    /// Why the game's metadata could not be loaded.
     pub error: Option<String>,
 }
 
+/// Fetches a game's metadata and the edition's name tables together, and reports the three states
+/// a page can be in.
+///
+/// Refetches whenever `game_id` changes; `edition` is captured once, which is correct only because
+/// no route changes the edition without also changing the game.
 #[hook]
 pub fn use_game_leaderboards(
     edition: PlatformEdition,

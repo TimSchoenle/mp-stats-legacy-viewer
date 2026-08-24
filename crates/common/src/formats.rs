@@ -1,23 +1,34 @@
-/// Binary format constants and utilities
+//! The numbers the on-disk layout is built out of.
+
+/// Constants describing the raw dumps and the pages cut out of them.
 pub mod raw {
-    /// Entries per leaderboard page (1k entries per page for optimal compression)
+    /// Entries the converter puts on one leaderboard page.
+    ///
+    /// The dumps page their own chunks at ten thousand. Re-paging to a thousand is what makes one
+    /// page of the site one file, so paging forward costs a fetch rather than a tenth of one
+    /// already in hand.
     pub const ENTRIES_PER_PAGE: usize = 1000;
 
-    /// Entries per page as f64 for division operations (frontend pagination)
+    /// [`ENTRIES_PER_PAGE`] as a float, for the page arithmetic in the client.
     pub const ENTRIES_PER_PAGE_F64: f64 = 1000.0;
 
-    /// Chunk file name pattern format string (use with format!("chunk_{:04}.bin.xz", index))
+    /// The shape a page file's name takes, for reference. `format!` needs a literal, so the
+    /// spelling that is actually used is in `mp_stats_core::routes`.
     pub const CHUNK_FILENAME_PATTERN: &str = "chunk_{:04}.bin.xz";
 
-    /// Minimum prefix length for sharding
+    /// Characters of a UUID that name its profile shard, so at most 4096 shards per edition.
     pub const MIN_PREFIX_LENGTH: usize = 3;
 
-    /// Minimum name length for indexing
+    /// Characters of a name that name its search index shard, and therefore the shortest query
+    /// the search can answer at all.
     pub const MIN_NAME_LENGTH: usize = 3;
 
-    /// Dictionary chunk size for player ID sharding (old format: 10k chunks)
+    /// Player ids per dictionary file in the dumps.
+    ///
+    /// The dumps chose it, not this repository. The conversion reads every dictionary file it
+    /// finds regardless, so nothing downstream depends on the value being right.
     pub const DICTIONARY_CHUNK_SIZE: i32 = 10000;
 }
 
-/// Common file names
+/// The name the dumps give the JSON beside each snapshot.
 pub const FILE_META: &str = "_meta.json";

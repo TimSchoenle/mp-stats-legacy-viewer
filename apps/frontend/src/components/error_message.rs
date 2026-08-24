@@ -1,13 +1,20 @@
+//! The one way a page reports that something did not load.
+
 use yew::prelude::*;
 
+/// What went wrong, and how much of the page to give it.
 #[derive(Properties, PartialEq, Clone)]
 pub struct ErrorMessageProps {
+    /// The headline, which should name what could not be loaded.
     pub title: String,
+    /// The detail underneath it.
     pub message: String,
+    /// Render as a strip above content that did load, rather than in place of it.
     #[prop_or(false)]
     pub is_banner: bool,
 }
 
+/// The site's one failure state, as a full-width card or as a banner over content that survived.
 #[function_component(ErrorMessage)]
 pub fn error_message(props: &ErrorMessageProps) -> Html {
     if props.is_banner {

@@ -1,9 +1,12 @@
+//! The root component and the route table it switches on.
+
 use crate::components::{footer::Footer, header::Header};
 use crate::pages::{self, home::Home, not_found::NotFound};
 use crate::route::Route;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// The frame every page renders inside: header, routed body, footer.
 #[function_component(App)]
 pub fn app() -> Html {
     html! {

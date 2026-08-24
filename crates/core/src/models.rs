@@ -1,3 +1,9 @@
+//! Every record the converted tree holds, plus the ranking the converter and the client both
+//! read positions out of.
+//!
+//! The layout of the tree these live in is at the crate root. What is not here is any path into
+//! it: those are [`crate::routes`].
+
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use std::collections::HashMap;
@@ -5,45 +11,45 @@ use std::error::Error;
 use std::fmt::Display;
 use std::str::FromStr;
 
-/// Name of the global (all-time) leaderboard board. This is the board whose
-/// latest snapshot is used to expose the per-category "game list" stats.
+/// The directory the dumps give the all-time board, matched case-insensitively.
+///
+/// It is the only board whose leading entry is published on the game page, and the only one whose
+/// stats reach a player profile; the periodic boards beside it are browsable but nothing is
+/// aggregated out of them.
 pub const GLOBAL_BOARD: &str = "All";
 
-/// Stateful helper implementing **standard competition ranking** ("1224").
+/// Assigns standard competition ranks ("1224") to a stream of entries already in descending score
+/// order.
 ///
-/// Entries must be fed in *descending* score order. Entries that share a score
-/// receive the same rank, and the next distinct (lower) score jumps to its
-/// 1-based positional index, leaving gaps where ties occurred. Centralizing the
-/// algorithm here keeps position/rank calculation identical between the
-/// leaderboard and player-profile pipelines so a player with a given score is
-/// always shown at the same position in both views.
+/// Feeding a score greater than the previous one produces a rank, but not a meaningful one: the
+/// ranker keeps no history beyond the last entry, so it cannot notice the stream went backwards.
+/// The batch counterpart for unordered input is [`competition_ranks_by_score`], and the two agree
+/// on every ordering the converter actually produces.
 ///
 /// ```
 /// use mp_stats_core::models::CompetitionRanker;
 ///
 /// let mut ranker = CompetitionRanker::new();
-/// assert_eq!(ranker.next_rank(100), 1); // 1st place
-/// assert_eq!(ranker.next_rank(100), 1); // tie -> same rank
-/// assert_eq!(ranker.next_rank(90), 3);  // next distinct score skips #2
+/// assert_eq!(ranker.next_rank(100), 1);
+/// assert_eq!(ranker.next_rank(100), 1);
+/// assert_eq!(ranker.next_rank(90), 3);
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct CompetitionRanker {
-    /// 1-based ordinal of the most recently ranked entry.
     position: u32,
-    /// Score of the most recently ranked entry, if any.
     last_score: Option<u64>,
-    /// Rank assigned to the most recently ranked entry.
     last_rank: u32,
 }
 
 impl CompetitionRanker {
-    /// Create a fresh ranker positioned before the first entry.
+    /// A ranker positioned before the first entry, so the next call returns rank 1.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Feed the next entry's `score` (which must be `<=` the previously fed
-    /// score) and obtain its competition rank.
+    /// The rank of the next entry: the previous entry's rank if `score` ties it, otherwise this
+    /// entry's 1-based position in the stream.
     pub fn next_rank(&mut self, score: u64) -> u32 {
         self.position += 1;
         let rank = if self.last_score == Some(score) {
@@ -57,13 +63,12 @@ impl CompetitionRanker {
     }
 }
 
-/// Compute a `score -> rank` lookup applying standard competition ranking
-/// ("1224") to an unordered multiset of scores supplied as `score -> count`.
+/// Ranks a whole multiset at once, given how many entries achieved each score.
 ///
-/// The rank of a score equals `1 + (number of entries with a strictly greater
-/// score)`, so every entry sharing a score gets the same position. This is the
-/// batch counterpart to [`CompetitionRanker`] (used for the streaming,
-/// already-sorted leaderboard case) and yields identical positions.
+/// A score's rank is one more than the number of entries scoring strictly above it, which is the
+/// same answer [`CompetitionRanker`] reaches one entry at a time. Every score in `counts` appears
+/// in the result; an empty input gives an empty table.
+#[must_use]
 pub fn competition_ranks_by_score(counts: &HashMap<u64, u64>) -> HashMap<u64, u32> {
     let mut scores: Vec<u64> = counts.keys().copied().collect();
     // Highest score first so prefix-summing the counts gives "entries ahead".
@@ -78,122 +83,190 @@ pub fn competition_ranks_by_score(counts: &HashMap<u64, u64>) -> HashMap<u64, u3
     table
 }
 
+/// One game as the landing page lists it.
+///
+/// Assembled in the client out of [`IdMap::games`] rather than fetched, so no file in the tree
+/// holds one.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Game {
+    /// The directory the game's leaderboards sit under, which is also what
+    /// [`crate::routes::game_bin`] takes.
     pub id: SmolStr,
+    /// What the game is called on screen. The dumps carry no separate label, so this equals
+    /// [`Self::id`].
     pub name: SmolStr,
+    /// The blurb from the dump's ID map, absent when it carried none.
     pub description: Option<SmolStr>,
+    /// Always absent. The dumps hold no icons and the converter writes none.
     pub icon: Option<SmolStr>,
-    /// Total number of snapshots collected for this game across all of its
-    /// leaderboards. Defaults to `0` for legacy payloads.
+    /// Snapshots archived across every one of the game's boards, `0` in payloads written before
+    /// the count existed.
     #[serde(default)]
     pub total_snapshots: u64,
 }
 
+/// The game list of one edition.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct PlatformMeta {
+    /// Sorted by name, since the ID map they came out of is unordered.
     pub games: Vec<Game>,
 }
 
+/// One ranked row, carrying its score as a float.
+// Nothing writes or reads one: the tree stores `LeaderboardPage`, and the client hands out
+// `LeaderboardEntry`.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardChunk {
+    /// Competition rank, 1-based.
     pub rank: u32,
+    /// The player's UUID.
     pub uuid: SmolStr,
+    /// The player's display name.
     pub name: SmolStr,
+    /// The score the rank was derived from.
     pub score: f64,
 }
 
-/// Structure-of-Arrays (SoA) format for leaderboard pages
-/// Stores 1,000 entries per page in columnar layout for better compression
+/// One page of a leaderboard, stored column by column.
+///
+/// The four vectors are the same length and index `i` of each belongs to the same entry. Four
+/// runs of like-typed values compress far harder under LZMA than the same values interleaved,
+/// which is the whole reason for the shape. Rows are in rank order, so index 0 is the best entry
+/// on the page.
+///
+/// Every page but the last holds [`mp_stats_common::formats::raw::ENTRIES_PER_PAGE`] entries.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardPage {
+    /// Competition ranks, 1-based and counted from the start of the board rather than the page.
     pub ranks: Vec<u32>,
+    /// Player UUIDs.
     pub uuids: Vec<SmolStr>,
+    /// Player display names.
     pub names: Vec<SmolStr>,
+    /// The scores the ranks were derived from.
     pub scores: Vec<u64>,
 }
 
+/// One row of a [`LeaderboardPage`], zipped back together for display.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardEntry {
+    /// Competition rank, 1-based and counted from the start of the board.
     pub rank: u32,
+    /// The player's UUID, which is what a link to their profile is built from.
     pub uuid: SmolStr,
+    /// The player's display name.
     pub name: SmolStr,
+    /// The score the rank was derived from.
     pub score: u64,
 }
 
-/// Highlighted leaderboard entry used for the per-category "game list" stats,
-/// i.e. the `#1 holder` of a board's latest snapshot and their top score.
+/// Whoever leads a board's current snapshot, read off the first row of its first page.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct TopEntry {
+    /// The leader's UUID.
     pub uuid: SmolStr,
+    /// The leader's display name.
     pub name: SmolStr,
+    /// The leading score.
     pub score: u64,
 }
 
+/// What is browsable for one board of one stat.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct LeaderboardMeta {
+    /// The current snapshot and every archived one, in no particular order. The snapshot selector
+    /// orders them by timestamp.
     pub snapshots: Vec<HistoricalSnapshot>,
-    /// The `#1 holder` of this board's latest snapshot (highest score).
-    /// Defaults to `None` for legacy payloads.
+    /// The leader of the current snapshot. Absent on every board but [`GLOBAL_BOARD`], and in
+    /// payloads written before the field existed.
     #[serde(default)]
     pub top: Option<TopEntry>,
 }
 
+/// Everything one game's page needs, which is one fetch of `games/<game>.bin.xz`.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct GameLeaderboardData {
+    /// The directory the game's leaderboards sit under.
     pub game_id: SmolStr,
+    /// What the game is called on screen, which the dumps make the same string as
+    /// [`Self::game_id`].
     pub game_name: SmolStr,
+    /// The blurb from the dump's ID map, absent when it carried none.
     pub description: Option<SmolStr>,
+    /// Always absent. The dumps hold no icons and the converter writes none.
     pub icon: Option<SmolStr>,
+    /// Stat name, then board name. Stat is the outer key because the page groups by category and
+    /// offers the boards as a switch inside one.
     pub stats: HashMap<SmolStr, HashMap<SmolStr, LeaderboardMeta>>,
-    /// Total number of ranked entries across all of the game's latest
-    /// leaderboards. Defaults to `0` for legacy payloads.
+    /// Ranked entries summed over the current snapshot of every board, `0` in payloads written
+    /// before the count existed.
     #[serde(default)]
     pub total_entries: u64,
-    /// Total number of distinct snapshots collected for this game across all of
-    /// its leaderboards. Defaults to `0` for legacy payloads.
+    /// Snapshots summed over every board, counting the current one, `0` in payloads written
+    /// before the count existed.
     #[serde(default)]
     pub total_snapshots: u64,
 }
 
+/// What one numeric id in a profile stands for.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMapValue {
+    /// The name, which for a game and for a board is also its directory in the tree.
     pub name: SmolStr,
+    /// The blurb from the dump's ID map, absent when it carried none.
     pub description: Option<SmolStr>,
-    /// Total number of snapshots collected for this entry (games only).
-    /// Defaults to `0` and is populated by the converter after game metadata
-    /// processing.
+    /// Snapshots archived for this game. `0` on boards and stats, and on a game the converter
+    /// found no leaderboard directory for.
     #[serde(default)]
     pub total_snapshots: u64,
 }
 
+/// The three id tables every [`StatRaw`] resolves through, one fetch for a whole edition.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct IdMap {
+    /// Board ids, one of which names [`GLOBAL_BOARD`].
     pub boards: HashMap<u32, IdMapValue>,
+    /// Game ids.
     pub games: HashMap<u32, IdMapValue>,
+    /// Stat ids, which are shared across games rather than scoped to one: two games measuring
+    /// wins resolve to the same entry here.
     pub stats: HashMap<u32, IdMapValue>,
 }
 
+/// One player's standing in one category, with the three ids left unresolved.
+///
+/// Resolving them costs the whole [`IdMap`], which is one fetch for the edition rather than three
+/// strings repeated on every row of every profile shard.
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct StatRaw {
+    /// Key into [`IdMap::boards`]. Only [`GLOBAL_BOARD`] survives into a profile.
     pub board_id: u32,
+    /// Key into [`IdMap::games`].
     pub game_id: u32,
+    /// Key into [`IdMap::stats`].
     pub stat_id: u32,
+    /// The player's score in this category.
     pub score: u64,
+    /// Competition rank, 1-based, recomputed across the whole player population rather than taken
+    /// from the dump.
     pub rank: u32,
+    /// When the dump this entry came from was taken, in Unix seconds.
     pub save_time: u64,
 }
 
+/// One player, as a profile shard stores them under their UUID.
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct PlayerProfile {
+    /// The player's UUID, whose first three characters name the shard this came out of.
     pub uuid: SmolStr,
+    /// The display name. The converter substitutes the UUID where the dump's dictionary carried
+    /// no name, so a converted profile always has one.
     pub name: Option<SmolStr>,
+    /// Every category the player placed in, in no particular order.
     pub stats: Vec<StatRaw>,
 }
 
-/// Aggregated, ready-to-display ranking metrics derived from a
-/// [`PlayerProfile`]. Centralizing this here keeps rank calculation
-/// consistent between the converter, server and frontend.
+/// The headline numbers on a profile page, counted over one [`PlayerProfile`].
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default)]
 pub struct PlayerSummary {
     /// Number of ranked stat entries (board/game/stat combinations).
@@ -211,11 +284,11 @@ pub struct PlayerSummary {
 }
 
 impl PlayerProfile {
-    /// Compute aggregated ranking metrics for this profile.
+    /// Counts this profile's stats into a [`PlayerSummary`].
     ///
-    /// Only entries with a valid rank (`rank > 0`) contribute to the
-    /// rank-based metrics, while every entry contributes to the score total
-    /// and the set of games played.
+    /// An entry with `rank == 0` still counts towards the score total and the games played, and
+    /// towards nothing rank-based. The total saturates rather than wrapping.
+    #[must_use]
     pub fn summary(&self) -> PlayerSummary {
         use std::collections::BTreeSet;
 
@@ -246,44 +319,70 @@ impl PlayerProfile {
     }
 }
 
+/// A name resolved to the player it belongs to and the shard holding them.
+// Nothing writes or reads one: the names index in the tree is a plain map.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct NameLookup {
+    /// The player's UUID.
     pub uuid: SmolStr,
+    /// The shard the player's profile is in.
     #[serde(rename = "shard")]
     pub shard_path: SmolStr,
 }
 
+/// The `_meta.json` beside a snapshot in the dumps, read by the converter and by nothing else.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct MetaFile {
+    /// When the snapshot was taken, as the dump spells it: ISO 8601 with milliseconds.
     pub save_time: String,
+    /// The same instant in Unix seconds, which is the one that reaches the client.
     pub save_time_unix: u64,
+    /// The dump's own identifier for the save this snapshot came out of.
     pub save_id: u32,
+    /// Ranked entries in the snapshot.
     pub total_entries: u32,
+    /// Pages the dump split those entries across, which is not the page count the conversion
+    /// produces.
     pub total_pages: u32,
 }
 
-// --- Historical Leaderboard Models ---
-
+/// One browsable state of a board, whether current or archived.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct HistoricalSnapshot {
+    /// The directory the snapshot's pages sit in: `latest` for the current one, a timestamped
+    /// name from the dump's history archive for an older one.
     pub snapshot_id: SmolStr,
+    /// When the snapshot was taken, in Unix seconds. The selector orders by this.
     pub timestamp: u64,
+    /// Pages the dump split the snapshot across, which is not the page count the conversion
+    /// produces.
     pub total_pages: u32,
+    /// Ranked entries in the snapshot.
     pub total_entries: u32,
 }
 
+/// Which of the two Minecraft platforms a set of statistics came from.
+///
+/// The two are converted and browsed separately from the same dump layout, so an edition names a
+/// subtree, a route segment and a theme, and no record is ever shared between them.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Hash)]
 pub enum PlatformEdition {
+    /// The Java server, whose players are identified by real UUIDs.
     Java,
+    /// The Bedrock server, whose dumps carry names where a UUID would be, so nothing here can
+    /// assume a profile key parses as one.
     Bedrock,
 }
 
+/// Renders [`PlatformEdition::directory_name`], not [`PlatformEdition::display_name`], because
+/// this is what the router interpolates into a URL.
 impl Display for PlatformEdition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.directory_name())
     }
 }
 
+/// A string that named neither edition.
 #[derive(Debug, Clone)]
 pub struct PlatformEditionParseError {
     input: String,
@@ -302,6 +401,9 @@ impl Display for PlatformEditionParseError {
 }
 
 impl Error for PlatformEditionParseError {}
+
+/// Accepts either [`PlatformEdition::directory_name`] in any case, with surrounding whitespace
+/// trimmed. This is what turns the `:edition` route segment back into a value.
 impl FromStr for PlatformEdition {
     type Err = Box<dyn Error>;
 
@@ -318,6 +420,9 @@ impl FromStr for PlatformEdition {
 }
 
 impl PlatformEdition {
+    /// The edition's subtree in the converted data, which is also its route segment and the
+    /// spelling [`FromStr`] parses.
+    #[must_use]
     pub fn directory_name(&self) -> &'static str {
         match self {
             PlatformEdition::Java => "java",
@@ -325,6 +430,8 @@ impl PlatformEdition {
         }
     }
 
+    /// The edition's name as it is written on screen.
+    #[must_use]
     pub fn display_name(&self) -> &'static str {
         match self {
             PlatformEdition::Java => "Java",
@@ -332,8 +439,10 @@ impl PlatformEdition {
         }
     }
 
+    /// Both editions, in the order the navigation and the conversion run walk them.
     pub const VARIANTS: [Self; 2] = [Self::Java, Self::Bedrock];
 
+    /// Iterates [`Self::VARIANTS`], so nothing has to spell both editions out to visit them.
     pub fn iter() -> std::slice::Iter<'static, Self> {
         Self::VARIANTS.iter()
     }

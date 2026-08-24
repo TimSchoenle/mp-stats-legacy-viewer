@@ -1,3 +1,5 @@
+//! Step 3c: the dumps' player shards, re-sharded by UUID and re-ranked across the population.
+
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
 use mp_stats_core::models::{
@@ -10,11 +12,22 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use walkdir::WalkDir;
 
-/// Process the player snapshot files into profile shards.
+/// Writes one profile shard per UUID prefix, and returns every UUID that ended up in one.
 ///
-/// Returns the set of UUIDs that actually received a profile shard entry. This
-/// set is later used to stamp a `has_profile` flag onto the names index so the
-/// frontend can hide search suggestions for players without any profile.
+/// The dumps shard by player id; the site looks a player up by UUID, so this re-shards on the
+/// first three characters of the UUID, uppercased. Where the ID map names an all-time board, only
+/// that board's entries survive: a profile lists a standing per category, and the periodic boards
+/// would repeat every category once per window.
+///
+/// Every profile is held in memory at once, because the ranks cannot be assigned until the whole
+/// population is known. A player id the dictionary cannot resolve is dropped.
+///
+/// The returned set is what [`crate::build_names_archive`] stamps its `has_profile` flag from.
+/// An absent `players` directory yields an empty set rather than an error.
+///
+/// # Errors
+///
+/// Never. A shard that fails to read or to write is reported to stderr and skipped.
 pub fn process_java_players(
     platform: &PlatformEdition,
     java_in: &Path,
@@ -32,7 +45,7 @@ pub fn process_java_players(
 
     // Collect all .json.xz files
     let mut files = Vec::new();
-    for entry in walker.filter_map(|e| e.ok()) {
+    for entry in walker.filter_map(std::result::Result::ok) {
         if entry.file_type().is_file() {
             let path = entry.path();
             if let Some(name) = path.file_name() {
@@ -50,7 +63,7 @@ pub fn process_java_players(
         .iter()
         .find(|(_, board)| board.name.to_lowercase() == "all")
         .map(|(id, _)| *id);
-    println!("Found all board id: {:?}", all_board_id);
+    println!("Found all board id: {all_board_id:?}");
 
     println!("Found {} player shards to process.", files.len());
 
@@ -59,7 +72,7 @@ pub fn process_java_players(
         .par_iter()
         .map(|path| {
             process_player_shard(path, all_board_id, player_lookup_map).unwrap_or_else(|e| {
-                eprintln!("Failed to process player shard {:?}: {}", path, e);
+                eprintln!("Failed to process player shard {path:?}: {e}");
                 HashMap::new()
             })
         })
@@ -95,14 +108,13 @@ pub fn process_java_players(
     Ok(profiled_uuids)
 }
 
-/// Recompute every profile's per-stat rank using standard competition ranking
-/// ("1224") so players who share a score share a position.
+/// Overwrites every stat's rank with its position among all players in the same
+/// `(board, game, stat)` group.
 ///
-/// Ranks are computed independently for each `(board_id, game_id, stat_id)`
-/// group across the entire player population: a stat's rank is `1 + (number of
-/// entries with a strictly greater score)`. This mirrors the leaderboard
-/// pipeline exactly, keeping a player's position identical between the
-/// leaderboard and their profile.
+/// Two passes over the whole population: one to count how many players reached each score, one to
+/// stamp the rank back on. It is done here rather than per shard because a player's rivals are
+/// spread across every shard, and the rank the dumps carried is a sequential index that puts two
+/// equal scores in different places.
 fn assign_competition_ranks(shards: &mut HashMap<String, HashMap<String, PlayerProfile>>) {
     // Pass 1: tally how many entries achieved each score per stat group.
     let mut counts: HashMap<(u32, u32, u32), HashMap<u64, u64>> = HashMap::new();
@@ -139,7 +151,10 @@ fn assign_competition_ranks(shards: &mut HashMap<String, HashMap<String, PlayerP
     }
 }
 
-/// Process a single player shard file
+/// Reads one dump shard and returns its profiles grouped by the UUID prefix they belong under.
+///
+/// The stride is seven integers per stat, of which the save id at offset three is read past: the
+/// site shows the current standing and has no use for which save it came from.
 fn process_player_shard(
     path: &Path,
     all_board_id: Option<u32>,

@@ -1,13 +1,26 @@
+//! Writing a score the way its category means it.
+//!
+//! A score in the tree is a bare `u64` and the dumps say nothing about what it counts. Two
+//! categories are known to count something other than a quantity, and both are recognised here by
+//! name, which is the only handle there is.
+
 use gloo_console::__macro::JsValue;
 use std::sync::OnceLock;
 use web_sys::js_sys::{Array, BigInt, Intl, Object};
 
+/// How to write the scores of one category, decided once for a whole table.
 pub struct ScoreFormatter {
     locale: String,
     format_type: FormatType,
 }
 
-pub fn create_score_formatter(game: &String, stat: &String) -> ScoreFormatter {
+/// Picks the rendering for one category, by matching its game and stat names case-insensitively.
+///
+/// Experience earned on the global board gains a level, and the two play-time categories become a
+/// duration. Everything else is a grouped number. The locale comes from the browser, falling back
+/// to `en-US`.
+#[must_use]
+pub fn create_score_formatter(game: &str, stat: &str) -> ScoreFormatter {
     let locale = web_sys::window()
         .map(|w| w.navigator())
         .and_then(|n| n.language())
@@ -30,8 +43,12 @@ pub fn create_score_formatter(game: &String, stat: &String) -> ScoreFormatter {
 }
 
 impl ScoreFormatter {
+    /// The server's level cap. A score past the last threshold reports this rather than running
+    /// off the end of the table.
     const MAX_LEVEL: u8 = 100;
 
+    /// Writes `score` as this category means it.
+    #[must_use]
     pub fn format_score(&self, score: u64) -> String {
         match self.format_type {
             FormatType::Default => self.standard_format(score),
@@ -64,6 +81,8 @@ impl ScoreFormatter {
         format!("{formatted_exp} (Level {level})")
     }
 
+    /// The three largest non-zero units, so a decade of play time reads as years and months rather
+    /// than as a number of seconds nobody can size.
     fn format_seconds_to_time(&self, total_seconds: u64) -> String {
         const SECONDS_PER_MINUTE: u64 = 60;
         const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
@@ -118,6 +137,11 @@ impl ScoreFormatter {
         parts.join(", ")
     }
 
+    /// Cumulative experience needed for each level, built once per tab.
+    ///
+    /// The curve is the server's: 500 per level to level 10, 1000 to level 20, and from there a
+    /// further 1000 for every twenty levels reached. It is reproduced rather than stored, because
+    /// the dumps carry totals and never a level.
     fn level_thresholds() -> &'static [u64; Self::MAX_LEVEL as usize] {
         static THRESHOLDS: OnceLock<[u64; ScoreFormatter::MAX_LEVEL as usize]> = OnceLock::new();
 
@@ -144,6 +168,7 @@ impl ScoreFormatter {
         })
     }
 
+    /// The level `score` reaches, capped at [`Self::MAX_LEVEL`].
     fn calculate_level(&self, score: u64) -> u8 {
         let thresholds = Self::level_thresholds();
 
@@ -152,9 +177,13 @@ impl ScoreFormatter {
     }
 }
 
+/// The three ways a score is written.
 enum FormatType {
+    /// A grouped number in the reader's locale.
     Default,
+    /// The same, with the level it reaches after it.
     ExpLevel,
+    /// A count of seconds, as a duration.
     SecondsToTime,
 }
 

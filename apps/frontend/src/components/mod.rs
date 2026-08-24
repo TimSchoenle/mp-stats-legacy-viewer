@@ -1,3 +1,5 @@
+//! Markup shared between pages. Anything used by exactly one page lives with that page instead.
+
 pub mod error_message;
 pub mod footer;
 pub mod header;

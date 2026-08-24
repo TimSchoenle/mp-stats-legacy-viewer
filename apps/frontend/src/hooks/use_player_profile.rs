@@ -1,20 +1,32 @@
+//! The profile page's data, and the distinction between a player who is missing and a fetch that
+//! failed.
+
 use crate::Api;
 use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile};
 use yew::platform::spawn_local;
 use yew::prelude::*;
 
+/// What a profile page has to render from.
 #[derive(Clone, PartialEq, Debug)]
 pub struct UsePlayerProfileResult {
+    /// The player's stats, absent until the fetch lands and after it fails.
     pub profile: Option<PlayerProfile>,
+    /// The name tables the profile's numeric ids resolve through.
     pub id_map: Option<IdMap>,
+    /// A fetch is in flight.
     pub loading: bool,
+    /// Why the profile could not be loaded. Not set for a player who has no profile.
     pub error: Option<String>,
-    /// True when the player simply has no profile data (i.e. they were not
-    /// present in the latest page of any game), as opposed to a genuine
-    /// fetch/network error. This drives a dedicated empty state in the UI.
+    /// The player placed in nothing, or the UUID was not a UUID. Separated from `error` because
+    /// it is the ordinary outcome of following a stale link and deserves a page rather than a
+    /// failure banner.
     pub not_found: bool,
 }
 
+/// Fetches one player's profile and then the name tables its ids resolve through.
+///
+/// The two are sequential rather than concurrent: a profile that is not there makes the second
+/// fetch pointless.
 #[hook]
 pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerProfileResult {
     let profile = use_state(|| None::<PlayerProfile>);

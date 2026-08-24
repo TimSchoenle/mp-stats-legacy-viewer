@@ -22,3 +22,6 @@ csp-shell = { workspace = true }
 [dev-dependencies]
 # `ServiceExt::oneshot` drives the router through the CSP middleware without binding a port.
 tower = { workspace = true, features = ["util"] }
+
+[lints]
+workspace = true

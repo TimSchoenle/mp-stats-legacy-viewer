@@ -1,5 +1,9 @@
+//! An unused early sketch of the profile card.
+
 use yew::prelude::*;
 
+/// A profile card filled with placeholder text.
+// Mounted by nothing. The profile page draws its own header.
 #[function_component(PlayerCard)]
 pub fn player_card() -> Html {
     html! {

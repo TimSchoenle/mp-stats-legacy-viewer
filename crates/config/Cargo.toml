@@ -42,3 +42,6 @@ terrace-config = { workspace = true, features = ["testing"] }
 [[example]]
 name = "config-schema"
 required-features = ["config-schema"]
+
+[lints]
+workspace = true

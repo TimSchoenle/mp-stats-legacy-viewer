@@ -1,3 +1,10 @@
+//! Fetching, decompressing and decoding one file of the converted tree, with a cache in front.
+//!
+//! Every method here is a path from [`mp_stats_core::routes`], a fetch, an LZMA pass and a
+//! Postcard decode. The cache holds decompressed bytes rather than decoded values, because the
+//! same names index is decoded into two different shapes and the expensive half is the
+//! decompression either way.
+
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
 use mp_stats_core::models::{
@@ -17,10 +24,12 @@ fn now_ms() -> f64 {
     Date::now()
 }
 
+/// One cached response: the decompressed bytes, and when they stop counting as fresh.
+///
+/// An empty `bytes` is the negative entry a failed fetch leaves behind.
 #[derive(Clone, Debug)]
 struct CacheEntry {
     expires_at_ms: f64,
-    /// Decompressed bytes.
     bytes: Arc<Vec<u8>>,
 }
 
@@ -30,12 +39,19 @@ impl CacheEntry {
     }
 }
 
+/// The client's whole data layer: a cache keyed by URL, and the fetches that fill it.
+///
+/// Cloning shares the cache rather than copying it, which is what makes it safe to hand to every
+/// component through a Yew context. One is created per tab and lives as long as the tab does, so
+/// nothing here survives a reload.
 #[derive(Clone, Debug)]
 pub struct Api {
     cache: Rc<RefCell<HashMap<String, CacheEntry>>>,
     last_sweep_ms: Arc<AtomicU64>,
 }
 
+/// Every instance compares equal, so putting one in a hook's dependency list never re-runs the
+/// effect. The cache it carries is shared and its contents are not a component's business.
 impl PartialEq for Api {
     fn eq(&self, _other: &Self) -> bool {
         true
@@ -51,18 +67,33 @@ impl Default for Api {
     }
 }
 
+/// [`Result`] with the fetch error already filled in.
+///
+/// A missing file and a malformed one both arrive as
+/// [`GlooError`](gloo_net::Error::GlooError) carrying a message, so a caller that needs to tell
+/// them apart has to read it.
 pub type ApiResult<T> = Result<T, gloo_net::Error>;
 
 impl Api {
-    const TTL_GAME_MS: f64 = 60.0 * 60.0 * 1000.0; // 1 Hour
-    const TTL_ID_MAP_MS: f64 = 60.0 * 60.0 * 1000.0; // 1 Hour
-    const TTL_PLAYER_SHARD_MS: f64 = 1.0 * 60.0 * 1000.0; // 1 Minute
-    const TTL_LEADERBOARD_CHUNK_MS: f64 = 1.0 * 60.0 * 1000.0; // 1 Minute
-    const TTL_NAME_INDEX_MS: f64 = 3.0 * 60.0 * 1000.0; // 3 Minutes
+    // The lifetimes are about memory, not staleness: the tree is rewritten by a batch job between
+    // deployments and never while a tab is open, so every one of these could be infinite and still
+    // be correct. What they bound is how long a page the reader has navigated away from goes on
+    // occupying the tab. The order reflects size and reuse — a game's metadata is small and
+    // revisited on every page of it, a leaderboard page is large and read once.
+    const TTL_GAME_MS: f64 = 60.0 * 60.0 * 1000.0;
+    const TTL_ID_MAP_MS: f64 = 60.0 * 60.0 * 1000.0;
+    const TTL_PLAYER_SHARD_MS: f64 = 60.0 * 1000.0;
+    const TTL_LEADERBOARD_CHUNK_MS: f64 = 60.0 * 1000.0;
+    const TTL_NAME_INDEX_MS: f64 = 3.0 * 60.0 * 1000.0;
 
-    const TTL_ERROR_MS: f64 = 10.0 * 1000.0; // 10 Seconds
+    // A failed fetch is remembered too, for long enough to stop a component that re-renders on
+    // every keystroke from turning one missing file into a request per frame.
+    const TTL_ERROR_MS: f64 = 10.0 * 1000.0;
 
-    const SWEEP_INTERVAL_MS: u64 = 30_000; // every 30s at most
+    // Expired entries are dropped on the next fetch after this interval rather than on a timer.
+    // Nothing here runs while the tab is idle, and a sweep the reader is not waiting on is a sweep
+    // that costs nothing to defer.
+    const SWEEP_INTERVAL_MS: u64 = 30_000;
 
     fn maybe_sweep_expired(&self) {
         let now = now_ms() as u64;
@@ -164,16 +195,10 @@ impl Api {
         })
     }
 
-    /// Fetch the names index for a prefix.
+    /// The names index for one three-character prefix, or `None` if it cannot be fetched or
+    /// decoded.
     ///
-    /// Each entry maps a player name to `(uuid, has_profile)`, where
-    /// `has_profile` indicates whether an actual profile exists for that player.
-    ///
-    /// To stay compatible with data generated before the `has_profile` flag was
-    /// introduced, this falls back to the legacy `name -> uuid` layout when the
-    /// new tuple layout cannot be decoded. Legacy entries are treated as having
-    /// a profile so search keeps returning results against older data instead of
-    /// silently showing nothing.
+    /// A prefix with no index is an ordinary answer: it means no player's name starts that way.
     async fn get_name_index(
         &self,
         edition: &PlatformEdition,
@@ -189,6 +214,11 @@ impl Api {
         decode_name_index(&bytes)
     }
 
+    /// One game's categories, boards, snapshots and leaders, which is one file.
+    ///
+    /// # Errors
+    ///
+    /// If the game has no metadata file, or it does not decode.
     pub async fn fetch_game_leaderboards(
         &self,
         edition: &PlatformEdition,
@@ -202,6 +232,14 @@ impl Api {
             })
     }
 
+    /// The edition's game list, sorted by name.
+    ///
+    /// Built out of [`Self::fetch_id_map`] rather than fetched: no file in the tree holds a game
+    /// list, because the ID map already names every game.
+    ///
+    /// # Errors
+    ///
+    /// If the ID map cannot be fetched or decoded.
     pub async fn fetch_meta(&self, edition: &PlatformEdition) -> ApiResult<PlatformMeta> {
         let id_map = self.fetch_id_map(edition).await?;
 
@@ -222,6 +260,12 @@ impl Api {
         Ok(PlatformMeta { games })
     }
 
+    /// The edition's board, game and stat name tables, which every id in a profile resolves
+    /// through.
+    ///
+    /// # Errors
+    ///
+    /// If the map is missing or does not decode.
     pub async fn fetch_id_map(&self, edition: &PlatformEdition) -> ApiResult<IdMap> {
         self.fetch_bin_cached::<IdMap>(
             &format!("/data/{}", routes::meta_map_bin(edition)),
@@ -231,6 +275,14 @@ impl Api {
         .map_err(|_| gloo_net::Error::GlooError("Failed to fetch id map".to_string()))
     }
 
+    /// One page of a board's current standings, in rank order.
+    ///
+    /// `chunk` is zero-based, so the site's page 1 is chunk 0. A page past the end of the board
+    /// is a missing file and comes back as an error rather than an empty vector.
+    ///
+    /// # Errors
+    ///
+    /// If the page does not exist or does not decode.
     pub async fn fetch_leaderboard(
         &self,
         edition: &PlatformEdition,
@@ -266,6 +318,10 @@ impl Api {
         Ok(entries)
     }
 
+    /// Looks up a display name for each UUID, skipping the ones with no profile.
+    ///
+    /// One profile shard fetch per UUID, in sequence. Given for a handful of leaders; a list is
+    /// better served by the names already on a leaderboard page.
     pub async fn resolve_names(
         &self,
         edition: &PlatformEdition,
@@ -282,6 +338,17 @@ impl Api {
         resolved
     }
 
+    /// One player's profile, out of the shard their UUID falls in.
+    ///
+    /// The UUID is checked before anything is fetched, against 32 or 36 characters of hex and
+    /// dashes. Bedrock is exempt: its dumps carry names where a UUID belongs, so there is no shape
+    /// to check against.
+    ///
+    /// # Errors
+    ///
+    /// If the UUID fails that check, if the shard is missing or does not decode, or if the shard
+    /// exists and holds no entry for this player — which is what a player who never placed looks
+    /// like, rather than a fault.
     pub async fn fetch_player(
         &self,
         edition: &PlatformEdition,
@@ -322,6 +389,19 @@ impl Api {
         }
     }
 
+    /// Up to ten players whose name contains `query`, across both editions, best match first.
+    ///
+    /// A query shorter than three characters returns nothing: three is the length of a names index
+    /// shard, so there is no file to look in. Both editions are fetched at once, and one that has
+    /// no index for the prefix contributes nothing rather than failing the search. Players with no
+    /// profile are left out, so no suggestion leads to an empty page.
+    ///
+    /// Ordering is exact match, then names starting with the query, then the rest, alphabetically
+    /// within each group.
+    ///
+    /// # Errors
+    ///
+    /// Never. A prefix neither edition has an index for gives an empty result.
     pub async fn search_players_by_name(
         &self,
         query: &str,
@@ -387,6 +467,11 @@ impl Api {
         Ok(results)
     }
 
+    /// One page of an archived snapshot of a board, numbered as [`Self::fetch_leaderboard`].
+    ///
+    /// # Errors
+    ///
+    /// If the page does not exist or does not decode.
     pub async fn fetch_history_leaderboard(
         &self,
         edition: &PlatformEdition,
@@ -426,13 +511,12 @@ impl Api {
     }
 }
 
-/// Decode a (decompressed) names-index payload into `name -> (uuid, has_profile)`.
+/// Decodes a names index, in either of the two layouts the tree has held.
 ///
-/// The current data layout stores `name -> (uuid, has_profile)`, but data
-/// produced before the `has_profile` flag was introduced stored `name -> uuid`.
-/// We first try the current layout and fall back to the legacy one (treating
-/// legacy entries as having a profile) so player search keeps returning results
-/// even when the served data has not yet been regenerated.
+/// The current one maps a name to its UUID and a has-profile flag; the one before it mapped a name
+/// straight to a UUID. An entry in the older layout is reported as having a profile, which keeps
+/// it searchable: dropping it would make a tree that has not been reconverted look like a tree
+/// with no players in it.
 fn decode_name_index(bytes: &[u8]) -> Option<HashMap<String, (String, bool)>> {
     if bytes.is_empty() {
         return None;

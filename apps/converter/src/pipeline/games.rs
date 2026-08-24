@@ -1,3 +1,5 @@
+//! Step 3b: one metadata file per game, assembled from the leaderboards step 3 just wrote.
+
 use anyhow::Result;
 use mp_stats_common::compression::{read_lzma_bin, read_lzma_raw, write_lzma_bin};
 use mp_stats_core::models::{
@@ -15,7 +17,7 @@ use walkdir::WalkDir;
 
 fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
     // Decompress the .xz file first
-    let decompressed_tar = read_lzma_raw(&*history_in)?;
+    let decompressed_tar = read_lzma_raw(history_in)?;
 
     // Now extract the tar archive
     let mut archive = tar::Archive::new(std::io::Cursor::new(decompressed_tar));
@@ -32,15 +34,15 @@ fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
             let snapshot_name = path_str[..slash_pos].to_string();
             let file_name = path_str[slash_pos + 1..].to_string();
 
-            if file_name == "_meta.json" {
-                if let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(entry)) {
-                    snapshots.push(HistoricalSnapshot {
-                        snapshot_id: SmolStr::new(&snapshot_name),
-                        timestamp: meta.save_time_unix,
-                        total_pages: meta.total_pages,
-                        total_entries: meta.total_entries,
-                    });
-                }
+            if file_name == "_meta.json"
+                && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(entry))
+            {
+                snapshots.push(HistoricalSnapshot {
+                    snapshot_id: SmolStr::new(&snapshot_name),
+                    timestamp: meta.save_time_unix,
+                    total_pages: meta.total_pages,
+                    total_entries: meta.total_entries,
+                });
             }
         }
     }
@@ -48,11 +50,10 @@ fn read_history_data(history_in: &Path) -> Result<Vec<HistoricalSnapshot>> {
     Ok(snapshots)
 }
 
-/// Read the `#1 holder` (highest score) from the already-produced latest
-/// leaderboard page (`chunk_0000`) for a given board/game/stat.
+/// The leading entry of a board, read back off the first row of the first page this run wrote.
 ///
-/// The page is stored in rank order (best first), so the first row is the top
-/// entry. Returns `None` when the page is missing or empty.
+/// Reading it beats recomputing it: the page is already in rank order, so the answer is the row
+/// at index 0. `None` when the page is missing, unreadable or empty.
 fn read_top_entry(
     platform: &PlatformEdition,
     base_out: &Path,
@@ -75,10 +76,24 @@ fn read_top_entry(
     Some(TopEntry { uuid, name, score })
 }
 
-/// Process and aggregate game metadata from leaderboards.
+/// Writes `games/<game>.bin.xz` for every game found under `in_path`, and returns each game's
+/// snapshot count so the caller can fold it back into the ID map.
 ///
-/// Returns a map of `game_id -> total distinct snapshots` so callers can
-/// enrich the edition-level metadata with snapshot counts.
+/// A game's directory names it. Its boards, their snapshots and their totals come from the dumps'
+/// own `_meta.json` and history archives, and the leading entry comes from the pages under
+/// `base_out` — which is why this has to run after the leaderboards and not beside them.
+///
+/// A game whose metadata will not write is reported by nothing and leaves no file. The run
+/// continues.
+///
+/// # Errors
+///
+/// If the leaderboard tree cannot be walked.
+///
+/// # Panics
+///
+/// If a directory three levels under `leaderboards` has no parent or no name, which the walk it
+/// came from cannot produce.
 pub fn process_game_metadata(
     platform: &PlatformEdition,
     in_path: &Path,
@@ -92,7 +107,7 @@ pub fn process_game_metadata(
 
     let walker = WalkDir::new(&lb_in).min_depth(3).max_depth(3);
 
-    for entry in walker.into_iter().filter_map(|e| e.ok()) {
+    for entry in walker.into_iter().filter_map(std::result::Result::ok) {
         if entry.file_type().is_dir() {
             let path = entry.path();
             let stat_name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -126,7 +141,7 @@ pub fn process_game_metadata(
                     && let Ok(file) = File::open(latest_meta.join("_meta.json"))
                     && let Ok(meta) = serde_json::from_reader::<_, MetaFile>(BufReader::new(file))
                 {
-                    total_entries = total_entries.saturating_add(meta.total_entries as u64);
+                    total_entries = total_entries.saturating_add(u64::from(meta.total_entries));
                     all_snapshots.push(HistoricalSnapshot {
                         snapshot_id: SmolStr::new("latest"),
                         timestamp: meta.save_time_unix,
@@ -160,7 +175,7 @@ pub fn process_game_metadata(
                 );
             }
 
-            let mut game_friendly_name = game_id.to_string();
+            let mut game_friendly_name = game_id.clone();
             let mut description = None;
 
             for val in id_map.games.values() {
