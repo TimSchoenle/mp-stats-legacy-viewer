@@ -1,15 +1,26 @@
+//! Moving between the pages of a board.
+
 use crate::hooks::use_theme;
 use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 
+/// Where the reader is in the board, and how far it goes.
 #[derive(Properties, PartialEq)]
 pub struct PaginationProps {
+    /// The edition, which decides the theme these controls are drawn in.
     pub edition: PlatformEdition,
+    /// The page being viewed, 1-based.
     pub current_page: u32,
+    /// The last page, 1-based. Both ends disable their buttons on reaching it.
     pub max_page: u32,
+    /// Called with a 1-based page number, already clamped to `1..=max_page`.
     pub on_change: Callback<u32>,
 }
 
+/// First, previous, a page box, next and last.
+///
+/// The box is typed into freely and only reports on submit, and only for a number inside the
+/// board, so a half-typed page never triggers a fetch.
 #[function_component(PaginationControls)]
 pub fn pagination_controls(props: &PaginationProps) -> Html {
     let theme_color = use_theme();

@@ -1,3 +1,5 @@
+//! Steps 2 and 4: the player dictionary going in, and the search index coming out.
+
 use anyhow::Result;
 use mp_stats_common::compression::write_lzma_bin;
 use mp_stats_common::formats::raw;
@@ -10,16 +12,20 @@ use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
 
-/// Process the dictionary and gather the raw names map.
+/// Reads every dictionary file under `java_in` into the two lookups the rest of the run needs.
 ///
-/// Returns a tuple of:
-/// * `lookup_map`: player_id -> (uuid, name) used by later pipeline steps.
-/// * `names_map`: name prefix -> [(name, uuid)] used to build the names index.
+/// The first maps a player id to their UUID and name, and is what turns the integer in a chunk or
+/// a stride into a person. A player the dump gave no name to is given their UUID as one, so the
+/// map has no holes. The second groups names by their lowercased three-character prefix, which is
+/// the shard [`build_names_archive`] will write; a name shorter than that prefix is dropped, since
+/// there is no shard for it to go in and no query short enough to find it.
 ///
-/// The names index itself is intentionally *not* written here: it is built
-/// later (via [`build_names_archive`]) once the set of players that actually
-/// received a profile is known, so each entry can be stamped with a
-/// `has_profile` flag.
+/// Writes nothing. `platform` and `output_dir` are taken for symmetry with the other steps and
+/// are unused.
+///
+/// # Errors
+///
+/// If a dictionary file cannot be opened or does not parse as the map the dumps write.
 pub fn process_dictionary_and_names(
     platform: &PlatformEdition,
     java_in: &Path,
@@ -35,8 +41,8 @@ pub fn process_dictionary_and_names(
 
     // Gather all JSONs first
     let mut files = Vec::new();
-    for entry in walker.filter_map(|e| e.ok()) {
-        if entry.path().extension().map_or(false, |e| e == "json") {
+    for entry in walker.filter_map(std::result::Result::ok) {
+        if entry.path().extension().is_some_and(|e| e == "json") {
             files.push(entry.path().to_path_buf());
         }
     }
@@ -71,7 +77,7 @@ pub fn process_dictionary_and_names(
                         }
                         local_ids.insert(id, (uuid, name));
                     } else {
-                        local_ids.insert(id, (uuid.clone(), uuid.to_string()));
+                        local_ids.insert(id, (uuid.clone(), uuid.clone()));
                     }
                 }
                 Ok((local_names, local_ids))
@@ -99,13 +105,18 @@ pub fn process_dictionary_and_names(
     Ok((global_id_map, names_map))
 }
 
-/// Build names archive and index.
+/// Writes one search index file per name prefix, each mapping a name to its UUID and to whether
+/// that player has a profile.
 ///
-/// Each index entry maps a player name to `(uuid, has_profile)`, where
-/// `has_profile` is `true` when the player's UUID is present in
-/// `profiled_uuids` (i.e. an actual profile shard was produced for them).
-/// The frontend uses this flag to hide search suggestions that would lead to
-/// an empty "no profile data" page.
+/// The flag is the reason this runs last: it is `true` exactly for the UUIDs in `profiled_uuids`,
+/// which is only known once the profile shards have been written. Without it the search would
+/// suggest names that open an empty page.
+///
+/// Two players sharing a name leave only one entry, the last one written.
+///
+/// # Errors
+///
+/// If an index file cannot be written.
 pub fn build_names_archive(
     platform: &PlatformEdition,
     output_dir: &Path,

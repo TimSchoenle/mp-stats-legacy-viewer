@@ -1,3 +1,5 @@
+//! The leaderboard itself.
+
 use crate::Route;
 use crate::hooks::use_theme;
 use crate::models::LeaderboardEntry;
@@ -7,14 +9,21 @@ use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// The rows to draw, and what they are rows of.
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardTableProps {
+    /// The game, which together with `stat` decides how a score is written.
     pub game: String,
+    /// The category, which together with `game` decides how a score is written.
     pub stat: String,
+    /// The rows, in rank order. The first one's score is what the comparison bars are measured
+    /// against, so a page other than the first compares against the best on that page.
     pub entries: Vec<LeaderboardEntry>,
+    /// The edition every player link points into.
     pub edition: PlatformEdition,
 }
 
+/// One page of a board as a table: rank, player, a bar against the leader, and the score.
 #[function_component(LeaderboardTable)]
 pub fn leaderboard_table(props: &LeaderboardTableProps) -> Html {
     let theme_color = use_theme();

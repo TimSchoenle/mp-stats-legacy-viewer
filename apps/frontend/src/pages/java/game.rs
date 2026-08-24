@@ -1,3 +1,5 @@
+//! One game's categories.
+
 use crate::Route;
 use crate::components::error_message::ErrorMessage;
 use crate::hooks::{use_game_leaderboards, use_theme};
@@ -6,12 +8,19 @@ use mp_stats_core::models::{GLOBAL_BOARD, PlatformEdition, TopEntry};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// Which game to open.
 #[derive(Properties, PartialEq, Clone)]
 pub struct GameProps {
+    /// The platform the game belongs to.
     pub edition: PlatformEdition,
+    /// The game's directory in the tree.
     pub game: String,
 }
 
+/// One game's categories, each with the all-time leader beside it.
+///
+/// Every category links into the all-time board, since that is the only one whose leader is
+/// recorded. The other boards are reached from the tabs on the leaderboard page.
 #[function_component(GameView)]
 pub fn game_view(props: &GameProps) -> Html {
     let game_req = use_game_leaderboards(props.edition.clone(), props.game.clone());

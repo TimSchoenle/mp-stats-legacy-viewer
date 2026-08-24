@@ -1,3 +1,5 @@
+//! The front page.
+
 use crate::Route;
 use crate::components::search_bar::SearchBar;
 use mp_stats_core::models::PlatformEdition;
@@ -38,6 +40,7 @@ fn edition_card(edition: &PlatformEdition) -> Html {
     }
 }
 
+/// The edition chooser and a search box, which is all a visitor with no player in mind needs.
 #[function_component(Home)]
 pub fn home() -> Html {
     html! {

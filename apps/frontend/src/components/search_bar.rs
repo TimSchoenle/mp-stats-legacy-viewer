@@ -1,3 +1,5 @@
+//! Finding a player by name or by UUID, from the bar in the header.
+
 use crate::hooks::use_theme;
 use crate::{Api, Route};
 use mp_stats_core::models::PlatformEdition;
@@ -7,20 +9,28 @@ use web_sys::{HtmlInputElement, KeyboardEvent, MouseEvent};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// How wide the bar is drawn, since the header and the home page want different sizes.
 #[derive(Properties, PartialEq)]
 pub struct SearchBarProps {
+    /// Classes on the wrapper.
     #[prop_or(Classes::from("max-w-md"))]
     pub class: Classes,
+    /// Classes on the input itself.
     #[prop_or(Classes::from("py-2 pl-10 pr-12 text-sm rounded-md"))]
     pub input_classes: Classes,
 }
 
+/// One row of the dropdown.
 #[derive(Clone, PartialEq)]
 enum Suggestion {
+    /// A player the names index matched, by edition, name and UUID.
     Player(PlatformEdition, String, String),
+    /// What the typed text looks like a UUID and neither index was consulted: an offer to open
+    /// that profile in one edition or the other.
     UuidAction(PlatformEdition, String),
 }
 
+/// The five pieces of state one search box needs.
 struct SearchState {
     pub query: UseStateHandle<String>,
     pub latest_query: Rc<RefCell<String>>,
@@ -29,6 +39,7 @@ struct SearchState {
     pub show_dropdown: UseStateHandle<bool>,
 }
 
+/// Allocates that state, so the component body stays about behaviour.
 #[hook]
 fn use_player_search() -> SearchState {
     let query = use_state(String::new);
@@ -46,6 +57,7 @@ fn use_player_search() -> SearchState {
     }
 }
 
+/// What to draw under the box.
 #[derive(Properties, PartialEq)]
 struct DropdownProps {
     suggestions: Vec<Suggestion>,
@@ -53,6 +65,8 @@ struct DropdownProps {
     on_navigate: Callback<Suggestion>,
 }
 
+/// The suggestion list. Rows commit on mouse-down rather than click, because the box loses focus
+/// first and a click would arrive after the list had closed.
 #[function_component(SearchDropdown)]
 fn search_dropdown(props: &DropdownProps) -> Html {
     html! {
@@ -109,6 +123,13 @@ fn search_dropdown(props: &DropdownProps) -> Html {
     }
 }
 
+/// The search box and its dropdown.
+///
+/// Text of 32 or 36 characters is taken for a UUID and offered as a direct profile link in either
+/// edition, since a UUID names a shard and needs no index. Anything else searches from three
+/// characters up, which is the shortest prefix a names index shard exists for. A response is
+/// dropped unless the box still holds the query it was made for, so a slow fetch cannot overwrite
+/// the suggestions for what is now typed.
 #[function_component(SearchBar)]
 pub fn search_bar(props: &SearchBarProps) -> Html {
     let navigator = use_navigator().unwrap();

@@ -1,3 +1,9 @@
+//! Two runs of the real pipeline over the `data-test` fixture.
+//!
+//! What they pin is the pair of claims the unit tests cannot reach: that a conversion fills in the
+//! per-category leader and totals a game page needs, and that a cached run produces the same bytes
+//! as an uncached one — the determinism the whole cache rests on.
+
 use mp_stats_common::compression::read_lzma_bin;
 use mp_stats_converter::{ConversionCache, Converter};
 use mp_stats_core::models::{GameLeaderboardData, PlatformEdition};
@@ -44,7 +50,9 @@ fn conversion_populates_per_category_top_and_total_entries() {
     );
     let output = std::env::temp_dir().join(unique);
 
-    let _guard = CONVERT_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CONVERT_GUARD
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     // Disable the on-disk cache so the test always exercises a full conversion.
     let converter = Converter::with_cache(input, output.clone(), ConversionCache::disabled())
@@ -54,8 +62,7 @@ fn conversion_populates_per_category_top_and_total_entries() {
     let game_path = output.join(routes::game_bin(&PlatformEdition::Java, "ABarbariansLife"));
     assert!(
         game_path.exists(),
-        "expected game metadata file at {:?}",
-        game_path
+        "expected game metadata file at {game_path:?}"
     );
 
     let game: GameLeaderboardData = read_lzma_bin(&game_path).expect("read game bin");
@@ -130,7 +137,9 @@ fn cached_run_reuses_output_and_matches_uncached_run() {
     let output_cold = tmp.join(format!("mp_stats_out_cold_{unique}"));
     let output_warm = tmp.join(format!("mp_stats_out_warm_{unique}"));
 
-    let _guard = CONVERT_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    let _guard = CONVERT_GUARD
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     // First run: empty cache -> full conversion that also populates the cache.
     let cold = Converter::with_cache(

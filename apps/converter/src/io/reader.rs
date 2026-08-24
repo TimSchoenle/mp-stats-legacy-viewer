@@ -1,9 +1,16 @@
+//! Reading a dump file, and the checks a run makes before it reads anything.
+
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-/// Safely read and parse JSON file with validation
+/// Parses `path` as JSON into `T`.
+///
+/// # Errors
+///
+/// If the file cannot be opened, is empty, is larger than `MAX_JSON_SIZE`, or does not parse. The
+/// size ceiling is what stops a corrupt dump from being read into memory whole before it fails.
 pub fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     let file =
         File::open(path).with_context(|| format!("Failed to open file: {}", path.display()))?;
@@ -35,7 +42,11 @@ pub fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     Ok(data)
 }
 
-/// Check if path exists and is a valid directory
+/// Checks that `path` is an existing directory, naming it `description` if it is not.
+///
+/// # Errors
+///
+/// If the path does not exist, or exists and is not a directory.
 pub fn validate_directory(path: &Path, description: &str) -> Result<()> {
     if !path.exists() {
         anyhow::bail!(
@@ -52,16 +63,23 @@ pub fn validate_directory(path: &Path, description: &str) -> Result<()> {
     Ok(())
 }
 
-/// Check if two paths are different (safety check for in-place operations)
+/// Refuses an input and output directory that resolve to the same place.
+///
+/// Passing is not proof they differ: a path that does not exist yet cannot be canonicalized, and
+/// an unresolvable pair is accepted rather than guessed at.
+///
+/// # Errors
+///
+/// If both paths resolve and resolve to the same directory.
 pub fn validate_different_paths(in_path: &Path, out_path: &Path) -> Result<()> {
-    if let (Ok(in_canon), Ok(out_canon)) = (in_path.canonicalize(), out_path.canonicalize()) {
-        if in_canon == out_canon {
-            anyhow::bail!(
-                "Input and output directories must be different for safety: {} == {}",
-                in_canon.display(),
-                out_canon.display()
-            );
-        }
+    if let (Ok(in_canon), Ok(out_canon)) = (in_path.canonicalize(), out_path.canonicalize())
+        && in_canon == out_canon
+    {
+        anyhow::bail!(
+            "Input and output directories must be different for safety: {} == {}",
+            in_canon.display(),
+            out_canon.display()
+        );
     }
     Ok(())
 }

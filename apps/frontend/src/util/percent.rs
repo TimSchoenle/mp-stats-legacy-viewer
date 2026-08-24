@@ -1,7 +1,8 @@
-/// Formats a percentage value, only showing decimal digits when they are
-/// meaningful. Values are rounded to at most `MAX_DECIMALS` places and any
-/// trailing zeros (and a dangling decimal point) are trimmed, so a value such
-/// as `100.00000` renders as `100` while `33.33333` is preserved.
+//! The one percentage on the site: how a row's score compares with the leader's.
+
+/// Renders `value` as a percentage, rounded to five decimals with trailing zeros trimmed, so
+/// `100.0` comes out as `100%` and `33.33333` keeps every digit.
+#[must_use]
 pub fn format_percent(value: f64) -> String {
     const MAX_DECIMALS: usize = 5;
 

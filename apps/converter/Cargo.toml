@@ -19,3 +19,6 @@ walkdir = { workspace = true }
 rayon = { workspace = true }
 binary-layout = { workspace = true }
 tar = { workspace = true }
+
+[lints]
+workspace = true

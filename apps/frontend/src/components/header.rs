@@ -1,3 +1,5 @@
+//! The bar across the top of every page.
+
 use crate::Route;
 use crate::components::search_bar::SearchBar;
 use crate::hooks::use_theme;
@@ -5,6 +7,10 @@ use mp_stats_core::models::PlatformEdition;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+/// The bar on every page: the mark, a link per edition, and the search box.
+///
+/// The edition link is marked active for any route naming that edition, not just its landing
+/// page, so a reader three levels deep can still see which platform they are in.
 #[function_component(Header)]
 pub fn header() -> Html {
     let route = use_route::<Route>().unwrap_or(Route::Home);

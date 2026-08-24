@@ -1,5 +1,50 @@
+//! The batch job that turns a directory of server dumps into the tree the site is served out of.
+//!
+//! What goes in is documented in `data/README.md`; what comes out is documented at the root of
+//! [`mp_stats_core`]. This is the record of the conversion between them.
+//!
+//! # The two record layouts it reads
+//!
+//! A leaderboard chunk is a raw buffer of big-endian pairs, a `u64` player id and a `u64` score,
+//! with no strings and no header. Rank is not in the file at all: the dumps left it to be derived
+//! from the chunk number and the offset, which puts two players who scored the same in different
+//! places.
+//!
+//! A player shard is JSON, `{"<player id>": [...]}`, whose array is a flat run of integers read
+//! seven at a time: board id, game id, stat id, save id, score, rank, timestamp. The rank in it is
+//! sequential and has the same problem.
+//!
+//! Both are replaced by standard competition ranking, computed over the whole population rather
+//! than per file, which is what makes a player's position on their profile the position they have
+//! on the board. The dump's own rank column is read and discarded.
+//!
+//! # The order of the steps
+//!
+//! Every step of [`Converter::convert`] is forced into place by the one after it.
+//!
+//! 1. The ID map is read first and written out, because every later step resolves numeric ids
+//!    against it and the run cannot start without it.
+//! 2. The dictionary is read next, into a player id to UUID and name lookup. Nothing that follows
+//!    can name a player without it.
+//! 3. Leaderboards are converted before game metadata, because the leading entry on a game page is
+//!    read back off the first page this step just wrote rather than computed a second time.
+//! 4. Players are converted after game metadata, and the names index is built last of all: an
+//!    index entry records whether the player has a profile, and that is only known once the
+//!    profile shards exist. Without it the search would offer names that land on an empty page.
+//!
+//! # What a failure looks like
+//!
+//! A missing `meta/map.json` fails the run. An edition whose input directory is absent is skipped
+//! with a line on stdout, which is the normal case for a dump set carrying only one platform.
+//!
+//! Everything below that is per-file and does not stop the run: a chunk that will not decompress,
+//! a player id the dictionary cannot resolve, a page that will not write. Each prints to stderr
+//! and the conversion carries on, so a run that exits zero can still have produced a tree with
+//! holes in it. That is deliberate for a one-shot job over a decade of dumps, and it is the reason
+//! the output is assembled in a staging directory and moved into place only once, at the end.
+
 pub mod io;
-pub mod models;
+pub(crate) mod models;
 pub mod pipeline;
 
 use anyhow::Result;
@@ -19,34 +64,45 @@ pub use pipeline::{
     process_java_leaderboards, process_java_players,
 };
 
-/// Build a process-unique staging directory name.
+/// A staging directory name no other converter can pick.
 ///
-/// Combines the process id, a high-resolution timestamp and a monotonically
-/// increasing counter so that no two `Converter` instances - whether in the
-/// same process or across concurrently running test processes (`cargo
-/// nextest`) - ever share a staging area.
+/// Process id, nanoseconds and a counter: the first separates `cargo nextest`, which runs every
+/// test in its own process, the second separates runs, and the third separates two converters
+/// built inside one of them.
 fn unique_staging_name() -> String {
     static COUNTER: AtomicU64 = AtomicU64::new(0);
 
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
+        .map_or(0, |d| d.as_nanos());
     let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
 
     format!("converter_staging_{}_{}_{}", std::process::id(), nanos, seq)
 }
 
-/// Main conversion orchestrator
+/// One conversion run, over both editions.
+///
+/// Constructing one validates the directories; nothing is read or written until
+/// [`Converter::convert`].
 pub struct Converter {
+    /// Directory holding the raw dumps, one subdirectory per edition.
     pub input_dir: PathBuf,
+    /// Directory the converted tree is moved into, replacing whatever was there.
     pub output_dir: PathBuf,
+    /// Private workspace under `target/`, unique to this converter, emptied at the start of a run
+    /// and gone by the end of one.
     pub staging_dir: PathBuf,
+    /// Where a previous run's output is restored from and this run's is stored, or a no-op when
+    /// disabled.
     pub cache: ConversionCache,
 }
 
 impl Converter {
-    /// Build a converter from its configuration block.
+    /// Builds a converter from the `[converter]` block.
+    ///
+    /// # Errors
+    ///
+    /// As [`Converter::with_cache`].
     pub fn from_config(config: &ConverterConfig) -> Result<Self> {
         Self::with_cache(
             config.input_dir.clone(),
@@ -55,6 +111,12 @@ impl Converter {
         )
     }
 
+    /// Builds a converter over an explicit cache, which is what lets a test disable one.
+    ///
+    /// # Errors
+    ///
+    /// If `input_dir` is not an existing directory, or if it and `output_dir` resolve to the same
+    /// place — a run that converted the dumps into themselves would destroy them.
     pub fn with_cache(
         input_dir: PathBuf,
         output_dir: PathBuf,
@@ -84,7 +146,16 @@ impl Converter {
         })
     }
 
-    /// Run the full conversion pipeline
+    /// Converts both editions and replaces `output_dir` with the result.
+    ///
+    /// Progress goes to stdout and per-file failures to stderr; see the crate root for which of
+    /// them stop the run. `output_dir` is untouched until the last step, so a run that fails part
+    /// way leaves the previous output in place.
+    ///
+    /// # Errors
+    ///
+    /// If the staging directory cannot be prepared, if an edition's input is unreadable or its
+    /// `meta/map.json` is missing, or if the staging tree cannot be moved into `output_dir`.
     pub fn convert(&self) -> Result<()> {
         println!("Starting data conversion...");
         println!("Input: {:?}", self.input_dir);
@@ -195,7 +266,7 @@ impl Converter {
     ) -> Result<IdMap> {
         let map_path = java_in.join("meta/map.json");
         if !map_path.exists() {
-            anyhow::bail!("map.json not found at {:?}", map_path);
+            anyhow::bail!("map.json not found at {map_path:?}");
         }
 
         let id_map: IdMap = read_json(&map_path)?;
@@ -206,7 +277,8 @@ impl Converter {
         Ok(id_map)
     }
 
-    /// Persist the edition's ID map to its LZMA-compressed bin file.
+    // Written twice per edition: once as read, and once more after the per-game snapshot counts
+    // are known, since they are only counted while the leaderboards are walked.
     fn write_metadata(
         &self,
         platform: &PlatformEdition,

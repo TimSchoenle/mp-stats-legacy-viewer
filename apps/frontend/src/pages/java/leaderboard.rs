@@ -1,3 +1,5 @@
+//! One board of one category, at one page and one snapshot.
+
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -12,20 +14,33 @@ use crate::components::leaderboards::snapshot_selector::SnapshotSelector;
 use crate::hooks::{use_game_leaderboards, use_leaderboard_entries, use_theme};
 use mp_stats_core::models::PlatformEdition;
 
+/// Which page of which board to open, straight off the route.
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
+    /// The platform the board belongs to.
     pub edition: PlatformEdition,
+    /// The game's directory in the tree.
     pub game: String,
+    /// The board's directory: the all-time board or one of the periodic ones.
     pub board: String,
+    /// The category's directory.
     pub stat: String,
+    /// 1-based page number.
     pub page: u32,
 }
 
+/// The `?snapshot=` part of a leaderboard URL.
+///
+/// It rides in the query string rather than in the path so that the board tabs and the page
+/// controls can rewrite their half of the URL without either having to know about the other.
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct SnapshotQuery {
+    /// An archived snapshot id, or `latest`, which is what an absent query means.
     pub snapshot: String,
 }
 
+/// One page of one board: the title, the board tabs, the snapshot timeline, the table and the
+/// page controls.
 #[function_component(LeaderboardView)]
 pub fn leaderboard_view(props: &LeaderboardProps) -> Html {
     let location = use_location().unwrap();
