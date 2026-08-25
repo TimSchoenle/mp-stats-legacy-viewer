@@ -4,4 +4,4 @@
 //! The platform is three programs over one directory of files. `apps/converter` rewrites the raw
 //! dumps under `data/` into the sharded tree documented at the root of `mp-stats-core`,
 //! `apps/server` serves that tree and the built frontend as static files, and `apps/frontend` is
-//! the Yew client that fetches out of it and does the querying in the browser.
+//! the Dioxus client that fetches out of it and does the querying in the browser.

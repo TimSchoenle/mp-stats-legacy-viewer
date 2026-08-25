@@ -1,4 +1,4 @@
-//! The Yew client, which is where the querying happens.
+//! The Dioxus client, which is where the querying happens.
 //!
 //! There is no service to ask. A page assembles itself out of files fetched from the converted
 //! tree under `/data`, decompressed and decoded in the browser, so a route resolves to a set of
@@ -20,7 +20,7 @@ pub mod components;
 pub mod hooks;
 pub mod pages;
 pub mod route;
-pub use route::Route;
+pub use route::{Route, Snapshot};
 pub mod api;
 pub mod app;
 pub mod util;

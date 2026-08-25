@@ -158,7 +158,10 @@ RUN set -eux; \
 
 FROM chef AS frontend_base
 RUN apt-get update && apt-get install -y nodejs npm
-RUN cargo binstall trunk
+# The Dioxus CLI, pinned to the same minor as the `dioxus` dependency in the workspace manifest.
+# `dx` writes the shell and links the wasm bundle into it, so a CLI from a different release can
+# emit a bundle the crate does not boot.
+RUN cargo binstall --no-confirm dioxus-cli@0.7.10
 
 # The frontend compiles to wasm and is therefore identical for every target
 # platform; keeping it free of `TARGETARCH` lets multi-arch builds share it.
@@ -169,7 +172,11 @@ RUN cargo chef cook --release --target wasm32-unknown-unknown --recipe-path reci
 COPY . .
 WORKDIR /app/apps/frontend
 RUN npm install
-RUN trunk build --release
+# The two halves `dx` does not build: the fonts copied out of `node_modules`, and the Tailwind
+# stylesheet. Both land in `public/`, which `dx` then copies into the root of its output. Run
+# before the build rather than after, because that copy happens during it.
+RUN npm run build:assets
+RUN dx build --release --web
 
 # Only architecture-independent files (accounts, certificates, timezone data)
 # are taken from this stage, so it can stay on the build platform.
@@ -203,7 +210,10 @@ COPY --from=env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=env /usr/share/zoneinfo /usr/share/zoneinfo
 
 COPY --from=backend_builder /server /server
-COPY --from=frontend /app/apps/frontend/dist /dist
+# `dx` writes the servable directory here rather than to `dist`; the layout inside it - an
+# `index.html` beside hashed `assets/`, `fonts/` and `app.css` - is what `server.dist_dir`
+# points at, so nothing downstream of this line changes.
+COPY --from=frontend /app/target/dx/mp-stats-frontend/release/web/public /dist
 COPY --from=data-optimizer /app/data-dist /dist/data
 
 # The image describes itself: the layout inside it is a property of the image,

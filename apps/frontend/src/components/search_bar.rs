@@ -2,26 +2,11 @@
 
 use crate::hooks::use_theme;
 use crate::{Api, Route};
+use dioxus::prelude::*;
 use mp_stats_core::models::PlatformEdition;
-use std::cell::RefCell;
-use std::rc::Rc;
-use web_sys::{HtmlInputElement, KeyboardEvent, MouseEvent};
-use yew::prelude::*;
-use yew_router::prelude::*;
-
-/// How wide the bar is drawn, since the header and the home page want different sizes.
-#[derive(Properties, PartialEq)]
-pub struct SearchBarProps {
-    /// Classes on the wrapper.
-    #[prop_or(Classes::from("max-w-md"))]
-    pub class: Classes,
-    /// Classes on the input itself.
-    #[prop_or(Classes::from("py-2 pl-10 pr-12 text-sm rounded-md"))]
-    pub input_classes: Classes,
-}
 
 /// One row of the dropdown.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum Suggestion {
     /// A player the names index matched, by edition, name and UUID.
     Player(PlatformEdition, String, String),
@@ -30,96 +15,77 @@ enum Suggestion {
     UuidAction(PlatformEdition, String),
 }
 
-/// The five pieces of state one search box needs.
-struct SearchState {
-    pub query: UseStateHandle<String>,
-    pub latest_query: Rc<RefCell<String>>,
-    pub suggestions: UseStateHandle<Vec<Suggestion>>,
-    pub focused_index: UseStateHandle<Option<usize>>,
-    pub show_dropdown: UseStateHandle<bool>,
-}
+impl Suggestion {
+    /// The edition this row would open a profile in, which is also the chip it is labelled with.
+    fn edition(&self) -> &PlatformEdition {
+        match self {
+            Self::Player(edition, ..) | Self::UuidAction(edition, ..) => edition,
+        }
+    }
 
-/// Allocates that state, so the component body stays about behaviour.
-#[hook]
-fn use_player_search() -> SearchState {
-    let query = use_state(String::new);
-    let latest_query = use_mut_ref(String::new);
-    let suggestions = use_state(Vec::<Suggestion>::new);
-    let focused_index = use_state(|| Option::<usize>::None);
-    let show_dropdown = use_state(|| false);
-
-    SearchState {
-        query,
-        latest_query,
-        suggestions,
-        focused_index,
-        show_dropdown,
+    /// The chip class for [`Self::edition`].
+    fn badge_class(&self) -> &'static str {
+        match self.edition() {
+            PlatformEdition::Java => "chip chip-mint",
+            PlatformEdition::Bedrock => "chip chip-azure",
+        }
     }
 }
 
-/// What to draw under the box.
-#[derive(Properties, PartialEq)]
-struct DropdownProps {
+/// The length of a names index shard, and so the shortest prefix there is a file to look in for.
+const MIN_QUERY_LEN: usize = 3;
+
+/// The two lengths a UUID is written at: bare hex, and hex with dashes.
+const UUID_LENGTHS: [usize; 2] = [32, 36];
+
+/// The suggestion list.
+///
+/// Rows commit on mouse-down rather than click, because the box loses focus first and a click
+/// would arrive after the list had closed.
+#[component]
+fn SearchDropdown(
     suggestions: Vec<Suggestion>,
     focused_index: Option<usize>,
-    on_navigate: Callback<Suggestion>,
-}
-
-/// The suggestion list. Rows commit on mouse-down rather than click, because the box loses focus
-/// first and a click would arrive after the list had closed.
-#[function_component(SearchDropdown)]
-fn search_dropdown(props: &DropdownProps) -> Html {
-    html! {
-        <div class="absolute mt-2 w-full card overflow-hidden z-50 shadow-2xl">
-            { for props.suggestions.iter().enumerate().map(|(index, suggestion)| {
-                let is_focused = props.focused_index == Some(index);
-                let bg_class = if is_focused { "bg-ink-3" } else { "hover:bg-ink-3/60" };
-
-                let onmousedown = {
-                    let on_navigate = props.on_navigate.clone();
-                    let suggestion = suggestion.clone();
-                    Callback::from(move |e: MouseEvent| {
-                        e.prevent_default();
-                        on_navigate.emit(suggestion.clone());
-                    })
-                };
-
-                match suggestion {
-                    Suggestion::Player(edition, name, uuid) => {
-                        let badge_class = match edition {
-                            PlatformEdition::Java => "chip chip-mint",
-                            PlatformEdition::Bedrock => "chip chip-azure",
-                        };
-                        let short_uuid = if uuid.len() > 8 { &uuid[..8] } else { uuid.as_str() };
-                        html! {
-                            <div {onmousedown} class={classes!("px-4", "py-2.5", "cursor-pointer", "flex", "items-center", "justify-between", "gap-3", "transition-colors", bg_class)}>
-                                <div class="flex items-center gap-3 min-w-0">
-                                    <span class="text-paper-1 text-sm font-medium truncate">{name}</span>
-                                    <span class="font-mono text-xs text-paper-3">{short_uuid}{"…"}</span>
-                                </div>
-                                <span class={badge_class}>{ edition.display_name() }</span>
-                            </div>
+    on_navigate: EventHandler<Suggestion>,
+) -> Element {
+    rsx! {
+        div { class: "absolute mt-2 w-full card overflow-hidden z-50 shadow-2xl",
+            for (index , suggestion) in suggestions.into_iter().enumerate() {
+                div {
+                    key: "{index}",
+                    class: if focused_index == Some(index) {
+                        "px-4 py-2.5 cursor-pointer flex items-center justify-between gap-3 transition-colors bg-ink-3"
+                    } else {
+                        "px-4 py-2.5 cursor-pointer flex items-center justify-between gap-3 transition-colors hover:bg-ink-3/60"
+                    },
+                    onmousedown: {
+                        let suggestion = suggestion.clone();
+                        move |event: Event<MouseData>| {
+                            event.prevent_default();
+                            on_navigate.call(suggestion.clone());
                         }
+                    },
+
+                    match &suggestion {
+                        Suggestion::Player(_, name, uuid) => rsx! {
+                            div { class: "flex items-center gap-3 min-w-0",
+                                span { class: "text-paper-1 text-sm font-medium truncate", "{name}" }
+                                span { class: "font-mono text-xs text-paper-3",
+                                    "{uuid.get(..8).unwrap_or(uuid)}\u{2026}"
+                                }
+                            }
+                        },
+                        Suggestion::UuidAction(edition, _) => rsx! {
+                            span { class: "text-sm font-medium text-paper-2",
+                                "Look up UUID in {edition.display_name()}"
+                            }
+                        },
                     }
-                    Suggestion::UuidAction(edition, _uuid) => {
-                        let badge_class = match edition {
-                            PlatformEdition::Java => "chip chip-mint",
-                            PlatformEdition::Bedrock => "chip chip-azure",
-                        };
-                        let text = match edition {
-                            PlatformEdition::Java => "Look up UUID in Java",
-                            PlatformEdition::Bedrock => "Look up UUID in Bedrock",
-                        };
-                        html! {
-                            <div {onmousedown} class={classes!("px-4", "py-2.5", "cursor-pointer", "flex", "items-center", "justify-between", "gap-3", "transition-colors", bg_class)}>
-                                <span class="text-sm font-medium text-paper-2">{text}</span>
-                                <span class={badge_class}>{ edition.display_name() }</span>
-                            </div>
-                        }
-                    }
+
+                    span { class: suggestion.badge_class(), {suggestion.edition().display_name()} }
                 }
-            }) }
-        </div>
+            }
+        }
     }
 }
 
@@ -130,238 +96,201 @@ fn search_dropdown(props: &DropdownProps) -> Html {
 /// characters up, which is the shortest prefix a names index shard exists for. A response is
 /// dropped unless the box still holds the query it was made for, so a slow fetch cannot overwrite
 /// the suggestions for what is now typed.
-#[function_component(SearchBar)]
-pub fn search_bar(props: &SearchBarProps) -> Html {
-    let navigator = use_navigator().unwrap();
-    let api_ctx = use_context::<Api>().expect("no api found");
+///
+/// `class` sizes the wrapper and `input_classes` the input, because the header and the home page
+/// want different sizes out of the same component.
+#[component]
+pub fn SearchBar(
+    #[props(default = "max-w-md".to_string())] class: String,
+    #[props(default = "py-2 pl-10 pr-12 text-sm rounded-md".to_string())] input_classes: String,
+) -> Element {
+    let navigator = use_navigator();
+    let api = use_context::<Api>();
     let theme_color = use_theme();
 
-    let state = use_player_search();
+    let mut query = use_signal(String::new);
+    let mut suggestions = use_signal(Vec::<Suggestion>::new);
+    let mut focused_index = use_signal(|| Option::<usize>::None);
+    let mut show_dropdown = use_signal(|| false);
 
-    let oninput = {
-        let query = state.query.clone();
-        let latest_query = state.latest_query.clone();
-        let suggestions = state.suggestions.clone();
-        let show_dropdown = state.show_dropdown.clone();
-        let focused_index = state.focused_index.clone();
-        let api_ctx = api_ctx.clone();
+    // Committing a row: navigate, and close the list behind us. Held in a callback rather than
+    // written out three times, because the box, the keyboard and the dropdown all commit rows.
+    let navigate_to = use_callback(move |suggestion: Suggestion| {
+        show_dropdown.set(false);
 
-        Callback::from(move |e: InputEvent| {
-            let input: HtmlInputElement = e.target_unchecked_into();
-            let val = input.value();
-            query.set(val.clone());
-            *latest_query.borrow_mut() = val.clone();
-            focused_index.set(None);
-
-            if val.is_empty() {
-                suggestions.set(Vec::new());
-                show_dropdown.set(false);
-                return;
+        match suggestion {
+            Suggestion::Player(edition, name, uuid) => {
+                query.set(name);
+                navigator.push(Route::Player { edition, uuid });
             }
-
-            let val_len = val.len();
-            if val_len == 32 || val_len == 36 {
-                suggestions.set(vec![
-                    Suggestion::UuidAction(PlatformEdition::Java, val.clone()),
-                    Suggestion::UuidAction(PlatformEdition::Bedrock, val.clone()),
-                ]);
-                show_dropdown.set(true);
-                return;
+            Suggestion::UuidAction(edition, uuid) => {
+                navigator.push(Route::Player { edition, uuid });
             }
+        };
+    });
 
-            if val_len >= 3 {
-                let q = val.clone();
-                let suggestions = suggestions.clone();
-                let show_dropdown = show_dropdown.clone();
-                let ctx = api_ctx.clone();
-                let query_ref = latest_query.clone();
+    let on_input = move |event: Event<FormData>| {
+        let value = event.value();
+        query.set(value.clone());
+        focused_index.set(None);
 
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(results) = ctx.search_players_by_name(&q).await
-                        && *query_ref.borrow() == q
-                    {
-                        let mapped: Vec<Suggestion> = results
-                            .into_iter()
-                            .map(|(ed, name, uuid)| Suggestion::Player(ed, name, uuid))
-                            .collect();
-                        suggestions.set(mapped);
-                        show_dropdown.set(true);
-                    }
-                });
-            } else {
-                suggestions.set(Vec::new());
-                show_dropdown.set(false);
-            }
-        })
-    };
-
-    let navigate_to = {
-        let navigator = navigator.clone();
-        let show_dropdown = state.show_dropdown.clone();
-        let query = state.query.clone();
-
-        Callback::from(move |suggestion: Suggestion| {
+        if value.is_empty() {
+            suggestions.set(Vec::new());
             show_dropdown.set(false);
-            match suggestion {
-                Suggestion::Player(edition, name, uuid) => {
-                    query.set(name);
-                    navigator.push(&Route::Player { edition, uuid });
-                }
-                Suggestion::UuidAction(edition, uuid) => {
-                    navigator.push(&Route::Player { edition, uuid });
-                }
-            }
-        })
-    };
+            return;
+        }
 
-    let onkeydown = {
-        let suggestions = state.suggestions.clone();
-        let focused_index = state.focused_index.clone();
-        let show_dropdown = state.show_dropdown.clone();
-        let navigate_to = navigate_to.clone();
+        // A UUID names the shard it lives in, so there is nothing to look up: offer it in both
+        // editions and let the profile page report which one has it.
+        if UUID_LENGTHS.contains(&value.len()) {
+            suggestions.set(vec![
+                Suggestion::UuidAction(PlatformEdition::Java, value.clone()),
+                Suggestion::UuidAction(PlatformEdition::Bedrock, value),
+            ]);
+            show_dropdown.set(true);
+            return;
+        }
 
-        Callback::from(move |e: KeyboardEvent| {
-            if !*show_dropdown || suggestions.is_empty() {
+        if value.len() < MIN_QUERY_LEN {
+            suggestions.set(Vec::new());
+            show_dropdown.set(false);
+            return;
+        }
+
+        let api = api.clone();
+        spawn(async move {
+            let Ok(results) = api.search_players_by_name(&value).await else {
+                return;
+            };
+
+            // The box may have moved on while this was in flight. `peek` rather than a read,
+            // because subscribing a spawned task to the query it is checking would restart it.
+            if *query.peek() != value {
                 return;
             }
 
-            let len = suggestions.len();
-            match e.key().as_str() {
-                "ArrowDown" => {
-                    e.prevent_default();
-                    let next = match *focused_index {
-                        Some(i) => {
-                            if i + 1 < len {
-                                i + 1
-                            } else {
-                                0
-                            }
-                        }
-                        None => 0,
-                    };
-                    focused_index.set(Some(next));
+            suggestions.set(
+                results
+                    .into_iter()
+                    .map(|(edition, name, uuid)| Suggestion::Player(edition, name, uuid))
+                    .collect(),
+            );
+            show_dropdown.set(true);
+        });
+    };
+
+    let on_key_down = move |event: Event<KeyboardData>| {
+        let length = suggestions.read().len();
+        if !show_dropdown() || length == 0 {
+            return;
+        }
+
+        match event.key() {
+            Key::ArrowDown => {
+                event.prevent_default();
+                focused_index.set(Some(match focused_index() {
+                    Some(index) if index + 1 < length => index + 1,
+                    Some(_) | None => 0,
+                }));
+            }
+            Key::ArrowUp => {
+                event.prevent_default();
+                focused_index.set(Some(match focused_index() {
+                    Some(index) if index > 0 => index - 1,
+                    Some(_) | None => length - 1,
+                }));
+            }
+            Key::Enter => {
+                event.prevent_default();
+
+                // With nothing focused, Enter takes the best match, which is the first row.
+                let index = focused_index().unwrap_or(0);
+                let suggestion = suggestions.read().get(index).cloned();
+                if let Some(suggestion) = suggestion {
+                    navigate_to.call(suggestion);
                 }
-                "ArrowUp" => {
-                    e.prevent_default();
-                    let prev = match *focused_index {
-                        Some(i) => {
-                            if i > 0 {
-                                i - 1
-                            } else {
-                                len - 1
-                            }
-                        }
-                        None => len - 1,
-                    };
-                    focused_index.set(Some(prev));
-                }
-                "Enter" => {
-                    e.prevent_default();
-                    if let Some(i) = *focused_index {
-                        if let Some(s) = suggestions.get(i) {
-                            navigate_to.emit(s.clone());
-                        }
-                    } else if let Some(s) = suggestions.first() {
-                        navigate_to.emit(s.clone());
+            }
+            Key::Escape => show_dropdown.set(false),
+            _ => {}
+        }
+    };
+
+    let on_submit = move |event: Event<FormData>| {
+        event.prevent_default();
+
+        let first = suggestions.read().first().cloned();
+        if let Some(suggestion) = first {
+            navigate_to.call(suggestion);
+            return;
+        }
+
+        let typed = query().trim().to_string();
+        if typed.is_empty() {
+            return;
+        }
+
+        // No matching suggestion: still route to the player page so the visitor lands on the
+        // dedicated "no profile data" empty state (which explains why a profile may be missing)
+        // instead of the form silently doing nothing. Default to the Java edition.
+        navigate_to.call(Suggestion::UuidAction(PlatformEdition::Java, typed));
+    };
+
+    let on_blur = move |_| {
+        // The list has to outlive the blur, because a row commits on mouse-down and the box loses
+        // focus before that lands.
+        gloo_timers::callback::Timeout::new(200, move || show_dropdown.set(false)).forget();
+    };
+
+    rsx! {
+        div { class: "{theme_color} relative w-full {class}",
+            form { class: "relative flex items-center", onsubmit: on_submit,
+
+                // Search icon (left)
+                span { class: "absolute left-4 top-1/2 -translate-y-1/2 text-paper-4 pointer-events-none",
+                    svg {
+                        xmlns: "http://www.w3.org/2000/svg",
+                        class: "h-4 w-4",
+                        fill: "none",
+                        view_box: "0 0 24 24",
+                        stroke: "currentColor",
+                        stroke_width: "2",
+                        circle { cx: "11", cy: "11", r: "7" }
+                        path { stroke_linecap: "round", d: "m21 21-4.3-4.3" }
                     }
                 }
-                "Escape" => {
-                    show_dropdown.set(false);
+
+                input {
+                    r#type: "text",
+                    placeholder: "Find a player by name or UUID\u{2026}",
+                    class: "input-text font-mono {input_classes}",
+                    value: "{query}",
+                    autocomplete: "off",
+                    oninput: on_input,
+                    onkeydown: on_key_down,
+                    onfocus: move |_| {
+                        if !query().is_empty() {
+                            show_dropdown.set(true);
+                        }
+                    },
+                    onblur: on_blur,
                 }
-                _ => {}
-            }
-        })
-    };
 
-    let onsubmit = {
-        let suggestions = state.suggestions.clone();
-        let navigate_to = navigate_to.clone();
-        let query = state.query.clone();
-
-        Callback::from(move |e: SubmitEvent| {
-            e.prevent_default();
-
-            if let Some(s) = suggestions.first() {
-                navigate_to.emit(s.clone());
-            } else {
-                let val = query.trim().to_string();
-                if val.is_empty() {
-                    return;
+                button {
+                    r#type: "submit",
+                    class: "absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-theme-500 text-ink-0 border border-theme-500 hover:bg-theme-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                    disabled: query().is_empty(),
+                    title: "Search",
+                    "Search"
                 }
-                // No matching suggestion: still route to the player page so the
-                // visitor lands on the dedicated "no profile data" empty state
-                // (which explains why a profile may be missing) instead of the
-                // form silently doing nothing. Default to the Java edition.
-                navigate_to.emit(Suggestion::UuidAction(PlatformEdition::Java, val));
             }
-        })
-    };
 
-    let onblur = {
-        let show_dropdown = state.show_dropdown.clone();
-        Callback::from(move |_| {
-            let show_dropdown = show_dropdown.clone();
-            gloo_timers::callback::Timeout::new(200, move || {
-                show_dropdown.set(false);
-            })
-            .forget();
-        })
-    };
-
-    let input_ref = use_node_ref();
-
-    let onfocus = {
-        let show_dropdown = state.show_dropdown.clone();
-        let query = state.query.clone();
-        Callback::from(move |_| {
-            if !query.is_empty() {
-                show_dropdown.set(true);
+            if show_dropdown() && !suggestions.read().is_empty() {
+                SearchDropdown {
+                    suggestions: suggestions(),
+                    focused_index: focused_index(),
+                    on_navigate: move |suggestion| navigate_to.call(suggestion),
+                }
             }
-        })
-    };
-
-    html! {
-        <div class={classes!(theme_color, "relative", "w-full", props.class.clone())}>
-            <form {onsubmit} class="relative flex items-center">
-                // Search icon (left)
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-paper-4 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path stroke-linecap="round" d="m21 21-4.3-4.3"/>
-                    </svg>
-                </span>
-
-                <input
-                    ref={input_ref}
-                    type="text"
-                    placeholder="Find a player by name or UUID…"
-                    class={classes!("input-text", "font-mono", props.input_classes.clone())}
-                    value={(*state.query).clone()}
-                    {oninput}
-                    {onkeydown}
-                    {onfocus}
-                    {onblur}
-                    autocomplete="off"
-                />
-
-                // ⌘K hint or submit button (right)
-                <button
-                    type="submit"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-theme-500 text-ink-0 border border-theme-500 hover:bg-theme-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    disabled={state.query.is_empty()}
-                    title="Search"
-                >
-                    { "Search" }
-                </button>
-            </form>
-
-            if *state.show_dropdown && !state.suggestions.is_empty() {
-                <SearchDropdown
-                    suggestions={(*state.suggestions).clone()}
-                    focused_index={*state.focused_index}
-                    on_navigate={navigate_to}
-                />
-            }
-        </div>
+        }
     }
 }

@@ -2,7 +2,7 @@
 //! Java.
 
 pub use self::game::GameView;
-pub use self::landing::JavaLanding;
+pub use self::landing::EditionLanding;
 pub use self::player::PlayerView;
 pub use leaderboard::LeaderboardView;
 

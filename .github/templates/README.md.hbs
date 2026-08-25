@@ -28,7 +28,7 @@ this repository is the three programs that turn it into a site.
 so that a page of the site costs a few files rather than one index of everyone.
 
 `apps/server` is an Axum binary that serves that tree and the built frontend as static files. The
-only routes it registers are three health probes. `apps/frontend` is a Yew client compiled to
+only routes it registers are three health probes. `apps/frontend` is a Dioxus client compiled to
 WebAssembly, and it is where the work happens: it fetches the files a page needs, decompresses
 them and reads the records out of them in the browser.
 
@@ -106,7 +106,7 @@ boot. Its values are documented in
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cargo install trunk just --locked
+cargo install dioxus-cli just --locked
 git clone {{ repo.url }}.git
 cd {{ repo.name }}
 ```
@@ -117,14 +117,20 @@ Node.js is required as well: `apps/frontend` builds its Tailwind stylesheet thro
 ## Usage
 
 Build the frontend first. The server reads `index.html` out of `server.dist_dir` at startup to
-hash the inline scripts for its `Content-Security-Policy`, and a missing one fails the boot before
-the listener binds.
+derive its `Content-Security-Policy`, and a missing one fails the boot before the listener binds.
+
+`build:assets` is the half `dx` does not do: it copies the self-hosted fonts out of `node_modules`
+and compiles the Tailwind stylesheet, both into `apps/frontend/public`, which `dx` then copies into
+the root of its output.
 
 ```bash
 cd apps/frontend
 npm install
-trunk build
+npm run build:assets
+dx build --release --web
 ```
+
+The result lands in `target/dx/mp-stats-frontend/release/web/public`.
 
 Then convert a data directory. The converter takes no arguments; every path is a configuration
 key, so a one-off run is a matter of overriding one:
@@ -133,12 +139,12 @@ key, so a one-off run is a matter of overriding one:
 MP_STATS_CONVERTER__INPUT_DIR=data-test cargo run -p mp-stats-converter
 ```
 
-Run the server on `8081` and point it at both outputs, because `apps/frontend/Trunk.json` proxies
+Run the server on `8081` and point it at both outputs, because `apps/frontend/Dioxus.toml` proxies
 `/data/` there:
 
 ```bash
 MP_STATS_SERVER__BIND_ADDR=127.0.0.1:8081 \
-MP_STATS_SERVER__DIST_DIR=apps/frontend/dist \
+MP_STATS_SERVER__DIST_DIR=target/dx/mp-stats-frontend/release/web/public \
 MP_STATS_SERVER__DATA_DIR=target/converted_data \
   cargo run -p mp-stats-server
 ```
@@ -146,10 +152,14 @@ MP_STATS_SERVER__DATA_DIR=target/converted_data \
 Then, in a second terminal:
 
 ```bash
-cd apps/frontend && trunk serve
+cd apps/frontend && dx serve
 ```
 
-`trunk serve` holds <http://localhost:8080> and forwards every `/data/` request to the server.
+`dx serve` holds <http://localhost:8080> and forwards every `/data/` request to the server. It
+rebuilds on a source change and hot-patches the running page rather than reloading it. It does not
+run the Tailwind build, so re-run `npm run build:assets` after editing `assets/input.css` - or keep
+`npm run watch:css` going in a third terminal.
+
 Run the checks CI runs with one recipe, and `just` with no arguments lists the rest:
 
 ```bash
@@ -189,10 +199,14 @@ the one that failed.
 The server sends a `Content-Security-Policy` on every document it serves, and the policy is
 derived from the shell rather than written down anywhere: at startup it reads the `index.html` in
 `dist_dir` and computes a `'sha256-…'` for each inline `<script>` in it, using
-[csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `{{csp_shell_tag}}`. Trunk
-regenerates the inline WASM bootstrap on every frontend build, so a hand-maintained hash would go
-stale silently: the header would still look correct while the browser refused the script and
-rendered a blank page. An unreadable shell fails the boot instead, before the listener binds.
+[csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `{{csp_shell_tag}}`. An
+unreadable shell fails the boot, before the listener binds.
+
+As `dx` builds it, that shell carries no inline script at all: the WASM bootstrap is a module
+loaded from `/assets/`, and the `'self'` already in `script-src` is what admits it. The derivation
+is kept because it is what makes that true rather than assumed - the day the shell gains an inline
+script, the header gains its hash in the same build, where a hand-maintained one would go stale
+silently and leave the browser refusing a script the policy looked correct without.
 
 Configuration decides only what the policy has to make room for. `[server.csp.cloudflare]` carries
 one key per Cloudflare product, all off by default. `turnstile` and `web_analytics` admit the

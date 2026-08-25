@@ -1,0 +1,44 @@
+# What `dx` needs to know to turn this crate into the directory the server serves.
+#
+# Four questions, in the order they are answered below: where the build output goes, which static
+# files ride along with it, what the shell is titled, and where `/data/` comes from while the site
+# is being developed.
+
+[application]
+# `dx build` writes to `target/dx/mp-stats-frontend/<profile>/web/public`. The Dockerfile and the
+# README name that path; nothing else needs to.
+name = "mp-stats-frontend"
+
+# Copied verbatim into the root of the build output, keeping relative paths and taking no content
+# hash - so a file's path under here is its URL. That is what resolves
+# `/fonts/inter-latin-400-normal.woff2`, the URL the `@font-face` rules in `assets/input.css` are
+# written against, and `/app.css`, the stylesheet `index.html` links. `npm run build:assets` is
+# what fills it; see `package.json`.
+public_dir = "public"
+
+[web.app]
+# The `<title>` of the shell, substituted into the `{app_title}` placeholder in `index.html`. The
+# placeholder has to stay there: given a `<title>` without one, `dx` inserts this value before the
+# closing tag instead of replacing what it finds, and the page ends up titled twice.
+title = "MP Stats Legacy Viewer"
+
+[web.watcher]
+# The router owns every path, so a request for `/java/game/Bedwars` has to be answered with the
+# shell rather than with a 404 - the same contract `mp-stats-server` meets in production by
+# falling back to `index.html`. Without this, a reload anywhere but `/` fails in development only,
+# which is the worst place for the two to disagree.
+index_on_404 = true
+# `public/` is watched as well as `src/`, so re-running `npm run build:assets` refreshes the page
+# rather than needing the dev server restarted.
+watch_path = ["src", "public"]
+
+# `/data/` in development. The converted tree is not part of this crate's output, so `dx serve`
+# forwards those requests to an `mp-stats-server` run on 8081 against `converter.output_dir`. The
+# backend URL's path is the prefix, and every subpath of it is forwarded too.
+[[web.proxy]]
+backend = "http://127.0.0.1:8081/data"
+
+# Size over speed: this is a document viewer over static files, and the wasm bundle is the largest
+# thing a first visit pays for. Release builds only - a debug build skips wasm-opt entirely.
+[web.wasm_opt]
+level = "z"

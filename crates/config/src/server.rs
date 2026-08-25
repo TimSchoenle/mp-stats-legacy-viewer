@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 /// What the server binds and what it serves.
 ///
-/// Every field has a working default, so a checkout with no `config.toml` at all runs against
-/// the layout `trunk build` and the converter produce.
+/// Every field has a working default, so a checkout with no `config.toml` at all runs against the
+/// layout the frontend build and the converter produce.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(
     feature = "config-schema",

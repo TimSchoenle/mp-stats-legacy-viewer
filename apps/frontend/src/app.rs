@@ -1,44 +1,23 @@
-//! The root component and the route table it switches on.
+//! The frame every page renders inside.
 
+use crate::Route;
 use crate::components::{footer::Footer, header::Header};
-use crate::pages::{self, home::Home, not_found::NotFound};
-use crate::route::Route;
-use yew::prelude::*;
-use yew_router::prelude::*;
+use dioxus::prelude::*;
 
-/// The frame every page renders inside: header, routed body, footer.
-#[function_component(App)]
-pub fn app() -> Html {
-    html! {
-        <div class="flex flex-col min-h-screen">
-            <Header />
-            <main class="flex-grow">
-                <Switch<Route> render={switch} />
-            </main>
-            <Footer />
-        </div>
-    }
-}
-
-fn switch(routes: Route) -> Html {
-    match routes {
-        Route::Home => html! { <Home /> },
-        Route::Landing { edition } => html! { <pages::java::JavaLanding edition={edition} /> },
-        Route::Game { edition, game } => html! {
-            <pages::java::GameView edition={edition} game={game} />
-        },
-        Route::Leaderboard {
-            edition,
-            game,
-            board,
-            stat,
-            page,
-        } => html! {
-            <pages::java::LeaderboardView edition={edition} game={game} board={board} stat={stat} page={page}  />
-        },
-        Route::Player { edition, uuid } => html! {
-            <pages::java::PlayerView edition={edition} uuid={uuid} />
-        },
-        Route::NotFound => html! { <NotFound /> },
+/// Header, routed body, footer.
+///
+/// This is the layout of the route table rather than a component any page mounts, which is what
+/// makes the header and the footer outlive a navigation: the router swaps only what is inside
+/// [`Outlet`], so the search box keeps its state and the sticky bar never repaints.
+#[component]
+pub fn AppShell() -> Element {
+    rsx! {
+        div { class: "flex flex-col min-h-screen",
+            Header {}
+            main { class: "flex-grow",
+                Outlet::<Route> {}
+            }
+            Footer {}
+        }
     }
 }

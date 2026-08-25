@@ -2,10 +2,9 @@
 
 use crate::Api;
 use crate::models::LeaderboardEntry;
+use dioxus::prelude::*;
 use mp_stats_core::HistoricalSnapshot;
 use mp_stats_core::models::PlatformEdition;
-use yew::platform::spawn_local;
-use yew::prelude::*;
 
 /// What a leaderboard page has to render from.
 #[derive(Clone, PartialEq)]
@@ -22,8 +21,12 @@ pub struct UseLeaderboardEntriesResult {
 /// Fetches one page of a board, from the current standings or from an archived snapshot.
 ///
 /// `page` is 1-based and becomes the zero-based chunk number. Nothing is fetched until `snapshot`
-/// is known, since the game metadata that names the snapshots arrives first.
-#[hook]
+/// is known, since the game metadata that names the snapshots arrives first; until then this
+/// reports itself as loading, which is what it is.
+///
+/// Every argument is a dependency, so a board tab, a page button and the snapshot timeline all
+/// refetch through the same path.
+#[must_use]
 pub fn use_leaderboard_entries(
     edition: PlatformEdition,
     game: String,
@@ -33,80 +36,62 @@ pub fn use_leaderboard_entries(
     snapshot: Option<HistoricalSnapshot>,
     is_latest_snapshot: bool,
 ) -> UseLeaderboardEntriesResult {
-    let entries = use_state(|| Vec::<LeaderboardEntry>::new());
-    let loading = use_state(|| true);
-    let error = use_state(|| None::<String>);
+    let api = use_context::<Api>();
 
-    let context = use_context::<Api>().expect("no api context found");
+    let resource = use_resource(use_reactive!(
+        |edition, game, board, stat, page, snapshot, is_latest_snapshot| {
+            let api = api.clone();
 
-    {
-        let entries = entries.clone();
-        let loading = loading.clone();
-        let error = error.clone();
-        let edition = edition.clone();
+            async move {
+                // The outer `None` is "not asked yet" rather than "asked and got nothing": the
+                // snapshot rides in on the game metadata, and until that lands there is no file
+                // name to fetch.
+                let snapshot = snapshot?;
 
-        use_effect_with(
-            (
-                snapshot.clone(),
-                page,
-                board.clone(),
-                stat.clone(),
-                is_latest_snapshot,
-            ),
-            move |(snap, page_captured, b, s, is_latest)| {
-                error.set(None);
+                // The site's page 1 is the tree's chunk 0.
+                let chunk = page.saturating_sub(1);
 
-                if let Some(snapshot_data) = snap.as_ref() {
-                    let page_idx = page_captured.saturating_sub(1); // 0-based chunk
-                    let provider = context.clone();
-                    let snapshot_data = snapshot_data.clone();
-                    let b = b.clone();
-                    let s = s.clone();
-                    let is_latest_captured = *is_latest;
+                let fetched = if is_latest_snapshot {
+                    api.fetch_leaderboard(&edition, &board, &game, &stat, chunk)
+                        .await
+                } else {
+                    api.fetch_history_leaderboard(
+                        &edition,
+                        &board,
+                        &game,
+                        &stat,
+                        &snapshot.snapshot_id,
+                        chunk,
+                    )
+                    .await
+                };
 
-                    loading.set(true);
-                    spawn_local(async move {
-                        let result = if is_latest_captured {
-                            provider
-                                .fetch_leaderboard(&edition, &b, &game, &s, page_idx)
-                                .await
-                        } else {
-                            provider
-                                .fetch_history_leaderboard(
-                                    &edition,
-                                    &b,
-                                    &game,
-                                    &s,
-                                    &snapshot_data.snapshot_id,
-                                    page_idx,
-                                )
-                                .await
-                        };
+                Some(match fetched {
+                    Ok(entries) => Ok(entries),
+                    // A page past the end of the board is a missing file, and a missing file is the
+                    // ordinary way a board ends. It draws the table's empty state rather than a
+                    // failure banner.
+                    Err(error) if error.to_string().contains("404") => Ok(Vec::new()),
+                    Err(error) => Err(format!("Failed to fetch chunk: {error}")),
+                })
+            }
+        }
+    ));
 
-                        match result {
-                            Ok(data) => {
-                                entries.set(data);
-                                loading.set(false);
-                            }
-                            Err(e) => {
-                                loading.set(false);
-                                if e.to_string().contains("404") {
-                                    entries.set(vec![]);
-                                } else {
-                                    error.set(Some(format!("Failed to fetch chunk: {}", e)));
-                                }
-                            }
-                        }
-                    });
-                }
-                || ()
-            },
-        );
-    }
+    let pending = matches!(resource.state().cloned(), UseResourceState::Pending);
+    let fetched = resource.value().cloned().flatten();
 
     UseLeaderboardEntriesResult {
-        entries: (*entries).clone(),
-        loading: *loading,
-        error: (*error).clone(),
+        entries: match &fetched {
+            Some(Ok(entries)) => entries.clone(),
+            Some(Err(_)) | None => Vec::new(),
+        },
+        // Also loading while the resource has resolved to "no snapshot yet": the page has no rows
+        // and no reason to say so, which is the same thing a fetch in flight means.
+        loading: pending || fetched.is_none(),
+        error: match fetched {
+            Some(Err(error)) => Some(error),
+            Some(Ok(_)) | None => None,
+        },
     }
 }

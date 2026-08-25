@@ -42,20 +42,17 @@ impl CacheEntry {
 /// The client's whole data layer: a cache keyed by URL, and the fetches that fill it.
 ///
 /// Cloning shares the cache rather than copying it, which is what makes it safe to hand to every
-/// component through a Yew context. One is created per tab and lives as long as the tab does, so
-/// nothing here survives a reload.
+/// component through a Dioxus context. One is provided above the router and lives as long as the
+/// tab does, so nothing here survives a reload - and nothing here is rebuilt by a navigation.
+///
+/// It is deliberately not [`PartialEq`]. Under Dioxus a fetch re-runs when the values named in its
+/// [`use_reactive!`](macro@dioxus::prelude::use_reactive) dependencies change, and this is never
+/// one of them: the cache is shared, its contents are not a component's business, and an `Api`
+/// that compared unequal to itself would restart every resource on every render.
 #[derive(Clone, Debug)]
 pub struct Api {
     cache: Rc<RefCell<HashMap<String, CacheEntry>>>,
     last_sweep_ms: Arc<AtomicU64>,
-}
-
-/// Every instance compares equal, so putting one in a hook's dependency list never re-runs the
-/// effect. The cache it carries is shared and its contents are not a component's business.
-impl PartialEq for Api {
-    fn eq(&self, _other: &Self) -> bool {
-        true
-    }
 }
 
 impl Default for Api {

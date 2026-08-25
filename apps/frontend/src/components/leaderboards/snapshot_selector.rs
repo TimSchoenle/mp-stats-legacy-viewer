@@ -1,263 +1,285 @@
 //! Choosing which archived state of a board to look at.
 
 use crate::hooks::use_theme;
-use mp_stats_core::models::{LeaderboardMeta, PlatformEdition};
+use crate::route::Snapshot;
+use dioxus::prelude::*;
+use mp_stats_core::models::{HistoricalSnapshot, LeaderboardMeta};
+use std::cmp::Reverse;
 use web_sys::js_sys::Date;
 use web_sys::js_sys::Intl::DateTimeFormatOptions;
 use web_sys::wasm_bindgen::JsValue;
-use yew::prelude::*;
 
-/// Which snapshots this board has, and which one is open.
-#[derive(Properties, PartialEq, Clone)]
-pub struct SnapshotSelectorProps {
-    /// The edition, which decides the theme this is drawn in.
-    pub edition: PlatformEdition,
-    /// The snapshot being viewed, either an archived id or the literal `latest`.
-    pub current_snapshot: String,
-    /// The board's metadata. Absent or empty renders nothing at all, which is how a board with no
-    /// history hides the control.
-    pub meta: Option<LeaderboardMeta>,
-    /// Called with the chosen snapshot id.
-    pub on_change: Callback<String>,
+/// The width the timeline is drawn in, and the inset that keeps the first and last tick from
+/// being clipped by the edge of it. Both are `viewBox` units rather than pixels: the SVG is
+/// stretched to whatever width the card has.
+const TIMELINE_WIDTH: f64 = 1180.0;
+/// The horizontal padding inside [`TIMELINE_WIDTH`] that ticks are laid out within.
+const TIMELINE_INSET: f64 = 8.0;
+/// The span the ticks are spread across, which is the width less the inset at both ends.
+const TIMELINE_SPAN: f64 = TIMELINE_WIDTH - 2.0 * TIMELINE_INSET;
+
+/// The reader's locale, or `en-US` where the browser will not say.
+fn browser_locale() -> String {
+    web_sys::window()
+        .map(|window| window.navigator())
+        .and_then(|navigator| navigator.language())
+        .unwrap_or_else(|| "en-US".to_string())
+}
+
+/// One snapshot's timestamp as a date in `locale`.
+fn format_date(timestamp: u64, locale: &str) -> String {
+    #[allow(clippy::cast_precision_loss)]
+    let milliseconds = (timestamp * 1000) as f64;
+
+    Date::new(&JsValue::from_f64(milliseconds))
+        .to_locale_date_string(locale, &DateTimeFormatOptions::new())
+        .into()
+}
+
+/// Where along the timeline a snapshot taken at `timestamp` sits, as a `viewBox` x coordinate.
+///
+/// Placed by timestamp rather than evenly, so a decade of dumps taken at irregular intervals reads
+/// as the gaps it really has.
+#[allow(clippy::cast_precision_loss)]
+fn tick_x(timestamp: u64, min_ts: u64, range: u64) -> f64 {
+    let fraction = (timestamp - min_ts) as f64 / range as f64;
+
+    TIMELINE_INSET + fraction * TIMELINE_SPAN
+}
+
+/// Whether `snapshot` is the one being viewed, given that "latest" names whichever is newest
+/// rather than an id of its own.
+fn is_viewing(snapshot: &HistoricalSnapshot, current: &Snapshot, max_ts: u64) -> bool {
+    if current.is_latest() {
+        snapshot.timestamp == max_ts
+    } else {
+        snapshot.snapshot_id == current.as_str()
+    }
 }
 
 /// A timeline of every snapshot of this board, with a dropdown under it.
 ///
-/// Ticks are placed by timestamp rather than evenly, so a decade of dumps taken at irregular
-/// intervals reads as the gaps it really has. Dates are formatted in the browser's locale.
-#[function_component(SnapshotSelector)]
-pub fn snapshot_selector(props: &SnapshotSelectorProps) -> Html {
+/// Dates are formatted in the browser's locale. `current_snapshot` is the one being viewed, and
+/// `meta` is the board's metadata - absent or empty renders nothing at all, which is how a board
+/// with no history hides the control. `on_change` is called with the snapshot chosen.
+///
+/// The theme comes from the route, so there is no `edition` prop to keep in step with it.
+#[component]
+pub fn SnapshotSelector(
+    current_snapshot: Snapshot,
+    meta: Option<LeaderboardMeta>,
+    on_change: EventHandler<Snapshot>,
+) -> Element {
     let theme_color = use_theme();
-    let hovered = use_state(|| None::<usize>);
+    let mut hovered = use_signal(|| Option::<usize>::None);
 
-    let meta = match &props.meta {
-        Some(m) => m,
-        None => return html! {},
+    // After the hooks, never before: a board with no history still has to run them, or the next
+    // board the reader opens reads this component's hook state at the wrong offsets.
+    let Some(meta) = meta.filter(|meta| !meta.snapshots.is_empty()) else {
+        return rsx! {};
     };
 
-    if meta.snapshots.is_empty() {
-        return html! {};
-    }
+    let locale = browser_locale();
 
-    let onchange = {
-        let on_change = props.on_change.clone();
-        Callback::from(move |e: Event| {
-            let target: web_sys::HtmlSelectElement = e.target_unchecked_into();
-            on_change.emit(target.value());
-        })
-    };
-
-    let mut sorted_snapshots = meta.snapshots.clone();
-    sorted_snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-
-    let locale = web_sys::window()
-        .map(|w| w.navigator())
-        .and_then(|n| n.language())
-        .unwrap_or_else(|| "en-US".to_string());
-    let date_formats = DateTimeFormatOptions::new();
-
-    // -------- Tickmark timeline --------
-    // Sort ASC for timeline positions
+    // Ascending for the timeline, descending for the dropdown: the timeline reads left to right
+    // through history, and the dropdown offers the most recent dump first.
     let mut chronological = meta.snapshots.clone();
-    chronological.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    chronological.sort_by_key(|snapshot| snapshot.timestamp);
+
+    let mut most_recent_first = meta.snapshots.clone();
+    most_recent_first.sort_by_key(|snapshot| Reverse(snapshot.timestamp));
+
     let total = chronological.len();
-    let min_ts = chronological.first().map(|s| s.timestamp).unwrap_or(0);
-    let max_ts = chronological.last().map(|s| s.timestamp).unwrap_or(1);
+    let min_ts = chronological
+        .first()
+        .map_or(0, |snapshot| snapshot.timestamp);
+    let max_ts = chronological
+        .last()
+        .map_or(1, |snapshot| snapshot.timestamp);
     let range = (max_ts - min_ts).max(1);
 
-    let fmt_date = |ts: u64| -> String {
-        let ms = (ts * 1000) as f64;
-        let d = Date::new(&JsValue::from_f64(ms));
-        d.to_locale_date_string(&locale, &date_formats).into()
-    };
+    let first_date = format_date(min_ts, &locale);
+    let last_date = format_date(max_ts, &locale);
 
-    let first_date = fmt_date(min_ts);
-    let last_date = fmt_date(max_ts);
+    let active_label = chronological
+        .iter()
+        .find(|snapshot| is_viewing(snapshot, &current_snapshot, max_ts))
+        .map_or_else(
+            || "\u{2014}".to_string(),
+            |snapshot| {
+                let date = format_date(snapshot.timestamp, &locale);
 
-    let current_snapshot_str = props.current_snapshot.clone();
+                if current_snapshot.is_latest() {
+                    format!("Latest \u{b7} {date}")
+                } else {
+                    date
+                }
+            },
+        );
 
-    let active_snap = if current_snapshot_str == "latest" {
-        chronological.last().cloned()
-    } else {
-        chronological
-            .iter()
-            .find(|s| s.snapshot_id == current_snapshot_str)
-            .cloned()
-    };
-    let active_label = active_snap
-        .as_ref()
-        .map(|s| {
-            if current_snapshot_str == "latest" {
-                format!("Latest · {}", fmt_date(s.timestamp))
-            } else {
-                fmt_date(s.timestamp)
+    rsx! {
+        div { class: "{theme_color} card p-4",
+            div { class: "flex items-baseline justify-between mb-3 gap-3 flex-wrap",
+                div { class: "eyebrow", "Snapshot \u{b7} {total} archived" }
+                div { class: "font-mono text-[11px] text-paper-3",
+                    "Viewing "
+                    span { class: "text-theme-500", "{active_label}" }
+                }
             }
-        })
-        .unwrap_or_else(|| "—".to_string());
 
-    html! {
-        <div class={classes!(theme_color, "card", "p-4")}>
-            <div class="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
-                <div class="eyebrow">
-                    { format!("Snapshot · {} archived", total) }
-                </div>
-                <div class="font-mono text-[11px] text-paper-3">
-                    { "Viewing " }
-                    <span class="text-theme-500">{ active_label }</span>
-                </div>
-            </div>
+            // Tickmark timeline
+            div { class: "relative w-full",
+                svg {
+                    view_box: "0 0 1180 36",
+                    preserve_aspect_ratio: "none",
+                    class: "block w-full h-9",
+                    line {
+                        x1: "0",
+                        y1: "22",
+                        x2: "1180",
+                        y2: "22",
+                        stroke: "var(--color-rule)",
+                        stroke_width: "1",
+                    }
+                    for (index , snapshot) in chronological.iter().enumerate() {
+                        {
+                            let x = tick_x(snapshot.timestamp, min_ts, range);
+                            let is_active = is_viewing(snapshot, &current_snapshot, max_ts);
+                            let is_hovered = hovered() == Some(index);
 
-            // Tickmark SVG (interactive)
-            <div class="relative w-full">
-                <svg viewBox="0 0 1180 36" preserveAspectRatio="none" class="block w-full h-9">
-                    <line x1="0" y1="22" x2="1180" y2="22" stroke="var(--color-rule)" stroke-width="1" />
-                    { for chronological.iter().enumerate().map(|(i, s)| {
-                        let t = if range > 0 {
-                            (s.timestamp - min_ts) as f64 / range as f64
-                        } else { 0.0 };
-                        let x = 8.0 + t * 1164.0;
-                        let is_active = if current_snapshot_str == "latest" {
-                            s.timestamp == max_ts
-                        } else {
-                            s.snapshot_id == current_snapshot_str
-                        };
-                        let is_hovered = *hovered == Some(i);
-                        let stroke = if is_active {
-                            "var(--color-theme-500)"
-                        } else if is_hovered {
-                            "var(--color-paper-1)"
-                        } else {
-                            "var(--color-paper-4)"
-                        };
-                        let stroke_w = if is_active || is_hovered { 2 } else { 1 };
-                        html! {
-                            <>
-                                <line
-                                    x1={format!("{x}")} y1="14"
-                                    x2={format!("{x}")} y2="30"
-                                    stroke={stroke}
-                                    stroke-width={stroke_w.to_string()}
-                                />
-                                if is_active {
-                                    <circle cx={format!("{x}")} cy="22" r="4" fill="var(--color-theme-500)"/>
+                            rsx! {
+                                line {
+                                    key: "{snapshot.snapshot_id}",
+                                    x1: "{x}",
+                                    y1: "14",
+                                    x2: "{x}",
+                                    y2: "30",
+                                    stroke: if is_active {
+                                        "var(--color-theme-500)"
+                                    } else if is_hovered {
+                                        "var(--color-paper-1)"
+                                    } else {
+                                        "var(--color-paper-4)"
+                                    },
+                                    stroke_width: if is_active || is_hovered { "2" } else { "1" },
                                 }
-                            </>
-                        }
-                    }) }
-                </svg>
-
-                // Invisible hit targets for hover/click on each snapshot
-                <div class="absolute inset-0">
-                    { for chronological.iter().enumerate().map(|(i, s)| {
-                        let t = if range > 0 {
-                            (s.timestamp - min_ts) as f64 / range as f64
-                        } else { 0.0 };
-                        let left_pct = (8.0 + t * 1164.0) / 1180.0 * 100.0;
-                        let snap_id = s.snapshot_id.to_string();
-                        let on_click = {
-                            let on_change = props.on_change.clone();
-                            let id = snap_id.clone();
-                            Callback::from(move |_: MouseEvent| on_change.emit(id.clone()))
-                        };
-                        let on_enter = {
-                            let hovered = hovered.clone();
-                            Callback::from(move |_: MouseEvent| hovered.set(Some(i)))
-                        };
-                        let on_leave = {
-                            let hovered = hovered.clone();
-                            Callback::from(move |_: MouseEvent| hovered.set(None))
-                        };
-                        html! {
-                            <button
-                                type="button"
-                                aria-label={fmt_date(s.timestamp)}
-                                onclick={on_click}
-                                onmouseenter={on_enter}
-                                onmouseleave={on_leave}
-                                class="absolute top-0 h-full w-3 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-0 focus:outline-none"
-                                style={format!("left:{left_pct}%")}
-                            />
-                        }
-                    }) }
-                </div>
-
-                // Hover tooltip
-                {
-                    if let Some(idx) = *hovered
-                        && let Some(s) = chronological.get(idx)
-                    {
-                        let t = if range > 0 {
-                            (s.timestamp - min_ts) as f64 / range as f64
-                        } else { 0.0 };
-                        let left_pct = (8.0 + t * 1164.0) / 1180.0 * 100.0;
-                        let is_active_tip = if current_snapshot_str == "latest" {
-                            s.timestamp == max_ts
-                        } else {
-                            s.snapshot_id == current_snapshot_str
-                        };
-                        html! {
-                            <div
-                                class="pointer-events-none absolute bottom-full z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-rule bg-ink-3 px-3 py-2 shadow-lg"
-                                style={format!("left:{left_pct}%")}
-                            >
-                                <div class="font-mono text-[11px] text-paper-1">
-                                    { fmt_date(s.timestamp) }
-                                    if is_active_tip {
-                                        <span class="text-theme-500">{ " · viewing" }</span>
+                                if is_active {
+                                    circle {
+                                        cx: "{x}",
+                                        cy: "22",
+                                        r: "4",
+                                        fill: "var(--color-theme-500)",
                                     }
-                                </div>
-                                <div class="mt-0.5 font-mono text-[11px] text-paper-3">
-                                    { format!("{} entries · {} pages", s.total_entries, s.total_pages) }
-                                </div>
-                            </div>
+                                }
+                            }
                         }
-                    } else {
-                        html! {}
                     }
                 }
-            </div>
 
-            <div class="font-mono text-[11px] text-paper-3 flex justify-between mt-1 tracking-[0.06em] uppercase">
-                <span>{ first_date }</span>
-                <span class="text-theme-500">{ last_date }</span>
-            </div>
+                // Invisible hit targets for hover/click on each snapshot
+                div { class: "absolute inset-0",
+                    for (index , snapshot) in chronological.iter().enumerate() {
+                        {
+                            let left_pct = tick_x(snapshot.timestamp, min_ts, range)
+                                / TIMELINE_WIDTH * 100.0;
+                            let snapshot_id = snapshot.snapshot_id.to_string();
+
+                            rsx! {
+                                button {
+                                    key: "{snapshot.snapshot_id}",
+                                    r#type: "button",
+                                    aria_label: {format_date(snapshot.timestamp, &locale)},
+                                    class: "absolute top-0 h-full w-3 -translate-x-1/2 cursor-pointer border-0 bg-transparent p-0 focus:outline-none",
+                                    style: "left:{left_pct}%",
+                                    onclick: move |_| {
+                                        on_change.call(snapshot_id.parse().unwrap_or_default());
+                                    },
+                                    onmouseenter: move |_| hovered.set(Some(index)),
+                                    onmouseleave: move |_| hovered.set(None),
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Hover tooltip
+                if let Some(snapshot) = hovered().and_then(|index| chronological.get(index)) {
+                    {
+                        let left_pct = tick_x(snapshot.timestamp, min_ts, range) / TIMELINE_WIDTH
+                            * 100.0;
+
+                        rsx! {
+                            div {
+                                class: "pointer-events-none absolute bottom-full z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border border-rule bg-ink-3 px-3 py-2 shadow-lg",
+                                style: "left:{left_pct}%",
+                                div { class: "font-mono text-[11px] text-paper-1",
+                                    {format_date(snapshot.timestamp, &locale)}
+                                    if is_viewing(snapshot, &current_snapshot, max_ts) {
+                                        span { class: "text-theme-500", " \u{b7} viewing" }
+                                    }
+                                }
+                                div { class: "mt-0.5 font-mono text-[11px] text-paper-3",
+                                    "{snapshot.total_entries} entries \u{b7} {snapshot.total_pages} pages"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            div {
+                class: "font-mono text-[11px] text-paper-3 flex justify-between mt-1 tracking-[0.06em] uppercase",
+                span { "{first_date}" }
+                span { class: "text-theme-500", "{last_date}" }
+            }
 
             // Dropdown selector
-            <div class="flex items-center gap-3 mt-4 pt-4 border-t border-rule-soft">
-                <label class="eyebrow shrink-0">{"Jump to:"}</label>
-                <div class="relative flex-1 max-w-xs">
-                    <select
-                        value={props.current_snapshot.clone()}
-                        {onchange}
-                        class={classes!(theme_color, "appearance-none", "w-full", "px-3", "py-2", "pr-9", "bg-ink-2", "border", "border-rule", "rounded-md", "text-sm", "font-mono", "text-paper-1", "cursor-pointer", "focus:outline-none", "focus:border-theme-500/60", "transition-colors")}
-                    >
-                        {for sorted_snapshots.iter().map(|snap| {
-                            let ms = (snap.timestamp * 1000) as f64;
-                            let d = Date::new(&JsValue::from_f64(ms));
-                            let formatted: String = d.to_locale_date_string(&locale, &date_formats).into();
-                            html! {
-                                <option
-                                    value={snap.snapshot_id.to_string()}
-                                    selected={props.current_snapshot == snap.snapshot_id.as_str()}
-                                >
-                                    {
-                                        if snap.snapshot_id == "latest" {
-                                            format!("Latest ({formatted})")
+            div { class: "flex items-center gap-3 mt-4 pt-4 border-t border-rule-soft",
+                label { class: "eyebrow shrink-0", "Jump to:" }
+                div { class: "relative flex-1 max-w-xs",
+                    select {
+                        class: "{theme_color} appearance-none w-full px-3 py-2 pr-9 bg-ink-2 border border-rule rounded-md text-sm font-mono text-paper-1 cursor-pointer focus:outline-none focus:border-theme-500/60 transition-colors",
+                        value: "{current_snapshot}",
+                        onchange: move |event| {
+                            on_change.call(event.value().parse().unwrap_or_default());
+                        },
+                        for snapshot in most_recent_first.iter() {
+                            {
+                                let formatted = format_date(snapshot.timestamp, &locale);
+                                let id = snapshot.snapshot_id.as_str();
+
+                                rsx! {
+                                    option {
+                                        key: "{id}",
+                                        value: "{id}",
+                                        selected: current_snapshot.as_str() == id,
+                                        if id == "latest" {
+                                            "Latest ({formatted})"
                                         } else {
-                                            formatted
+                                            "{formatted}"
                                         }
                                     }
-                                </option>
+                                }
                             }
-                        })}
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-paper-4">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
+                        }
+                    }
+                    div {
+                        class: "pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-paper-4",
+                        svg {
+                            class: "h-3.5 w-3.5",
+                            fill: "none",
+                            stroke: "currentColor",
+                            view_box: "0 0 24 24",
+                            stroke_width: "2",
+                            path {
+                                stroke_linecap: "round",
+                                stroke_linejoin: "round",
+                                d: "M19 9l-7 7-7-7",
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -25,3 +25,10 @@ fileExistenceTests:
   - name: configuration contract present
     path: /config/contract.json
     shouldExist: true
+  # The shell, at the path `deploy/config.toml` points `server.dist_dir` at. The frontend is
+  # copied out of the build tree by a path that only the Dockerfile knows, so a rename on the
+  # `dx` side lands here as an empty `/dist` - which the server refuses to start against, but
+  # only once the image is already published.
+  - name: frontend shell present
+    path: /dist/index.html
+    shouldExist: true
