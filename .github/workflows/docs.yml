@@ -143,7 +143,7 @@ jobs:
       # job had already fixed in the working tree and thrown away.
       - name: Commit the example configuration and the contract
         id: example
-        uses: TimSchoenle/actions/actions/common/commit-changes@76719ba61e9b9cf1ffafdc3cb895308055a7f3bd # tag=actions-common-commit-changes-v1.3.2
+        uses: TimSchoenle/actions/actions/common/commit-changes@57e5492e68be560bddac3c6fc9ba0a944cfee961 # tag=actions-common-commit-changes-v1.3.3
         with:
           token: ${{ steps.generate_token.outputs.token }}
           commit_message: 'docs: regenerate config.example.toml and the config contract'
