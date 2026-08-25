@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.18.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.2...v0.18.0) (2026-08-25)
+
+
+### Features
+
+* **config:** take terrace-config v0.9.0, the shared check and a justfile ([#431](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/431)) ([ea3c841](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ea3c8415687cd93b155c1ffd9d1558f0f1bb5038))
+* migrate the frontend from Yew to Dioxus 0.7 ([#444](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/444)) ([b33084f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b33084ff49e08f251016e4fac7a4bad2ebd8efca))
+
+
+### Documentation
+
+* bring the doc comments onto the estate standard ([#442](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/442)) ([226e79f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/226e79f95553ea29b111c56cb37db739e438d4bd))
+* render the README from the shared readme-variables payload ([#437](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/437)) ([c0a6913](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c0a69132e5d06142242a179aba3a9ea66f6446bc))
+
+
+### Miscellaneous
+
+* **deps:** update docker/setup-buildx-action digest to 37fe631 ([#436](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/436)) ([fa63ea1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fa63ea1ab3f61857f6bb3a6cd8bd0bb69a486928))
+* **deps:** update github/codeql-action action to v4.37.8 ([#443](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/443)) ([77cdd63](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/77cdd63be03072366ce2e1244d3d3760c1c136dc))
+* **deps:** update rust crate lzma-rust2 to 0.19.0 ([#433](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/433)) ([fc6a92e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fc6a92e275280cea87e037842fb474cb48445637))
+* **deps:** update rust docker tag to v1.98 ([#440](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/440)) ([61fe023](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/61fe0235e9d075a633e4ec2607f4b4cac92891cf))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.21 ([#434](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/434)) ([77eb01f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/77eb01f53d0db5afc6204ef9fb2af246c1f0c3a9))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.32 ([#435](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/435)) ([0caf187](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0caf1870c24d5fa69298106784bb333f88df404f))
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#419](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/419)) ([50f7d47](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/50f7d47557acb8665db3ed4f50919c2a0682c8d1))
+* **deps:** lock file maintenance ([#438](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/438)) ([6c4eafb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6c4eafb43038d16230b0d0308060a28fae00128e))
+* **deps:** lock file maintenance ([#439](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/439)) ([12831d6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/12831d6e59db809b6888b846981a44f2972e7003))
+* **deps:** lock file maintenance ([#441](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/441)) ([04504ab](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/04504ab016bb844b4762332eb279994fa5b028cf))
+
 ## [0.17.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.1...v0.17.2) (2026-08-19)
 
 
