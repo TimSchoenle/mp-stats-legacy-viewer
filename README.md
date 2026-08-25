@@ -41,7 +41,7 @@ The statistics were collected with [StatsApi](https://github.com/TimSchoenle/Sta
 ## Quick start
 
 ```bash
-docker run --rm -p 8080:8080 timschoenle/mp-stats-legacy-viewer:v0.17.2
+docker run --rm -p 8080:8080 timschoenle/mp-stats-legacy-viewer:v0.18.0
 ```
 
 Then open <http://localhost:8080>. The image carries the converted data and its own `/config.toml`,
@@ -84,7 +84,7 @@ so it takes no arguments and needs no volume.
 ### Docker
 
 ```bash
-docker pull timschoenle/mp-stats-legacy-viewer:v0.17.2
+docker pull timschoenle/mp-stats-legacy-viewer:v0.18.0
 ```
 
 A multi-platform manifest for `linux/amd64` and `linux/arm64`. Every release is signed with
