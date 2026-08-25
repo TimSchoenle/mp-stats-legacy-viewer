@@ -4,30 +4,22 @@
 //! distinguishable at a glance and nothing has to be persisted.
 
 use crate::Route;
+use dioxus::prelude::*;
 use mp_stats_core::models::PlatformEdition;
-use yew::prelude::*;
-use yew_router::prelude::*;
 
 /// The theme class for the route being viewed, which is the edition's where a route names one.
-#[hook]
+///
+/// Reading the route here is what subscribes the calling component to it, so a component that
+/// wears a theme class repaints on navigation without being handed the edition as a prop.
+#[must_use]
 pub fn use_theme() -> &'static str {
-    let route_context = use_route::<Route>();
-
-    let theme = use_memo(route_context, |route_ctx| {
-        if let Some(
-            Route::Landing { edition }
-            | Route::Game { edition, .. }
-            | Route::Leaderboard { edition, .. }
-            | Route::Player { edition, .. },
-        ) = route_ctx
-        {
-            get_theme_color(edition)
-        } else {
-            "theme-olive"
-        }
-    });
-
-    *theme
+    match use_route::<Route>() {
+        Route::Landing { edition }
+        | Route::Game { edition, .. }
+        | Route::Leaderboard { edition, .. }
+        | Route::Player { edition, .. } => get_theme_color(&edition),
+        Route::Home {} | Route::NotFound { .. } => "theme-olive",
+    }
 }
 
 /// The theme class an edition is drawn in.

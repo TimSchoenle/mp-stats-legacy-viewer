@@ -5,98 +5,111 @@ use crate::hooks::use_theme;
 use crate::models::LeaderboardEntry;
 use crate::util::percent::format_percent;
 use crate::util::score_formatter::create_score_formatter;
+use dioxus::prelude::*;
 use mp_stats_core::models::PlatformEdition;
-use yew::prelude::*;
-use yew_router::prelude::*;
-
-/// The rows to draw, and what they are rows of.
-#[derive(Properties, PartialEq, Clone)]
-pub struct LeaderboardTableProps {
-    /// The game, which together with `stat` decides how a score is written.
-    pub game: String,
-    /// The category, which together with `game` decides how a score is written.
-    pub stat: String,
-    /// The rows, in rank order. The first one's score is what the comparison bars are measured
-    /// against, so a page other than the first compares against the best on that page.
-    pub entries: Vec<LeaderboardEntry>,
-    /// The edition every player link points into.
-    pub edition: PlatformEdition,
-}
 
 /// One page of a board as a table: rank, player, a bar against the leader, and the score.
-#[function_component(LeaderboardTable)]
-pub fn leaderboard_table(props: &LeaderboardTableProps) -> Html {
+///
+/// `game` and `stat` together decide how a score is written. `entries` are the rows in rank
+/// order, and the first one's score is what the comparison bars are measured against - so a page
+/// other than the first compares against the best on that page. `edition` is what every player
+/// link points into.
+#[component]
+pub fn LeaderboardTable(
+    game: String,
+    stat: String,
+    entries: Vec<LeaderboardEntry>,
+    edition: PlatformEdition,
+) -> Element {
     let theme_color = use_theme();
-    let score_formatter = create_score_formatter(&props.game, &props.stat);
+    let score_formatter = create_score_formatter(&game, &stat);
 
-    // Top score for "vs. #1" bar
-    let top_score = props.entries.first().map(|e| e.score).unwrap_or(0);
+    // Top score for the "vs. #1" bar.
+    let top_score = entries.first().map_or(0, |entry| entry.score);
 
-    html! {
-        <div class={classes!(theme_color, "overflow-x-auto")}>
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr>
-                        <th class="table-header w-20">{ "Rank" }</th>
-                        <th class="table-header">{ "Player" }</th>
-                        <th class="table-header w-72 hidden md:table-cell">{ "vs. #1" }</th>
-                        <th class="table-header text-right">{ "Score" }</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    { for props.entries.iter().map(|row| {
-                        let is_top3 = row.rank <= 3;
-                        let pct = if top_score > 0 {
-                            ((row.score as f64 / top_score as f64) * 100.0).min(100.0).max(0.0)
-                        } else {
-                            0.0
-                        };
-                        let bar_color = if is_top3 { "var(--color-theme-500)" } else { "var(--color-paper-3)" };
-                        let bar_style = format!("width:{:.2}%; background:{};", pct, bar_color);
+    rsx! {
+        div { class: "{theme_color} overflow-x-auto",
+            table { class: "w-full text-left border-collapse",
+                thead {
+                    tr {
+                        th { class: "table-header w-20", "Rank" }
+                        th { class: "table-header", "Player" }
+                        th { class: "table-header w-72 hidden md:table-cell", "vs. #1" }
+                        th { class: "table-header text-right", "Score" }
+                    }
+                }
+                tbody {
+                    for row in entries.iter() {
+                        {
+                            let is_top3 = row.rank <= 3;
+                            let pct = if top_score > 0 {
+                                #[allow(clippy::cast_precision_loss)]
+                                let ratio = row.score as f64 / top_score as f64;
+                                (ratio * 100.0).clamp(0.0, 100.0)
+                            } else {
+                                0.0
+                            };
+                            let bar_color = if is_top3 {
+                                "var(--color-theme-500)"
+                            } else {
+                                "var(--color-paper-3)"
+                            };
 
-                        let rank_class = if is_top3 {
-                            "font-mono text-sm font-semibold text-theme-500"
-                        } else {
-                            "font-mono text-sm text-paper-3"
-                        };
-
-                        html! {
-                        <tr class="table-row group">
-                            <td class="table-cell">
-                                <span class={rank_class}>
-                                    { format!("#{}", row.rank) }
-                                </span>
-                            </td>
-                            <td class="table-cell">
-                                <Link<Route> to={Route::Player { edition: props.edition.clone(), uuid: row.uuid.to_string() }} classes="flex items-center gap-3 w-fit group/link">
-                                    <img
-                                        src={format!("https://mc-heads.net/avatar/{}/32", row.uuid)}
-                                        class="w-6 h-6 rounded bg-ink-3 border border-rule"
-                                        alt="Avatar"
-                                        loading="lazy"
-                                    />
-                                    <span class="font-mono text-sm font-medium text-paper-1 group-hover/link:text-theme-400 transition-colors">
-                                        { row.name.as_str() }
-                                    </span>
-                                </Link<Route>>
-                            </td>
-                            <td class="table-cell hidden md:table-cell">
-                                <div class="flex items-center gap-3 max-w-[16rem]">
-                                    <span class="bar-track flex-1">
-                                        <span class="bar-fill" style={bar_style}></span>
-                                    </span>
-                                    <span class="font-mono text-xs text-paper-3 tnum w-10 text-right">
-                                        { format_percent(pct) }
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="table-cell text-right font-mono font-medium text-paper-1 tnum">
-                                { score_formatter.format_score(row.score) }
-                            </td>
-                        </tr>
-                    }}) }
-                </tbody>
-            </table>
-        </div>
+                            rsx! {
+                                tr { key: "{row.uuid}-{row.rank}", class: "table-row group",
+                                    td { class: "table-cell",
+                                        span {
+                                            class: if is_top3 {
+                                                "font-mono text-sm font-semibold text-theme-500"
+                                            } else {
+                                                "font-mono text-sm text-paper-3"
+                                            },
+                                            "#{row.rank}"
+                                        }
+                                    }
+                                    td { class: "table-cell",
+                                        Link {
+                                            to: Route::Player {
+                                                edition: edition.clone(),
+                                                uuid: row.uuid.to_string(),
+                                            },
+                                            class: "flex items-center gap-3 w-fit group/link",
+                                            img {
+                                                src: "https://mc-heads.net/avatar/{row.uuid}/32",
+                                                class: "w-6 h-6 rounded bg-ink-3 border border-rule",
+                                                alt: "Avatar",
+                                                loading: "lazy",
+                                            }
+                                            span {
+                                                class: "font-mono text-sm font-medium text-paper-1 group-hover/link:text-theme-400 transition-colors",
+                                                "{row.name}"
+                                            }
+                                        }
+                                    }
+                                    td { class: "table-cell hidden md:table-cell",
+                                        div { class: "flex items-center gap-3 max-w-[16rem]",
+                                            span { class: "bar-track flex-1",
+                                                span {
+                                                    class: "bar-fill",
+                                                    style: "width:{pct:.2}%; background:{bar_color};",
+                                                }
+                                            }
+                                            span {
+                                                class: "font-mono text-xs text-paper-3 tnum w-10 text-right",
+                                                {format_percent(pct)}
+                                            }
+                                        }
+                                    }
+                                    td {
+                                        class: "table-cell text-right font-mono font-medium text-paper-1 tnum",
+                                        {score_formatter.format_score(row.score)}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

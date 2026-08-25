@@ -2,161 +2,150 @@
 
 use crate::hooks::use_theme;
 use crate::{Api, Route};
-use mp_stats_core::models::PlatformEdition;
+use dioxus::prelude::*;
+use mp_stats_core::models::{Game, PlatformEdition};
 use std::collections::BTreeMap;
-use yew::platform::spawn_local;
-use yew::prelude::*;
-use yew_router::prelude::*;
 
-/// Which edition to list.
-#[derive(Properties, PartialEq, Clone)]
-pub struct JavaLandingProps {
-    /// The platform whose games are listed.
-    pub edition: PlatformEdition,
+/// The letter a game is filed under: its first, upper-cased, or `#` for anything that does not
+/// start with a letter.
+fn initial(game: &Game) -> char {
+    match game.name.chars().next().map(|c| c.to_ascii_uppercase()) {
+        Some(letter) if letter.is_ascii_alphabetic() => letter,
+        _ => '#',
+    }
 }
 
 /// One edition's games, grouped by first letter.
-#[function_component(JavaLanding)]
-pub fn java_landing(props: &JavaLandingProps) -> Html {
-    let games = use_state(Vec::new);
-    let api_ctx = use_context::<Api>().expect("no api found found");
-
-    {
-        let games = games.clone();
-
-        use_effect_with(
-            (api_ctx, props.edition.clone()),
-            move |(ctx, current_edition)| {
-                let provider = ctx.clone();
-                let edition_to_fetch = current_edition.clone();
-
-                games.set(vec![]);
-
-                spawn_local(async move {
-                    if let Ok(meta) = provider.fetch_meta(&edition_to_fetch).await {
-                        games.set(meta.games);
-                    } else {
-                        games.set(vec![]);
-                    }
-                });
-                || ()
-            },
-        );
-    }
-
-    let sorted_games = {
-        let mut games_vec = (*games).clone();
-        games_vec.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        games_vec
-    };
-
-    // Group by first letter
-    let mut by_letter: BTreeMap<char, Vec<_>> = BTreeMap::new();
-    for game in &sorted_games {
-        let ch = game
-            .name
-            .chars()
-            .next()
-            .map(|c| c.to_ascii_uppercase())
-            .unwrap_or('#');
-        let key = if ch.is_ascii_alphabetic() { ch } else { '#' };
-        by_letter.entry(key).or_default().push(game.clone());
-    }
-
+///
+/// `edition` is the platform whose games are listed.
+#[component]
+pub fn EditionLanding(edition: PlatformEdition) -> Element {
+    let api = use_context::<Api>();
     let theme_color = use_theme();
-    let alphabet: Vec<char> = ('A'..='Z').collect();
-    let has_non_alpha = by_letter.contains_key(&'#');
-    let total_snapshots: u64 = sorted_games.iter().map(|g| g.total_snapshots).sum();
 
-    html! {
-        <div class={classes!(theme_color, "container", "mx-auto", "px-6", "py-8", "max-w-6xl", "xl:max-w-7xl", "2xl:max-w-[1600px]")}>
+    // An edition with no game list and an edition whose game list failed to load look the same to
+    // this page, and are rendered the same: the skeleton below. There is nothing a reader could do
+    // with the difference, and the ID map this is built from is fetched again by every page they
+    // could reach from here.
+    let games_resource = use_resource(use_reactive!(|edition| {
+        let api = api.clone();
+
+        async move {
+            api.fetch_meta(&edition)
+                .await
+                .map(|meta| meta.games)
+                .unwrap_or_default()
+        }
+    }));
+
+    let mut games = games_resource.value().cloned().unwrap_or_default();
+    games.sort_by_key(|game| game.name.to_lowercase());
+
+    let total_snapshots: u64 = games.iter().map(|game| game.total_snapshots).sum();
+    let game_count = games.len();
+
+    let mut by_letter: BTreeMap<char, Vec<Game>> = BTreeMap::new();
+    for game in games {
+        by_letter.entry(initial(&game)).or_default().push(game);
+    }
+
+    let has_non_alpha = by_letter.contains_key(&'#');
+
+    rsx! {
+        div {
+            class: "{theme_color} container mx-auto px-6 py-8 max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]",
+
             // Crumbs
-            <div class="crumbs mb-5">
-                <Link<Route> to={Route::Home}>{"Home"}</Link<Route>>
-                <span class="sep">{"/"}</span>
-                <span class="here">{ props.edition.display_name() }</span>
-            </div>
+            div { class: "crumbs mb-5",
+                Link { to: Route::Home {}, "Home" }
+                span { class: "sep", "/" }
+                span { class: "here", {edition.display_name()} }
+            }
 
             // Hero
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-7 border-b border-rule">
-                <div>
-                    <div class="eyebrow mb-3">{ format!("Edition · {}", props.edition.display_name()) }</div>
-                    <h1 class="serif page-title text-5xl md:text-6xl text-paper-1">
-                        <span class="text-theme-500">{ props.edition.display_name() }</span>
-                        { " Edition" }
-                    </h1>
-                    <p class="mt-3 text-sm text-paper-3 max-w-xl leading-relaxed">
-                        <span class="text-paper-1 font-medium">
-                            { format!("{} archived games", games.len()) }
-                        </span>
+            div {
+                class: "flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pb-7 border-b border-rule",
+                div {
+                    div { class: "eyebrow mb-3", "Edition \u{b7} {edition.display_name()}" }
+                    h1 { class: "serif page-title text-5xl md:text-6xl text-paper-1",
+                        span { class: "text-theme-500", {edition.display_name()} }
+                        " Edition"
+                    }
+                    p { class: "mt-3 text-sm text-paper-3 max-w-xl leading-relaxed",
+                        span { class: "text-paper-1 font-medium", "{game_count} archived games" }
                         if total_snapshots > 0 {
-                            { " across " }
-                            <span class="text-paper-1 font-medium">
-                                { format!("{} snapshots", total_snapshots) }
-                            </span>
+                            " across "
+                            span { class: "text-paper-1 font-medium", "{total_snapshots} snapshots" }
                         }
-                        { ". Browse historical leaderboards from snapshots collected 2021–2023." }
-                    </p>
-                </div>
-            </div>
+                        ". Browse historical leaderboards from snapshots collected 2021\u{2013}2023."
+                    }
+                }
+            }
 
-            if games.is_empty() {
+            if by_letter.is_empty() {
                 // Loading skeleton
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-8 animate-pulse">
-                    { for (0..9).map(|_| html! {
-                        <div class="h-14 bg-ink-2 rounded-lg border border-rule"></div>
-                    }) }
-                </div>
+                div {
+                    class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-8 animate-pulse",
+                    for index in 0..9 {
+                        div { key: "{index}", class: "h-14 bg-ink-2 rounded-lg border border-rule" }
+                    }
+                }
             } else {
                 // Alphabet rail
-                <div class="flex gap-1 mt-7 pb-3 border-b border-rule overflow-x-auto">
-                    { for alphabet.iter().map(|l| {
-                        let has = by_letter.contains_key(l);
-                        let cls = if has {
-                            "font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-paper-2 hover:bg-ink-3 cursor-pointer"
-                        } else {
-                            "font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-ink-4 cursor-default"
-                        };
-                        let href = format!("#letter-{l}");
-                        html! { <a class={cls} href={href}>{ l.to_string() }</a> }
-                    }) }
-                    if has_non_alpha {
-                        <a class="font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-paper-2 hover:bg-ink-3 cursor-pointer" href="#letter-other">{"#"}</a>
+                div { class: "flex gap-1 mt-7 pb-3 border-b border-rule overflow-x-auto",
+                    for letter in 'A'..='Z' {
+                        a {
+                            key: "{letter}",
+                            class: if by_letter.contains_key(&letter) {
+                                "font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-paper-2 hover:bg-ink-3 cursor-pointer"
+                            } else {
+                                "font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-ink-4 cursor-default"
+                            },
+                            href: "#letter-{letter}",
+                            "{letter}"
+                        }
                     }
-                </div>
+                    if has_non_alpha {
+                        a {
+                            class: "font-mono text-xs font-medium w-7 h-7 flex items-center justify-center rounded text-paper-2 hover:bg-ink-3 cursor-pointer",
+                            href: "#letter-other",
+                            "#"
+                        }
+                    }
+                }
 
                 // Grouped grid
-                <div class="mt-2">
-                    { for by_letter.iter().map(|(letter, games)| {
-                        let anchor_id = if *letter == '#' { "letter-other".to_string() } else { format!("letter-{letter}") };
-                        let label = if *letter == '#' { "#".to_string() } else { letter.to_string() };
-                        let edition = props.edition.clone();
-
-                        html! {
-                            <div id={anchor_id} class="grid grid-cols-[60px_1fr] gap-6 py-6 border-b border-rule-soft scroll-mt-20">
-                                <div class="serif text-5xl italic text-paper-4 leading-none">{ label }</div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-rule border border-rule rounded-lg overflow-hidden">
-                                    { for games.iter().map(|game| {
-                                        html! {
-                                            <Link<Route>
-                                                to={Route::Game { edition: edition.clone(), game: game.name.to_string() }}
-                                                classes="bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3 flex justify-between items-center group"
-                                            >
-                                                <div class="text-sm font-medium text-paper-1 truncate pr-2">
-                                                    { game.name.as_str() }
-                                                </div>
-                                                <span class="text-theme-500 text-sm opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
-                                                    { "→" }
-                                                </span>
-                                            </Link<Route>>
+                div { class: "mt-2",
+                    for (letter , group) in by_letter {
+                        div {
+                            key: "{letter}",
+                            id: if letter == '#' { "letter-other".to_string() } else { format!("letter-{letter}") },
+                            class: "grid grid-cols-[60px_1fr] gap-6 py-6 border-b border-rule-soft scroll-mt-20",
+                            div { class: "serif text-5xl italic text-paper-4 leading-none", "{letter}" }
+                            div {
+                                class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-rule border border-rule rounded-lg overflow-hidden",
+                                for game in group {
+                                    Link {
+                                        key: "{game.name}",
+                                        to: Route::Game {
+                                            edition: edition.clone(),
+                                            game: game.name.to_string(),
+                                        },
+                                        class: "bg-ink-2 hover:bg-ink-3 transition-colors px-4 py-3 flex justify-between items-center group",
+                                        div { class: "text-sm font-medium text-paper-1 truncate pr-2",
+                                            "{game.name}"
                                         }
-                                    }) }
-                                </div>
-                            </div>
+                                        span {
+                                            class: "text-theme-500 text-sm opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all",
+                                            "\u{2192}"
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }) }
-                </div>
+                    }
+                }
             }
-        </div>
+        }
     }
 }

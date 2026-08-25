@@ -2,6 +2,13 @@
   "name": "mp-stats-legacy-viewer",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "build:fonts": "node scripts/copy-fonts.mjs",
+    "build:css": "tailwindcss --input ./assets/input.css --output ./public/app.css --minify",
+    "build:assets": "npm run build:fonts && npm run build:css",
+    "watch:css": "tailwindcss --input ./assets/input.css --output ./public/app.css --watch"
+  },
   "devDependencies": {
     "@tailwindcss/cli": "4.3.3",
     "tailwindcss": "4.3.3"

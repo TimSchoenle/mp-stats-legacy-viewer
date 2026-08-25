@@ -96,3 +96,10 @@ dist/
 # developer's own copy of `config.example.toml` must never be committed; `deploy/config.toml`
 # is the image's baked config and is tracked.
 /config.toml
+
+# Built by `npm run build:assets` in `apps/frontend`: the fonts copied out of `node_modules` and
+# the compiled Tailwind stylesheet. `dx` copies everything under `public/` into its output, so
+# these are build inputs to that step rather than sources - but the rest of `public/` is not
+# generated, which is why the two paths are named instead of the directory.
+apps/frontend/public/fonts/
+apps/frontend/public/app.css

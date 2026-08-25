@@ -2,50 +2,45 @@
 
 use crate::Route;
 use crate::hooks::use_theme;
+use dioxus::prelude::*;
 use mp_stats_core::models::PlatformEdition;
-use yew::prelude::*;
-use yew_router::prelude::*;
-
-/// Where in the tree the reader currently is.
-#[derive(Properties, PartialEq)]
-pub struct HeaderProps {
-    /// The edition, which is both a crumb and the theme.
-    pub edition: PlatformEdition,
-    /// The game's directory name, shown as-is.
-    pub game: String,
-    /// The category's directory name. Underscores become spaces before it is shown.
-    pub stat: String,
-}
 
 /// The breadcrumb trail and title above a leaderboard.
-#[function_component(LeaderboardHeader)]
-pub fn leaderboard_header(props: &HeaderProps) -> Html {
+///
+/// `edition` is both a crumb and the theme, `game` is shown as-is, and `stat` has its underscores
+/// turned into spaces before it is shown.
+#[component]
+pub fn LeaderboardHeader(edition: PlatformEdition, game: String, stat: String) -> Element {
     let theme_color = use_theme();
-    let stat_display = props.stat.replace("_", " ");
+    let stat_display = stat.replace('_', " ");
 
-    html! {
-        <div class={classes!(theme_color)}>
+    rsx! {
+        div { class: "{theme_color}",
+
             // Crumbs
-            <div class="crumbs mb-5">
-                <Link<Route> to={Route::Home}>{"Home"}</Link<Route>>
-                <span class="sep">{"/"}</span>
-                <Link<Route> to={Route::Landing { edition: props.edition.clone() }}>{ props.edition.display_name() }</Link<Route>>
-                <span class="sep">{"/"}</span>
-                <Link<Route> to={Route::Game { edition: props.edition.clone(), game: props.game.clone() }}>{ &props.game }</Link<Route>>
-                <span class="sep">{"/"}</span>
-                <span class="here capitalize">{ stat_display.clone() }</span>
-            </div>
+            div { class: "crumbs mb-5",
+                Link { to: Route::Home {}, "Home" }
+                span { class: "sep", "/" }
+                Link { to: Route::Landing { edition: edition.clone() }, {edition.display_name()} }
+                span { class: "sep", "/" }
+                Link {
+                    to: Route::Game { edition: edition.clone(), game: game.clone() },
+                    "{game}"
+                }
+                span { class: "sep", "/" }
+                span { class: "here capitalize", "{stat_display}" }
+            }
 
             // Title
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-3">
-                <div>
-                    <div class="eyebrow mb-2">{ format!("{} · Category", &props.game) }</div>
-                    <h1 class="serif page-title text-5xl md:text-6xl text-paper-1 capitalize">
-                        <span class="text-paper-3">{"Top "}</span>
-                        { stat_display }
-                    </h1>
-                </div>
-            </div>
-        </div>
+            div { class: "flex flex-col md:flex-row md:items-end justify-between gap-3",
+                div {
+                    div { class: "eyebrow mb-2", "{game} \u{b7} Category" }
+                    h1 { class: "serif page-title text-5xl md:text-6xl text-paper-1 capitalize",
+                        span { class: "text-paper-3", "Top " }
+                        "{stat_display}"
+                    }
+                }
+            }
+        }
     }
 }

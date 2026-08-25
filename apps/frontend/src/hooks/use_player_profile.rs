@@ -2,9 +2,8 @@
 //! failed.
 
 use crate::Api;
+use dioxus::prelude::*;
 use mp_stats_core::models::{IdMap, PlatformEdition, PlayerProfile};
-use yew::platform::spawn_local;
-use yew::prelude::*;
 
 /// What a profile page has to render from.
 #[derive(Clone, PartialEq, Debug)]
@@ -23,76 +22,78 @@ pub struct UsePlayerProfileResult {
     pub not_found: bool,
 }
 
+/// The two ways a profile fetch ends badly, which the page answers very differently.
+#[derive(Clone, PartialEq, Debug)]
+enum ProfileError {
+    /// No such player in the archive, or a UUID that was never one. An ordinary answer.
+    NotFound,
+    /// The fetch itself failed.
+    Failed(String),
+}
+
 /// Fetches one player's profile and then the name tables its ids resolve through.
 ///
 /// The two are sequential rather than concurrent: a profile that is not there makes the second
 /// fetch pointless.
-#[hook]
+#[must_use]
 pub fn use_player_profile(edition: PlatformEdition, uuid: String) -> UsePlayerProfileResult {
-    let profile = use_state(|| None::<PlayerProfile>);
-    let id_map = use_state(|| None::<IdMap>);
-    let loading = use_state(|| true);
-    let error = use_state(|| None::<String>);
-    let not_found = use_state(|| false);
+    let api = use_context::<Api>();
 
-    let context = use_context::<Api>().expect("no api context found");
+    let resource = use_resource(use_reactive!(|edition, uuid| {
+        let api = api.clone();
 
-    {
-        let edition = edition.clone();
-        let profile = profile.clone();
-        let id_map = id_map.clone();
-        let loading = loading.clone();
-        let error = error.clone();
-        let not_found = not_found.clone();
+        async move {
+            match api.fetch_player(&edition, &uuid).await {
+                // The name tables are optional: a profile renders with numeric ids where names
+                // would be rather than not rendering at all.
+                Ok(profile) => Ok((profile, api.fetch_id_map(&edition).await.ok())),
+                Err(error) => {
+                    let message = error.to_string();
 
-        use_effect_with((edition, uuid, context), move |(edition, id, ctx)| {
-            profile.set(None);
-            id_map.set(None);
-            error.set(None);
-            not_found.set(false);
-            loading.set(true);
-
-            let edition = edition.clone();
-            let id = id.clone();
-            let provider = ctx.clone();
-
-            spawn_local(async move {
-                // Fetch profile first
-                let p_res = provider.fetch_player(&edition, &id).await;
-                match p_res {
-                    Ok(p) => profile.set(Some(p)),
-                    Err(e) => {
-                        // A missing player (not present in any leaderboard shard) is an
-                        // expected, benign outcome rather than a real error: surface it
-                        // through `not_found` so the UI can explain it gracefully.
-                        let msg = e.to_string();
-                        if msg.contains("not found") || msg.contains("Invalid UUID") {
-                            not_found.set(true);
+                    Err(
+                        if message.contains("not found") || message.contains("Invalid UUID") {
+                            ProfileError::NotFound
                         } else {
-                            error.set(Some(format!("Failed to load profile: {}", e)));
-                        }
-                        loading.set(false);
-                    }
+                            ProfileError::Failed(format!("Failed to load profile: {error}"))
+                        },
+                    )
                 }
+            }
+        }
+    }));
 
-                // If no error with profile, fetch map
-                if error.is_none()
-                    && let Ok(m) = provider.fetch_id_map(&edition).await
-                {
-                    id_map.set(Some(m));
-                }
+    let loading = matches!(resource.state().cloned(), UseResourceState::Pending);
 
-                loading.set(false);
-            });
-            || ()
-        });
-    }
-
-    UsePlayerProfileResult {
-        profile: (*profile).clone(),
-        id_map: (*id_map).clone(),
-        loading: *loading,
-        error: (*error).clone(),
-        not_found: *not_found,
+    match resource.value().cloned() {
+        None => UsePlayerProfileResult {
+            profile: None,
+            id_map: None,
+            loading,
+            error: None,
+            not_found: false,
+        },
+        Some(Ok((profile, id_map))) => UsePlayerProfileResult {
+            profile: Some(profile),
+            id_map,
+            loading,
+            error: None,
+            not_found: false,
+        },
+        // Both outcomes are withdrawn while a new fetch is in flight, so navigating from one
+        // missing player to another does not flash the previous verdict over the spinner.
+        Some(Err(ProfileError::NotFound)) => UsePlayerProfileResult {
+            profile: None,
+            id_map: None,
+            loading,
+            error: None,
+            not_found: !loading,
+        },
+        Some(Err(ProfileError::Failed(error))) => UsePlayerProfileResult {
+            profile: None,
+            id_map: None,
+            loading,
+            error: (!loading).then_some(error),
+            not_found: false,
+        },
     }
 }

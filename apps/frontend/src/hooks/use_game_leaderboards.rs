@@ -2,9 +2,8 @@
 
 use crate::Api;
 use crate::models::{GameLeaderboardData, IdMap};
+use dioxus::prelude::*;
 use mp_stats_core::models::PlatformEdition;
-use yew::platform::spawn_local;
-use yew::prelude::*;
 
 /// What a game page has to render from.
 #[derive(Clone, PartialEq)]
@@ -23,62 +22,62 @@ pub struct UseGameLeaderboardsResult {
 /// Fetches a game's metadata and the edition's name tables together, and reports the three states
 /// a page can be in.
 ///
-/// Refetches whenever `game_id` changes; `edition` is captured once, which is correct only because
-/// no route changes the edition without also changing the game.
-#[hook]
+/// Refetches whenever `edition` or `game_id` changes. Both are named in the dependency list, so
+/// there is no route that can change the edition without the fetch noticing - which naming only
+/// the game would allow.
+#[must_use]
 pub fn use_game_leaderboards(
     edition: PlatformEdition,
     game_id: String,
 ) -> UseGameLeaderboardsResult {
-    let data = use_state(|| None::<GameLeaderboardData>);
-    let id_map = use_state(|| None::<IdMap>);
-    let loading = use_state(|| true);
-    let error = use_state(|| None::<String>);
+    let api = use_context::<Api>();
 
-    let api_ctx = use_context::<Api>().expect("no api context found");
+    // One resource rather than two, because the page has no use for half of the pair: a game
+    // whose metadata failed has nothing to put the names on. The two fetches inside it still
+    // run concurrently.
+    let resource = use_resource(use_reactive!(|edition, game_id| {
+        let api = api.clone();
 
-    {
-        let data = data.clone();
-        let id_map = id_map.clone();
-        let loading = loading.clone();
-        let error = error.clone();
-        let edition = edition.clone();
+        async move {
+            let (data, id_map) = futures::future::join(
+                api.fetch_game_leaderboards(&edition, &game_id),
+                api.fetch_id_map(&edition),
+            )
+            .await;
 
-        use_effect_with((game_id.clone(), api_ctx.clone()), move |(game, ctx)| {
-            error.set(None);
+            match data {
+                Ok(data) => Ok((data, id_map.ok())),
+                Err(error) => Err(format!("Failed to load game data: {error}")),
+            }
+        }
+    }));
 
-            let game = game.clone();
-            let provider = ctx.clone();
-            loading.set(true);
+    // `state()` rather than `pending()`: the latter peeks, so a component that read it would not
+    // repaint when a navigation restarts the fetch and the spinner would never come back.
+    let loading = matches!(resource.state().cloned(), UseResourceState::Pending);
 
-            spawn_local(async move {
-                let data_fetch = provider.fetch_game_leaderboards(&edition, &game);
-                let map_fetch = provider.fetch_id_map(&edition);
-
-                let (data_res, map_res) = futures::future::join(data_fetch, map_fetch).await;
-
-                match data_res {
-                    Ok(fetched_data) => {
-                        data.set(Some(fetched_data));
-                        if let Ok(m) = map_res {
-                            id_map.set(Some(m));
-                        }
-                    }
-                    Err(e) => {
-                        error.set(Some(format!("Failed to load game data: {}", e)));
-                    }
-                }
-                loading.set(false);
-            });
-
-            || ()
-        });
-    }
-
-    UseGameLeaderboardsResult {
-        data: (*data).clone(),
-        id_map: (*id_map).clone(),
-        loading: *loading,
-        error: (*error).clone(),
+    match resource.value().cloned() {
+        // Nothing has landed yet, or the last run failed and this one is still in flight. Either
+        // way the page has no data and no failure to report.
+        None => UseGameLeaderboardsResult {
+            data: None,
+            id_map: None,
+            loading,
+            error: None,
+        },
+        Some(Ok((data, id_map))) => UseGameLeaderboardsResult {
+            data: Some(data),
+            id_map,
+            loading,
+            error: None,
+        },
+        // A failure is withdrawn the moment a new fetch starts, rather than sitting over the page
+        // until that fetch decides whether it agrees.
+        Some(Err(error)) => UseGameLeaderboardsResult {
+            data: None,
+            id_map: None,
+            loading,
+            error: (!loading).then_some(error),
+        },
     }
 }

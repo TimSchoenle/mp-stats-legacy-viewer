@@ -13,8 +13,7 @@ path = "src/main.rs"
 [dependencies]
 mp-stats-core = { workspace = true }
 mp-stats-common = { workspace = true }
-yew = { workspace = true }
-yew-router = { workspace = true }
+dioxus = { workspace = true }
 serde = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true, features = ["Navigator"] }

@@ -14,9 +14,9 @@
       "enabled": false
     },
     {
-      "groupName": "yew packages",
+      "groupName": "dioxus packages",
       "matchPackageNames": [
-        "/^yew/"
+        "/^dioxus/"
       ]
     }
   ]

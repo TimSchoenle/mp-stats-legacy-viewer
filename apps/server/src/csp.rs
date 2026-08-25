@@ -3,9 +3,12 @@
 //! The policy is not written out here and it is not written out in configuration. It is derived
 //! from the shell the server is about to serve: [`csp_shell`] reads `index.html` at startup and
 //! computes a `'sha256-…'` for every inline `<script>` in it, the way the HTML parser computes
-//! one. That is the whole point of deriving it — trunk regenerates the inline WASM bootstrap on
-//! every frontend build, and a hand-maintained hash would go stale silently, with a blank page
-//! and a console message as the only evidence.
+//! one. As `dx` builds it, that shell carries no inline script at all - the WASM bootstrap is a
+//! module served from `/assets/`, which the `'self'` in `script-src` admits - so today the
+//! derivation contributes no hashes. It is what keeps that a fact rather than an assumption: the
+//! build that puts an inline script in the shell is the build that puts its hash in the header,
+//! where a hand-maintained one would go stale silently, with a blank page and a console message
+//! as the only evidence.
 //!
 //! What configuration decides is only the part that differs between deployments: the Cloudflare
 //! concessions in `[server.csp.cloudflare]`. See [`mp_stats_config::CloudflareConfig`].
@@ -187,8 +190,10 @@ mod tests {
     use axum::routing::get;
     use tower::ServiceExt as _;
 
-    /// A shell shaped like the one trunk emits: an inline module script that boots the WASM
-    /// bundle, which is the script the whole derivation exists for.
+    /// A shell with an inline module script booting the WASM bundle, which is the shape the whole
+    /// derivation exists for. The shell this repository ships loads that module from `/assets/`
+    /// instead and so needs no hash - these tests cover the case the derivation is insurance
+    /// against, not the one it currently meets.
     const SHELL: &str = r#"<!DOCTYPE html><html><head>
         <link rel="preload" href="/app_bg.wasm" as="fetch"/>
         <script type="module">import init from '/app.js'; init('/app_bg.wasm');</script>
