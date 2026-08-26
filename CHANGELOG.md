@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.19.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.18.0...v0.19.0) (2026-08-26)
+
+
+### Features
+
+* **server:** optional Sentry reporting and tracing through the config system ([#447](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/447)) ([043da89](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/043da894eb79f15853c8fee2ba72524c5f1afe8f))
+
+
+### Miscellaneous
+
+* **deps:** update rust crate lzma-rust2 to 0.20.0 ([#448](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/448)) ([eb941fe](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/eb941fe0e67a637ffc1c142bee46c1d662a533a6))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.3.3 ([#445](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/445)) ([b93cb5f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b93cb5f44d785b8f391b97f6f156dd86593f4b6e))
+
 ## [0.18.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.17.2...v0.18.0) (2026-08-25)
 
 
