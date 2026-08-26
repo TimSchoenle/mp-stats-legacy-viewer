@@ -23,6 +23,10 @@ config-schema = ["terrace-config/schema-cli", "serde/derive"]
 
 [dependencies]
 serde = { workspace = true }
+# `telemetry.sentry.dsn` and nothing else. Held as a `SecretString` rather than a `String`
+# because the block it sits in is a `Debug` type that reaches the log stream, and the DSN embeds
+# a bearer credential for a project's ingest endpoint - the only secret this configuration has.
+secrecy = { workspace = true }
 # The layering itself. `loader` and `explain` only, from the workspace pin: the reload
 # supervisor would link notify and tokio-util into every consumer of a config struct, and
 # nothing here is rotated while the process runs - the server serves files off disk, the

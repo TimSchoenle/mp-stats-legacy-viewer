@@ -23,8 +23,8 @@
 //! lines in every repository that had a generator, which is how three of them ended up
 //! disagreeing about how to cut a `LABEL` block back out of a Dockerfile.
 //!
-//! What is genuinely this platform's own is below: the two blocks the schema is assembled from,
-//! the narrower surface the *image* publishes, the app identity, and the external variables no
+//! What is genuinely this platform's own is below: the blocks the schema is assembled from, the
+//! narrower surface the *image* publishes, the app identity, and the external variables no
 //! derive can find.
 //!
 //! # The image outputs
@@ -46,11 +46,11 @@
 
 use std::process::ExitCode;
 
-use mp_stats_config::{ConverterConfig, ServerConfig, terrace};
+use mp_stats_config::{ConverterConfig, ServerConfig, TelemetryConfig, terrace};
 use terrace_config::figment::util::nest;
 use terrace_config::figment::value::Value;
 use terrace_config::schema::cli::{Cli, Request};
-use terrace_config::schema::{App, Describe, External, JsonSchema, Schema};
+use terrace_config::schema::{App, Describe, External, ExternalVar, JsonSchema, Schema};
 
 /// The `$id` the generated JSON Schema carries.
 const SCHEMA_ID: &str = "https://github.com/TimSchoenle/mp-stats-legacy-viewer/config.schema.json";
@@ -66,7 +66,7 @@ fn main() -> ExitCode {
 
     // The one thing this generator cannot hand `Cli` a single schema for. A page of
     // documentation describes the configuration *file*, which both binaries read; a contract
-    // describes the *image*, whose entry point is `/server` and which reads one of the two
+    // describes the *image*, whose entry point is `/server` and which reads two of the three
     // blocks. Rendering a contract from the whole surface would publish the claim that this
     // image reads `[converter]`, and a validator believing it would accept a rendered
     // `[converter]` table that the server silently drops — the exact defect the contract exists
@@ -123,12 +123,15 @@ fn app() -> App {
 
 /// What this image reads that no derive can reach.
 ///
-/// This image declares no variable of its own — the server is one static binary that reads the
-/// layered `MP_STATS_` namespace and the loader's own path variables and nothing else — so what
-/// is left is the platform's, and `Unknown::Reject` (the default) is what makes leaving one out a
-/// failure rather than a silence. `HOSTNAME` comes from the container runtime and `KUBERNETES_*`
-/// from the API server; neither has an owner in this image, which is the one case an ignore is
-/// for.
+/// The server is one static binary reading the layered `MP_STATS_` namespace, the loader's own
+/// path variables, and exactly one variable outside both — so the list is short, and
+/// `Unknown::Reject` (the default) is what makes leaving one out a failure rather than a
+/// silence. `HOSTNAME` comes from the container runtime and `KUBERNETES_*` from the API server;
+/// neither has an owner in this image, which is the one case an ignore is for.
+///
+/// `RUST_LOG` is declared rather than ignored, because it *is* this image's: it outranks
+/// `telemetry.log_filter` when set, so it is a configuration key that happens to be spelled
+/// outside the prefix, and a chart that sets it should be validating it like any other.
 ///
 /// Not declared, and not declarable: the service-link variables Kubernetes injects for every
 /// service in the namespace. This service's own are spelled `MP_STATS_LEGACY_VIEWER_*`, which
@@ -138,27 +141,46 @@ fn app() -> App {
 /// `enableServiceLinks: false`, which is the chart's to set and not something this document can
 /// say.
 fn external() -> External {
-    External::new().ignore("KUBERNETES_*").ignore("HOSTNAME")
+    External::new()
+        .var(
+            ExternalVar::new("RUST_LOG")
+                .owner("tracing-subscriber")
+                .ty("String")
+                .docs(concat!(
+                    "Overrides `telemetry.log_filter` for this process. Same grammar; set it ",
+                    "to debug a running container without editing the configuration the ",
+                    "deployment is otherwise described by.",
+                )),
+        )
+        .ignore("KUBERNETES_*")
+        .ignore("HOSTNAME")
 }
 
 /// The whole configuration surface, with the defaults an unconfigured process would see.
 ///
-/// Built from the two blocks this crate owns rather than from an aggregate struct: the server
-/// binary deserialises `[server]` and the converter `[converter]`, and neither knows about the
-/// other's block. `merge` unions them into the one document that describes the file both read,
-/// which an aggregate declared for the generator alone could silently stop matching.
+/// Built from the blocks this crate owns rather than from an aggregate struct: the server binary
+/// deserialises `[server]` and `[telemetry]`, the converter `[converter]`, and neither knows
+/// about the other's. `merge` unions them into the one document that describes the file both
+/// read, which an aggregate declared for the generator alone could silently stop matching.
 fn schema() -> Schema {
-    block::<ServerConfig>("server").merge(block::<ConverterConfig>("converter"))
+    image_schema().merge(block::<ConverterConfig>("converter"))
 }
 
-/// The surface of the *image*, which is the server block and nothing else.
+/// The surface of the *image*, which is what the server binary reads and nothing else.
 ///
 /// The runtime stage is a `scratch` image whose entry point is `/server`, and that binary
-/// deserialises one block. `[converter]` is read by a binary that runs during the build and is
-/// never copied out of it, so publishing it here would make this document's one claim that must
-/// never be wrong — "these are the keys this image reads" — about keys the image ignores.
+/// deserialises two blocks: `[server]`, and the `[telemetry]` it shares with anything else this
+/// configuration ever describes. `[converter]` is read by a binary that runs during the build
+/// and is never copied out of it, so publishing it here would make this document's one claim
+/// that must never be wrong — "these are the keys this image reads" — about keys the image
+/// ignores.
+///
+/// The reverse mistake is just as bad and is why `[telemetry]` is here rather than only in
+/// [`schema`]: a chart rendering a `telemetry.sentry.dsn` this document did not declare fails
+/// its own validation, and the operator's conclusion is that Sentry is unsupported rather than
+/// that the contract is short a block.
 fn image_schema() -> Schema {
-    block::<ServerConfig>("server")
+    block::<ServerConfig>("server").merge(block::<TelemetryConfig>("telemetry"))
 }
 
 /// One block's schema, rooted at the key path the block sits at, carrying its observed defaults.

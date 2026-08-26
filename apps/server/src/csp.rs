@@ -38,9 +38,7 @@ use std::sync::Arc;
 /// value.
 pub(crate) fn attach(router: Router, config: &CspConfig, index_path: &Path) -> Result<Router> {
     if !config.enabled {
-        eprintln!(
-            "warning: `server.csp.enabled` is false - serving without a Content-Security-Policy"
-        );
+        tracing::warn!("`server.csp.enabled` is false - serving without a Content-Security-Policy");
         return Ok(router);
     }
 
@@ -50,7 +48,7 @@ pub(crate) fn attach(router: Router, config: &CspConfig, index_path: &Path) -> R
     // Documented scanner limits, not failures: the scan produced hashes, but one of them may
     // cover the wrong text. Reported loudly because the browser's half of this is silent.
     for warning in &scan.warnings {
-        eprintln!("warning: {}: {warning}", index_path.display());
+        tracing::warn!(shell = %index_path.display(), "{warning}");
     }
 
     let rendered = Rendered::new(assemble(&config.cloudflare, &scan))

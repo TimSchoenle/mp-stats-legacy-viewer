@@ -75,6 +75,10 @@ so it takes no arguments and needs no volume.
   written down. See [Content-Security-Policy](#content-security-policy).
 - Configuration is file-first and layered five deep, and a key supplied by two of the last three
   layers fails the boot rather than being resolved by precedence.
+- Structured logging through `tracing`, JSON or human-readable on one key, and **optional Sentry
+  error reporting and performance tracing** on top of the same record stream. Off by default;
+  switched on without a usable DSN, the server refuses to boot rather than reporting into
+  nothing. See [Observability](#observability).
 - The image describes its own configuration surface. `/config/contract.json` and three OCI labels
   ship inside it, and the release attaches a signed copy to the pushed digest, which is what lets
   the Helm chart check a rendered `config.toml` against what this image really loads.
@@ -194,6 +198,30 @@ Read before any of those layers exists:
 | `server.csp.cloudflare.turnstile` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__TURNSTILE` | `false` | — | Admit `https://challenges.cloudflare.com` in `script-src` **and** `frame-src`. |
 | `server.csp.cloudflare.web_analytics` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__WEB_ANALYTICS` | `false` | — | Admit Cloudflare Web Analytics: the beacon script, and the endpoint it reports to. |
 
+`[telemetry]`, read by `mp-stats-server` as well — it describes the process rather than the HTTP
+listener, which is why it is not a table inside `[server]`:
+
+| TOML | Type | Environment | Default | Flags | Purpose |
+|---|---|---|---|---|---|
+| `telemetry.log_filter` | `String` | `MP_STATS_TELEMETRY__LOG_FILTER` | `info` | — | `RUST_LOG`-style filter deciding which records are emitted at all, for example `info,mp_stats_server=debug`. |
+| `telemetry.json_logs` | `bool` | `MP_STATS_TELEMETRY__JSON_LOGS` | `false` | — | Emit one JSON object per record instead of human-readable lines. |
+| `telemetry.sentry.enabled` | `bool` | `MP_STATS_TELEMETRY__SENTRY__ENABLED` | `false` | — | Initialise the Sentry client. `false` installs no client, no panic hook, no `tracing` layer and no HTTP middleware, so every other key here is inert and nothing leaves the process. |
+| `telemetry.sentry.dsn` | `SecretString` | `MP_STATS_TELEMETRY__SENTRY__DSN` | unset | secret | Ingest URL, `https://<key>@<host>/<project>`. |
+| `telemetry.sentry.environment` | `String` | `MP_STATS_TELEMETRY__SENTRY__ENVIRONMENT` | unset | — | Environment tag on every event. |
+| `telemetry.sentry.release` | `String` | `MP_STATS_TELEMETRY__SENTRY__RELEASE` | unset | — | Release tag on every event. |
+| `telemetry.sentry.server_name` | `String` | `MP_STATS_TELEMETRY__SENTRY__SERVER_NAME` | unset | — | Host tag on every event. |
+| `telemetry.sentry.sample_rate` | `f32` | `MP_STATS_TELEMETRY__SENTRY__SAMPLE_RATE` | `1` | — | Fraction of captured events actually sent, `0.0`–`1.0`. |
+| `telemetry.sentry.traces_sample_rate` | `f32` | `MP_STATS_TELEMETRY__SENTRY__TRACES_SAMPLE_RATE` | `0` | — | Fraction of traces this process **starts** that are recorded, `0.0`–`1.0`. |
+| `telemetry.sentry.capture_level` | `SentryLevel`: `off` \| `error` \| `warn` \| `info` \| `debug` \| `trace` | `MP_STATS_TELEMETRY__SENTRY__CAPTURE_LEVEL` | `error` | — | Least severe `tracing` level reported as a Sentry **issue**. |
+| `telemetry.sentry.breadcrumb_level` | `SentryLevel`: `off` \| `error` \| `warn` \| `info` \| `debug` \| `trace` | `MP_STATS_TELEMETRY__SENTRY__BREADCRUMB_LEVEL` | `info` | — | Least severe `tracing` level kept as a **breadcrumb** — the trail attached to the next issue. |
+| `telemetry.sentry.max_breadcrumbs` | `usize` | `MP_STATS_TELEMETRY__SENTRY__MAX_BREADCRUMBS` | `100` | — | How many breadcrumbs one event carries. |
+| `telemetry.sentry.attach_stacktraces` | `bool` | `MP_STATS_TELEMETRY__SENTRY__ATTACH_STACKTRACES` | `true` | — | Attach a stack trace to events that carry none of their own. |
+| `telemetry.sentry.send_default_pii` | `bool` | `MP_STATS_TELEMETRY__SENTRY__SEND_DEFAULT_PII` | `false` | — | Send personally identifying data with every event: the client IP, the full request header set (`Cookie` included) and the resolved user. |
+| `telemetry.sentry.http_transactions` | `bool` | `MP_STATS_TELEMETRY__SENTRY__HTTP_TRANSACTIONS` | `true` | — | Record request spans: one Sentry transaction per request, named by the *matched route* rather than the URI, so a `/data` path does not become its own transaction name. |
+| `telemetry.sentry.span_attributes` | `bool` | `MP_STATS_TELEMETRY__SENTRY__SPAN_ATTRIBUTES` | `false` | — | Copy `tracing` span fields onto the Sentry span as attributes. |
+| `telemetry.sentry.shutdown_timeout_secs` | `u64` | `MP_STATS_TELEMETRY__SENTRY__SHUTDOWN_TIMEOUT_SECS` | `2` | — | How long process exit waits for queued events to drain. |
+| `telemetry.sentry.debug` | `bool` | `MP_STATS_TELEMETRY__SENTRY__DEBUG` | `false` | — | Print the SDK's own diagnostics to stderr. For proving a DSN works, not for running. |
+
 `[converter]`, read by `mp-stats-converter`:
 
 | TOML | Type | Environment | Default | Flags | Purpose |
@@ -245,6 +273,35 @@ from caching the shell. See
 All three answer `200` unconditionally. What they report is that the boot got past its own checks:
 the frontend was found, its inline scripts hashed and the address bound, each of which aborts the
 process rather than degrading it.
+
+### Observability
+
+Every line the server writes goes through `tracing`. `telemetry.log_filter` is the `RUST_LOG`
+grammar and defaults to `info`; `RUST_LOG` itself overrides it, and one that does not parse fails
+the boot rather than being ignored. `telemetry.json_logs = true` switches the whole stream to one
+JSON object per record.
+
+Sentry is a second sink on that same stream, off unless configured:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e MP_STATS_TELEMETRY__SENTRY__ENABLED=true \
+  -e MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/run/secrets/sentry-dsn \
+  -v ./sentry-dsn:/run/secrets/sentry-dsn:ro \
+  timschoenle/mp-stats-legacy-viewer:v0.18.0
+```
+
+It reports issues and breadcrumbs under thresholds of their own, the SDK's panic hook, and one
+transaction per matched route while `telemetry.sentry.traces_sample_rate` is above `0.0`. Enabled
+without a usable DSN, the process refuses to start: a reporter that reports nowhere is
+indistinguishable from a service with nothing to report. On `SIGTERM` the server drains in-flight
+requests and then flushes what Sentry has queued.
+
+The SDK is linked under the `mp-stats-server` crate's `sentry` feature, which is on by default and
+is what the published image is built with. `--no-default-features` drops it, and such a binary
+refuses to start while the section is switched on rather than ignoring it.
+[§7 of the configuration reference](docs/CONFIGURATION.md#7-logging-and-error-reporting) is the
+whole of it.
 
 ### The image
 
