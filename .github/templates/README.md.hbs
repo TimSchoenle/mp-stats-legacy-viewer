@@ -75,6 +75,10 @@ so it takes no arguments and needs no volume.
   written down. See [Content-Security-Policy](#content-security-policy).
 - Configuration is file-first and layered five deep, and a key supplied by two of the last three
   layers fails the boot rather than being resolved by precedence.
+- Structured logging through `tracing`, JSON or human-readable on one key, and **optional Sentry
+  error reporting and performance tracing** on top of the same record stream. Off by default;
+  switched on without a usable DSN, the server refuses to boot rather than reporting into
+  nothing. See [Observability](#observability).
 - The image describes its own configuration surface. `/config/contract.json` and three OCI labels
   ship inside it, and the release attaches a signed copy to the pushed digest, which is what lets
   the Helm chart check a rendered `config.toml` against what this image really loads.
@@ -182,6 +186,11 @@ Read before any of those layers exists:
 
 {{> config/server-keys }}
 
+`[telemetry]`, read by `mp-stats-server` as well — it describes the process rather than the HTTP
+listener, which is why it is not a table inside `[server]`:
+
+{{> config/telemetry-keys }}
+
 `[converter]`, read by `mp-stats-converter`:
 
 {{> config/converter-keys }}
@@ -228,6 +237,35 @@ from caching the shell. See
 All three answer `200` unconditionally. What they report is that the boot got past its own checks:
 the frontend was found, its inline scripts hashed and the address bound, each of which aborts the
 process rather than degrading it.
+
+### Observability
+
+Every line the server writes goes through `tracing`. `telemetry.log_filter` is the `RUST_LOG`
+grammar and defaults to `info`; `RUST_LOG` itself overrides it, and one that does not parse fails
+the boot rather than being ignored. `telemetry.json_logs = true` switches the whole stream to one
+JSON object per record.
+
+Sentry is a second sink on that same stream, off unless configured:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e MP_STATS_TELEMETRY__SENTRY__ENABLED=true \
+  -e MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/run/secrets/sentry-dsn \
+  -v ./sentry-dsn:/run/secrets/sentry-dsn:ro \
+  timschoenle/{{ repo.name }}:{{ release.tag }}
+```
+
+It reports issues and breadcrumbs under thresholds of their own, the SDK's panic hook, and one
+transaction per matched route while `telemetry.sentry.traces_sample_rate` is above `0.0`. Enabled
+without a usable DSN, the process refuses to start: a reporter that reports nowhere is
+indistinguishable from a service with nothing to report. On `SIGTERM` the server drains in-flight
+requests and then flushes what Sentry has queued.
+
+The SDK is linked under the `mp-stats-server` crate's `sentry` feature, which is on by default and
+is what the published image is built with. `--no-default-features` drops it, and such a binary
+refuses to start while the section is switched on rather than ignoring it.
+[§7 of the configuration reference](docs/CONFIGURATION.md#7-logging-and-error-reporting) is the
+whole of it.
 
 ### The image
 

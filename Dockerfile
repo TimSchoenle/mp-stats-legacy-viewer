@@ -42,6 +42,16 @@ RUN rustup target add \
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-gnu-gcc \
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
 
+# The C compiler `cc-rs` invokes for the target, needed since `ring` entered the tree with
+# the Sentry transport's TLS. Its own guess for a musl triple is `musl-gcc` on x86_64 and
+# `<arch>-linux-musl-gcc` everywhere else, and the second of those is not a package installed
+# above - only the GNU cross toolchain is. Naming the same driver the linker variables already
+# name keeps the two halves of the build consistent, and `ring` compiles against it: what it
+# takes from libc is small enough that the gnu headers and the musl runtime rustc supplies do
+# not disagree about any of it.
+ENV CC_x86_64_unknown_linux_musl=x86_64-linux-gnu-gcc \
+    CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc
+
 # Single source of truth for the Docker architecture -> Rust target mapping.
 # The binutils prefix of a triple is derived from its architecture component,
 # e.g. `aarch64-unknown-linux-musl` -> `aarch64-linux-gnu-strip`.
@@ -206,6 +216,10 @@ ARG GROUP_ID
 
 COPY --from=env /etc/passwd /etc/passwd
 COPY --from=env /etc/group /etc/group
+# Load-bearing beyond the usual: with `[telemetry.sentry]` switched on, this file is the trust
+# store the reporter's TLS connection verifies its DSN host against - `rustls-platform-verifier`
+# reads exactly this path on Linux - and a `scratch` image without it fails every send with an
+# unknown-issuer error rather than with anything naming a missing certificate bundle.
 COPY --from=env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=env /usr/share/zoneinfo /usr/share/zoneinfo
 

@@ -126,6 +126,59 @@ terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = 
 # `presets` and `nonce` together: the origin tables the Cloudflare products load from, and the
 # per-response nonce slot the edge-injected ones need.
 csp-shell = { git = "https://github.com/TimSchoenle/csp-shell", tag = "csp-shell-v0.2.0", features = ["cloudflare"] }
+# The record stream both sinks below read. `tracing` rather than `log` because the Sentry
+# integration is a `tracing_subscriber::Layer` and because a span is the unit a transaction is
+# cut from; `log` records reach it anyway through the `tracing-log` bridge `tracing-subscriber`
+# turns on by default.
+tracing = "0.1.44"
+# `env-filter` is the `RUST_LOG` grammar `telemetry.log_filter` is written in, `json` the
+# one-object-per-record layer `telemetry.json_logs` selects, and `fmt` the human-readable one it
+# selects instead. Nothing else is taken: the default feature set adds `tracing-log` and
+# `smallvec`, both of which are already pulled by the two layers.
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["env-filter", "fmt", "json", "std", "tracing-log"] }
+# The Sentry DSN carries a bearer credential for a project's ingest endpoint, and the block
+# holding it is logged with `?`. `serde` is the `Deserialize` the loader needs; `Serialize` is
+# deliberately not implemented for `SecretString` upstream, which is why the generator serialises
+# that one field through a redacting function of its own.
+secrecy = { version = "0.10.3", features = ["serde"] }
+# The reporter behind `[telemetry.sentry]`, optional at the binary through
+# `mp-stats-server/sentry`.
+#
+# `default-features = false` and then back up one at a time. `backtrace` and `debug-images` are
+# what make a stack trace resolve to a source line in a stripped release binary; `panic` is the
+# hook that reports a panic, which `axum` otherwise absorbs by dropping the connection and which
+# leaves no trace at all in a `scratch` image nobody is attached to. `reqwest`+`rustls` is the
+# transport, matching a process that already runs a Tokio reactor and adding no OpenSSL to that
+# image. The two integrations are `tracing` for the
+# subscriber layer and `tower-axum-matched-path` for one transaction per *matched route* rather
+# than per URI - without it every `/data/...` blob is its own transaction name.
+#
+# `contexts` is deliberately off, and it is a default: it adds an OS/host/runtime tag block by
+# pulling `os_info`, whose macOS support carries a fifteen-crate `objc2` tree into `Cargo.lock`
+# for a platform no image here targets. What it would report is a constant of the image, which
+# the release tag already names.
+sentry = { version = "0.49.1", default-features = false, features = [
+    "backtrace",
+    "debug-images",
+    "panic",
+    "reqwest",
+    "rustls-no-provider",
+    "tracing",
+    "tower-axum-matched-path",
+] }
+# The crypto provider for the transport above, chosen here rather than left to a default.
+#
+# `sentry/rustls` would take reqwest's `rustls`, which pins `aws-lc-rs` - and `aws-lc-sys` builds
+# its own C and needs cmake, which the cross-compiling builder in the Dockerfile does not have
+# and should not grow for a telemetry client. `rustls-no-provider` leaves the choice open and
+# this line makes it `ring`, which is C and assembly the installed cross toolchain already
+# compiles.
+#
+# `default-features = false` because the default *is* the provider that was just declined.
+# `std`, `tls12` and `logging` are the rest of what reqwest's connector expects; the process
+# default is installed in `apps/server/src/sentry.rs`, since `rustls-no-provider` means nobody
+# else does it.
+rustls = { version = "0.23.43", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 
 # Internal crates
 mp-stats-core = { path = "crates/core" }

@@ -112,6 +112,7 @@ tables:
     mkdir -p "{{ partials }}/config"
     just render markdown-loader > "{{ partials }}/config/loader-variables.hbs"
     just render markdown server > "{{ partials }}/config/server-keys.hbs"
+    just render markdown telemetry > "{{ partials }}/config/telemetry-keys.hbs"
     just render markdown converter > "{{ partials }}/config/converter-keys.hbs"
     echo "wrote the table partials in {{ partials }}/config"
 

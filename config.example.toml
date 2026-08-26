@@ -71,6 +71,135 @@
 #   server__csp__cloudflare__web_analytics in the secrets directory
 # web_analytics = false
 
+[telemetry]
+# `RUST_LOG`-style filter deciding which records are emitted at all, for example `info,mp_stats_server=debug`.
+# Type: String
+# Also from: MP_STATS_TELEMETRY__LOG_FILTER, MP_STATS_TELEMETRY__LOG_FILTER_FILE=/path/to/file,
+#   telemetry__log_filter in the secrets directory
+# log_filter = "info"
+
+# Emit one JSON object per record instead of human-readable lines.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__JSON_LOGS, MP_STATS_TELEMETRY__JSON_LOGS_FILE=/path/to/file,
+#   telemetry__json_logs in the secrets directory
+# json_logs = false
+
+[telemetry.sentry]
+# Initialise the Sentry client. `false` installs no client, no panic hook, no `tracing` layer and no HTTP middleware, so every other key here is inert and nothing leaves the process.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__ENABLED,
+#   MP_STATS_TELEMETRY__SENTRY__ENABLED_FILE=/path/to/file, telemetry__sentry__enabled in the
+#   secrets directory
+# enabled = false
+
+# Ingest URL, `https://<key>@<host>/<project>`.
+# Type: SecretString
+# Also from: MP_STATS_TELEMETRY__SENTRY__DSN, MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/path/to/file,
+#   telemetry__sentry__dsn in the secrets directory
+# Secret: the value below is a placeholder.
+# dsn = "<secret>"
+
+# Environment tag on every event.
+# Type: String
+# Also from: MP_STATS_TELEMETRY__SENTRY__ENVIRONMENT,
+#   MP_STATS_TELEMETRY__SENTRY__ENVIRONMENT_FILE=/path/to/file, telemetry__sentry__environment in
+#   the secrets directory
+# Unset by default: the value below is only the shape.
+# environment = "<value>"
+
+# Release tag on every event.
+# Type: String
+# Also from: MP_STATS_TELEMETRY__SENTRY__RELEASE,
+#   MP_STATS_TELEMETRY__SENTRY__RELEASE_FILE=/path/to/file, telemetry__sentry__release in the
+#   secrets directory
+# Unset by default: the value below is only the shape.
+# release = "<value>"
+
+# Host tag on every event.
+# Type: String
+# Also from: MP_STATS_TELEMETRY__SENTRY__SERVER_NAME,
+#   MP_STATS_TELEMETRY__SENTRY__SERVER_NAME_FILE=/path/to/file, telemetry__sentry__server_name in
+#   the secrets directory
+# Unset by default: the value below is only the shape.
+# server_name = "<value>"
+
+# Fraction of captured events actually sent, `0.0`–`1.0`.
+# Type: f32
+# Also from: MP_STATS_TELEMETRY__SENTRY__SAMPLE_RATE,
+#   MP_STATS_TELEMETRY__SENTRY__SAMPLE_RATE_FILE=/path/to/file, telemetry__sentry__sample_rate in
+#   the secrets directory
+# sample_rate = 1.0
+
+# Fraction of traces this process **starts** that are recorded, `0.0`–`1.0`.
+# Type: f32
+# Also from: MP_STATS_TELEMETRY__SENTRY__TRACES_SAMPLE_RATE,
+#   MP_STATS_TELEMETRY__SENTRY__TRACES_SAMPLE_RATE_FILE=/path/to/file,
+#   telemetry__sentry__traces_sample_rate in the secrets directory
+# traces_sample_rate = 0.0
+
+# Least severe `tracing` level reported as a Sentry **issue**.
+# Type: SentryLevel — one of: off, error, warn, info, debug, trace
+# Also from: MP_STATS_TELEMETRY__SENTRY__CAPTURE_LEVEL,
+#   MP_STATS_TELEMETRY__SENTRY__CAPTURE_LEVEL_FILE=/path/to/file, telemetry__sentry__capture_level
+#   in the secrets directory
+# capture_level = "error"
+
+# Least severe `tracing` level kept as a **breadcrumb** — the trail attached to the next issue.
+# Type: SentryLevel — one of: off, error, warn, info, debug, trace
+# Also from: MP_STATS_TELEMETRY__SENTRY__BREADCRUMB_LEVEL,
+#   MP_STATS_TELEMETRY__SENTRY__BREADCRUMB_LEVEL_FILE=/path/to/file,
+#   telemetry__sentry__breadcrumb_level in the secrets directory
+# breadcrumb_level = "info"
+
+# How many breadcrumbs one event carries.
+# Type: usize
+# Also from: MP_STATS_TELEMETRY__SENTRY__MAX_BREADCRUMBS,
+#   MP_STATS_TELEMETRY__SENTRY__MAX_BREADCRUMBS_FILE=/path/to/file,
+#   telemetry__sentry__max_breadcrumbs in the secrets directory
+# max_breadcrumbs = 100
+
+# Attach a stack trace to events that carry none of their own.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__ATTACH_STACKTRACES,
+#   MP_STATS_TELEMETRY__SENTRY__ATTACH_STACKTRACES_FILE=/path/to/file,
+#   telemetry__sentry__attach_stacktraces in the secrets directory
+# attach_stacktraces = true
+
+# Send personally identifying data with every event: the client IP, the full request header set (`Cookie` included) and the resolved user.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__SEND_DEFAULT_PII,
+#   MP_STATS_TELEMETRY__SENTRY__SEND_DEFAULT_PII_FILE=/path/to/file,
+#   telemetry__sentry__send_default_pii in the secrets directory
+# send_default_pii = false
+
+# Record request spans: one Sentry transaction per request, named by the *matched route* rather than the URI, so a `/data` path does not become its own transaction name.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__HTTP_TRANSACTIONS,
+#   MP_STATS_TELEMETRY__SENTRY__HTTP_TRANSACTIONS_FILE=/path/to/file,
+#   telemetry__sentry__http_transactions in the secrets directory
+# http_transactions = true
+
+# Copy `tracing` span fields onto the Sentry span as attributes.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__SPAN_ATTRIBUTES,
+#   MP_STATS_TELEMETRY__SENTRY__SPAN_ATTRIBUTES_FILE=/path/to/file,
+#   telemetry__sentry__span_attributes in the secrets directory
+# span_attributes = false
+
+# How long process exit waits for queued events to drain.
+# Type: u64
+# Also from: MP_STATS_TELEMETRY__SENTRY__SHUTDOWN_TIMEOUT_SECS,
+#   MP_STATS_TELEMETRY__SENTRY__SHUTDOWN_TIMEOUT_SECS_FILE=/path/to/file,
+#   telemetry__sentry__shutdown_timeout_secs in the secrets directory
+# shutdown_timeout_secs = 2
+
+# Print the SDK's own diagnostics to stderr. For proving a DSN works, not for running.
+# Type: bool
+# Also from: MP_STATS_TELEMETRY__SENTRY__DEBUG,
+#   MP_STATS_TELEMETRY__SENTRY__DEBUG_FILE=/path/to/file, telemetry__sentry__debug in the secrets
+#   directory
+# debug = false
+
 [converter]
 # Directory holding the raw per-edition data dumps. Must exist; the converter refuses to start otherwise.
 # Type: PathBuf

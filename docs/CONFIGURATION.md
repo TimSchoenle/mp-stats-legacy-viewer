@@ -94,6 +94,33 @@ For a local checkout, copy [`config.example.toml`](../config.example.toml) to `c
 | `server.csp.cloudflare.turnstile` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__TURNSTILE` | `false` | — | Admit `https://challenges.cloudflare.com` in `script-src` **and** `frame-src`. |
 | `server.csp.cloudflare.web_analytics` | `bool` | `MP_STATS_SERVER__CSP__CLOUDFLARE__WEB_ANALYTICS` | `false` | — | Admit Cloudflare Web Analytics: the beacon script, and the endpoint it reports to. |
 
+### `[telemetry]` — consumed by `mp-stats-server`
+
+Outside `[server]` because none of it is a property of the HTTP listener: a log filter and an
+error reporter belong to the process. [§7](#7-logging-and-error-reporting) is what these keys
+mean in practice.
+
+| TOML | Type | Environment | Default | Flags | Purpose |
+|---|---|---|---|---|---|
+| `telemetry.log_filter` | `String` | `MP_STATS_TELEMETRY__LOG_FILTER` | `info` | — | `RUST_LOG`-style filter deciding which records are emitted at all, for example `info,mp_stats_server=debug`. |
+| `telemetry.json_logs` | `bool` | `MP_STATS_TELEMETRY__JSON_LOGS` | `false` | — | Emit one JSON object per record instead of human-readable lines. |
+| `telemetry.sentry.enabled` | `bool` | `MP_STATS_TELEMETRY__SENTRY__ENABLED` | `false` | — | Initialise the Sentry client. `false` installs no client, no panic hook, no `tracing` layer and no HTTP middleware, so every other key here is inert and nothing leaves the process. |
+| `telemetry.sentry.dsn` | `SecretString` | `MP_STATS_TELEMETRY__SENTRY__DSN` | unset | secret | Ingest URL, `https://<key>@<host>/<project>`. |
+| `telemetry.sentry.environment` | `String` | `MP_STATS_TELEMETRY__SENTRY__ENVIRONMENT` | unset | — | Environment tag on every event. |
+| `telemetry.sentry.release` | `String` | `MP_STATS_TELEMETRY__SENTRY__RELEASE` | unset | — | Release tag on every event. |
+| `telemetry.sentry.server_name` | `String` | `MP_STATS_TELEMETRY__SENTRY__SERVER_NAME` | unset | — | Host tag on every event. |
+| `telemetry.sentry.sample_rate` | `f32` | `MP_STATS_TELEMETRY__SENTRY__SAMPLE_RATE` | `1` | — | Fraction of captured events actually sent, `0.0`–`1.0`. |
+| `telemetry.sentry.traces_sample_rate` | `f32` | `MP_STATS_TELEMETRY__SENTRY__TRACES_SAMPLE_RATE` | `0` | — | Fraction of traces this process **starts** that are recorded, `0.0`–`1.0`. |
+| `telemetry.sentry.capture_level` | `SentryLevel`: `off` \| `error` \| `warn` \| `info` \| `debug` \| `trace` | `MP_STATS_TELEMETRY__SENTRY__CAPTURE_LEVEL` | `error` | — | Least severe `tracing` level reported as a Sentry **issue**. |
+| `telemetry.sentry.breadcrumb_level` | `SentryLevel`: `off` \| `error` \| `warn` \| `info` \| `debug` \| `trace` | `MP_STATS_TELEMETRY__SENTRY__BREADCRUMB_LEVEL` | `info` | — | Least severe `tracing` level kept as a **breadcrumb** — the trail attached to the next issue. |
+| `telemetry.sentry.max_breadcrumbs` | `usize` | `MP_STATS_TELEMETRY__SENTRY__MAX_BREADCRUMBS` | `100` | — | How many breadcrumbs one event carries. |
+| `telemetry.sentry.attach_stacktraces` | `bool` | `MP_STATS_TELEMETRY__SENTRY__ATTACH_STACKTRACES` | `true` | — | Attach a stack trace to events that carry none of their own. |
+| `telemetry.sentry.send_default_pii` | `bool` | `MP_STATS_TELEMETRY__SENTRY__SEND_DEFAULT_PII` | `false` | — | Send personally identifying data with every event: the client IP, the full request header set (`Cookie` included) and the resolved user. |
+| `telemetry.sentry.http_transactions` | `bool` | `MP_STATS_TELEMETRY__SENTRY__HTTP_TRANSACTIONS` | `true` | — | Record request spans: one Sentry transaction per request, named by the *matched route* rather than the URI, so a `/data` path does not become its own transaction name. |
+| `telemetry.sentry.span_attributes` | `bool` | `MP_STATS_TELEMETRY__SENTRY__SPAN_ATTRIBUTES` | `false` | — | Copy `tracing` span fields onto the Sentry span as attributes. |
+| `telemetry.sentry.shutdown_timeout_secs` | `u64` | `MP_STATS_TELEMETRY__SENTRY__SHUTDOWN_TIMEOUT_SECS` | `2` | — | How long process exit waits for queued events to drain. |
+| `telemetry.sentry.debug` | `bool` | `MP_STATS_TELEMETRY__SENTRY__DEBUG` | `false` | — | Print the SDK's own diagnostics to stderr. For proving a DSN works, not for running. |
+
 ### `[converter]` — consumed by `mp-stats-converter`
 
 | TOML | Type | Environment | Default | Flags | Purpose |
@@ -111,18 +138,22 @@ after the key in the secrets directory ([§4](#4-file-backed-layers)) — `serve
 
 ## 4. File-backed layers
 
-Neither binary reads a secret today — no database, no credentials, no tokens. The two
-file-backed layers are still available, and are the reason this loader was adopted rather than
-a plain TOML parse:
+The platform reads exactly one secret: `telemetry.sentry.dsn`, whose URL embeds a bearer
+credential for a Sentry project's ingest endpoint. It is held as a `SecretString`, so the block
+it sits in does not print it when it is logged, and it belongs in one of the two layers below
+rather than in a `config.toml` that is usually committed. No database, no tokens, nothing else.
 
 * **Secrets directory.** Every file in `$MP_STATS_SECRETS_DIR` supplies the key its *name*
   spells, in the same `__`-nested, case-folded spelling minus the prefix:
-  `/run/secrets/server__data_dir` supplies `server.data_dir`. A `.` in a file name is refused
-  rather than treated as a separator. The provider follows the `..data` symlink a Kubernetes
-  projected volume uses and skips the dot-prefixed entries, so it works against a real mounted
-  `Secret`.
-* **`_FILE` indirection.** `MP_STATS_SERVER__DATA_DIR_FILE=/path` reads the value from that
+  `/run/secrets/telemetry__sentry__dsn` supplies `telemetry.sentry.dsn`. A `.` in a file name is
+  refused rather than treated as a separator. The provider follows the `..data` symlink a
+  Kubernetes projected volume uses and skips the dot-prefixed entries, so it works against a real
+  mounted `Secret`. A trailing newline is not part of the value.
+* **`_FILE` indirection.** `MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/path` reads the value from that
   path — the Docker convention.
+
+Both work for every key, not only the secret one; `MP_STATS_SERVER__DATA_DIR_FILE` is as valid as
+the example above.
 
 ---
 
@@ -187,7 +218,88 @@ deployment checklist:
 
 ---
 
-## 7. Examples
+## 7. Logging and error reporting
+
+Everything the server says about itself goes through `tracing`. `[telemetry]` decides what it
+writes and, optionally, who else receives it.
+
+### The log stream
+
+`telemetry.log_filter` is a `RUST_LOG`-style directive list and defaults to `info`. Set
+`telemetry.json_logs = true` for one JSON object per record, which is what a cluster shipping
+logs to a collector wants; left off, records are human-readable lines, which is what `docker run`
+on a terminal wants.
+
+`RUST_LOG` **outranks the key** when it is set. It is the one place in this configuration where a
+bare environment variable wins over the layered loader, and it is deliberate: it is the variable
+every Rust operator already reaches for while a container is misbehaving. A `RUST_LOG` that does
+not parse fails the boot rather than being silently ignored — the alternative is an operator
+reading the configured filter's output and concluding their directive did nothing.
+
+### Sentry
+
+Off by default and off in the image's own `config.toml`. A DSN is an egress destination for
+whatever a log line happens to carry, so switching it on is a decision made once per deployment:
+
+```toml
+[telemetry.sentry]
+enabled = true
+traces_sample_rate = 0.1
+```
+
+The DSN itself belongs in one of the file-backed layers ([§4](#4-file-backed-layers)) rather than
+in this file, which is usually committed:
+
+```bash
+MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/run/secrets/sentry-dsn
+```
+
+`enabled = true` **without a usable DSN fails the boot**, and so does a DSN that does not parse or
+a sample rate outside `0.0`–`1.0`. The alternative is a server that starts, serves, and reports
+into nothing — a state that is indistinguishable from a service with nothing to report, and that
+is noticed during the incident it was meant to surface. The error names the key and never quotes
+the DSN back, which embeds a credential.
+
+What a bound client attaches to:
+
+* **Records.** `capture_level` (default `error`) is the least severe level reported as an issue;
+  `breadcrumb_level` (default `info`) the least severe kept as the trail attached to the next
+  issue. Both sit *under* `log_filter`, which is the surprise worth knowing: tightening the log
+  filter to `warn` removes every `info` breadcrumb as well.
+* **Panics.** The SDK's hook. Worth having precisely because `axum` absorbs a panicking handler by
+  dropping the connection, which leaves nothing behind in an image nobody is attached to.
+* **Requests.** One hub per request, so breadcrumbs from concurrently served requests do not land
+  on each other, and — while `http_transactions` is on — one transaction per *matched route*, so
+  the whole of `/data` is one transaction name rather than one per blob. Whether a started
+  transaction is kept is `traces_sample_rate`, which is `0.0` by default: a static file server
+  starts no trace of its own, and still continues one it is handed.
+
+`send_default_pii` is off and worth leaving off. On, events carry the client IP and the full
+request header set, none of which a crash report needs in order to be actionable.
+
+### Two switches, not one
+
+The keys above are compiled in under the `mp-stats-server` crate's `sentry` feature, which is on
+by default and is what the published image is built with. A binary built with
+`--no-default-features` — worth roughly two megabytes of transport and TLS — still reads the block
+and **refuses to start while `telemetry.sentry.enabled` is set**, for the same reason a missing
+DSN does.
+
+One known limit of the release image: it is stripped and UPX-compressed, so the frames in a
+reported stack trace are addresses rather than symbols unless debug files for that build are
+uploaded to the Sentry project separately. The issue, its breadcrumbs, its tags and its request
+metadata are unaffected.
+
+### Shutdown
+
+The server stops on `SIGTERM` (and Ctrl-C), finishes what is in flight, and then flushes whatever
+Sentry has queued, bounded by `shutdown_timeout_secs`. A `SIGKILL` takes the queue with it —
+which is what makes the orchestrator's grace period the real bound on how much of a crashing
+replica's last minute survives.
+
+---
+
+## 8. Examples
 
 A full local override:
 
@@ -197,6 +309,9 @@ A full local override:
 bind_addr = "127.0.0.1:3000"
 dist_dir = "apps/frontend/dist"
 data_dir = "target/converted_data"
+
+[telemetry]
+log_filter = "info,mp_stats_server=debug"
 
 [converter]
 input_dir = "data-test"
@@ -224,7 +339,7 @@ MP_STATS_EXPLAIN=1 cargo run -p mp-stats-server
 
 ---
 
-## 8. The contract the image publishes
+## 9. The contract the image publishes
 
 Everything above is for a human. The same surface is published in a form a deployment pipeline
 reads, so that a chart rendering a `config.toml` full of keys this binary stopped reading fails

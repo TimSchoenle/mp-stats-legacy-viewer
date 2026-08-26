@@ -7,6 +7,19 @@ edition.workspace = true
 name = "server"
 path = "src/main.rs"
 
+[features]
+default = ["sentry"]
+# Link the Sentry SDK, so that `[telemetry.sentry]` can actually install a client. On by
+# default: the contract this image publishes declares those keys, and a binary that reads them
+# and cannot honour them is a trap rather than a saving. Off, the binary still reads the block
+# and refuses to start while `telemetry.sentry.enabled` is set - see `src/sentry.rs`.
+#
+# What it costs is the SDK, its `reqwest` transport and `rustls`, which is the only TLS stack in
+# this binary and roughly two megabytes of a `scratch` image otherwise carrying one static file
+# server. A deployment that reports through a sidecar rather than directly is the case for
+# `--no-default-features`.
+sentry = ["dep:sentry", "dep:secrecy", "dep:rustls"]
+
 [dependencies]
 mp-stats-config = { workspace = true }
 axum = { workspace = true }
@@ -18,6 +31,20 @@ anyhow = { workspace = true }
 # written out here. `cloudflare` is the feature carrying the presets and the per-response nonce
 # that `[server.csp.cloudflare]` switches on.
 csp-shell = { workspace = true }
+# The record stream. Every line this binary writes goes through `tracing` rather than `println!`
+# so that one configuration key can redirect the whole of it to JSON, and so that Sentry can read
+# the same records without any call site knowing it is there.
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sentry = { workspace = true, optional = true }
+# Only to expose the DSN in `src/sentry.rs`. Not optional for `mp-stats-config`, which holds the
+# type either way; optional here, because without the `sentry` feature nothing ever reads it.
+secrecy = { workspace = true, optional = true }
+# Linked for one call: installing `ring` as the process-wide crypto provider. Sentry's transport
+# is taken as `rustls-no-provider` precisely so that this is a decision rather than a default -
+# see the workspace manifest - and `rustls-no-provider` means the process panics on the first
+# connection if nobody installs one.
+rustls = { workspace = true, optional = true }
 
 [dev-dependencies]
 # `ServiceExt::oneshot` drives the router through the CSP middleware without binding a port.

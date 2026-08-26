@@ -14,3 +14,14 @@ bind_addr = "0.0.0.0:8080"
 # Where the image puts the built frontend and the converter's output.
 dist_dir = "/dist"
 data_dir = "/dist/data"
+
+# `[telemetry]` is deliberately absent, so the image logs at `info` in human-readable lines and
+# reports to nobody. Both halves are a deployment's decision rather than an image's:
+#
+#   MP_STATS_TELEMETRY__JSON_LOGS=true            one JSON object per record, for a collector
+#   MP_STATS_TELEMETRY__SENTRY__ENABLED=true      install the reporter
+#   MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/path    the DSN, which is a credential and belongs
+#                                                 in a mounted file rather than in this one
+#
+# Switching the reporter on without a usable DSN fails the boot. See section 7 of
+# `docs/CONFIGURATION.md`.

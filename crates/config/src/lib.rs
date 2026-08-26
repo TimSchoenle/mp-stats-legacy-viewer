@@ -7,10 +7,12 @@
 //! `MP_STATS_<KEY>_FILE` indirection. The last three are mutually exclusive per key: a key
 //! supplied by two of them is refused at boot rather than resolved by precedence.
 //!
-//! Each binary owns the aggregate it deserialises and reads only its own block, so one
+//! Each binary owns the aggregate it deserialises and reads only the blocks it uses, so one
 //! `config.toml` can describe the whole platform without either binary having to parse the
-//! other's section. `MP_STATS_EXPLAIN=1` makes either of them report which layer supplied each
-//! key before it does anything with the values.
+//! other's section. `[telemetry]` is the one block that is not a single binary's: it describes
+//! the process rather than the job, and the server reads it alongside `[server]`.
+//! `MP_STATS_EXPLAIN=1` makes either of them report which layer supplied each key before it does
+//! anything with the values.
 //!
 //! The blocks below are also the source the documentation is generated from. Under the
 //! `config-schema` feature every struct here derives `Describe`, and
@@ -22,8 +24,10 @@ mod converter;
 mod csp;
 mod loader;
 mod server;
+mod telemetry;
 
 pub use converter::{CacheConfig, ConverterConfig};
 pub use csp::{CloudflareConfig, CspConfig};
 pub use loader::{ConfigError, load, terrace};
 pub use server::ServerConfig;
+pub use telemetry::{SentryConfig, SentryLevel, TelemetryConfig};
