@@ -121,7 +121,7 @@ gloo-timers = "0.4.0"
 # taken on top of `loader` is `explain`, which costs no dependency at all and is what answers
 # "which of the five layers supplied this value" without a debugger. `schema` is *not* here - it
 # is a documentation-time cost, taken by `mp-stats-config`'s own `config-schema` feature.
-terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = "v0.9.0", default-features = false, features = ["loader", "explain"] }
+terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = "v0.9.1", default-features = false, features = ["loader", "explain"] }
 # Pinned by tag for the same reason as `terrace-config` above. The `cloudflare` feature is
 # `presets` and `nonce` together: the origin tables the Cloudflare products load from, and the
 # per-response nonce slot the edge-injected ones need.
