@@ -176,7 +176,7 @@ Both binaries read the same layered configuration, lowest precedence first: the 
 into the structs, a TOML file at `$MP_STATS_CONFIG` (default `./config.toml`, skipped if absent),
 `MP_STATS_`-prefixed environment variables, a secrets directory, and `MP_STATS_<KEY>_FILE`
 indirection. The layering is [terrace-config](https://github.com/TimSchoenle/terrace-config),
-pinned at `v0.9.0`. Neither binary takes command-line arguments.
+pinned at `v0.9.1`. Neither binary takes command-line arguments.
 
 Read before any of those layers exists:
 
