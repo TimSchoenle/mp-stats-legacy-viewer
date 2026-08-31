@@ -18,7 +18,7 @@ loader, so one file can describe the whole platform.
 
 Layered, lowest precedence first. The layering is
 [`terrace-config`](https://github.com/TimSchoenle/terrace-config), pinned at
-`v0.9.0`; which variable names *this* deployment spells is
+`v0.9.1`; which variable names *this* deployment spells is
 [`crates/config/src/loader.rs`](../crates/config/src/loader.rs); the typed blocks are the rest of
 [`crates/config`](../crates/config/src/lib.rs).
 
