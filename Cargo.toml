@@ -8,7 +8,7 @@ edition = "2024"
 # has to come from the payload rather than from a number typed into the template.
 [package]
 name = "mp-stats-platform"
-version = "0.19.0"
+version = "0.20.0"
 description = "Historical Minecraft server statistics, converted to sharded binary chunks and queried in the browser by a Dioxus client."
 license = "MIT"
 edition = "2024"

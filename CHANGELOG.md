@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.20.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.19.0...v0.20.0) (2026-09-02)
+
+
+### Features
+
+* update terrace to 0.10.0 and opt in to new nested feature ([#468](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/468)) ([1b66786](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1b667861dcdcb906c565bcf8f8b874f6a6a4ac2b))
+
+
+### CI
+
+* ensure check locked logic ([5f17de8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5f17de864b9ccce75dd97eaefb7c4d457bdadccc))
+
+
+### Miscellaneous
+
+* **deps:** update github/codeql-action action to v4.37.9 ([#449](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/449)) ([5c95b3d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5c95b3d48a1b98dd0018c0fc23a15ff5f0033836))
+* **deps:** update rust crate lzma-rust2 to v0.20.1 ([#469](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/469)) ([3f153c5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3f153c510149889b646490688944b0f71fc5fbbd))
+* **deps:** update rust crate sentry to v0.49.2 ([#450](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/450)) ([4d42207](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4d42207b7906f214cb08fb4226511028bdba32fa))
+* **deps:** update rust crate terrace-config to v0.9.1 ([#452](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/452)) ([926a026](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/926a026d2c82f84be25693caa20762bcd8c8c3ad))
+* **deps:** update rust:1.98-slim docker digest to 17d1ba8 ([#463](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/463)) ([95ce161](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/95ce161d678f036fbf4fc1d5539b933e051b8b47))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.33 ([#455](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/455)) ([82bd973](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/82bd9738af30a5b328293f0efbc79a23ed397202))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.4.0 ([#462](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/462)) ([0a53b8c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0a53b8ca9cb5b42571ab14f9ed87fdc9de14bd63))
+* **deps:** update timschoenle/actions/actions/common/readme-variables to vactions-common-readme-variables-v1.1.1 ([#456](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/456)) ([54e7e78](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/54e7e78c2595ce5d2826fec28e74d35d2e534c4a))
+* **deps:** update timschoenle/actions/actions/common/render-template to vactions-common-render-template-v1.1.2 ([#457](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/457)) ([b0ac02f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b0ac02f18a8309a209957d381d3ef7274d2b7490))
+* **deps:** update timschoenle/actions/actions/common/render-template-and-commit to vactions-common-render-template-and-commit-v1.1.4 ([#454](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/454)) ([6c13f01](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6c13f01eb1af62e5670cc3873d582fb43d7a55f8))
+* **deps:** update timschoenle/actions/actions/common/render-template-and-commit to vactions-common-render-template-and-commit-v1.1.5 ([#465](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/465)) ([dfc9523](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/dfc9523f6b9230fbef72fabacbae7c42cf35e720))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.6.4 ([#453](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/453)) ([ce4b43c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ce4b43cd3ebafe29e1d1960595acbe1e8e95558f))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.6.5 ([#466](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/466)) ([01b595f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/01b595f89b4065b17e26c8190aad805e2a795cd6))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.12 ([#458](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/458)) ([7292b1a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7292b1ae6d009163692226199073fc8f18e6d65b))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.13 ([#467](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/467)) ([3bc3400](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3bc3400137ceb57a394ce8904f51dd674d79f6a1))
+* **deps:** update timschoenle/actions/actions/rust/cargo-check to vactions-rust-cargo-check-v1.1.6 ([#459](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/459)) ([a39e024](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a39e024f22abaeee9abea96b5459da921fa3e8ff))
+* **deps:** update timschoenle/actions/actions/rust/clippy to vactions-rust-clippy-v1.1.10 ([#460](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/460)) ([f0319bb](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f0319bbeb081ed26eff73690f096c2dd239ca70e))
+* **deps:** update timschoenle/actions/actions/rust/config-contract to vactions-rust-config-contract-v1.2.0 ([#464](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/464)) ([6082948](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/60829487d6dc401b21563a2b4cbdea8a896976b2))
+* **deps:** update timschoenle/actions/actions/rust/test to vactions-rust-test-v1.1.2 ([#461](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/461)) ([5bab655](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/5bab655574311bef71508fc6a892e5188d0b6bbf))
+
 ## [0.19.0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.18.0...v0.19.0) (2026-08-26)
 
 
