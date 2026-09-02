@@ -30,6 +30,22 @@ jobs:
         with:
           egress-policy: audit
 
+      # `cargo check` alone never touches `--locked`, so a `Cargo.toml` edit that needs a
+      # matching `Cargo.lock` update can pass here and every other fast job, then only fail deep
+      # inside the multi-stage Docker build - `contract-builder` is the only place that runs
+      # `cargo` with `--locked` - after several minutes of otherwise-unrelated compilation. This
+      # is the cheap equivalent that fails in seconds instead.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+
+      - name: Verify Cargo.lock is up to date
+        run: cargo update --workspace --locked
+
       - name: Run Check
         uses: TimSchoenle/actions/actions/rust/cargo-check@e16a1e466faf8ec751b26289c1898143a253269f # tag=actions-rust-cargo-check-v1.1.6
 
