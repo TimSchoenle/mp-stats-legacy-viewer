@@ -388,6 +388,8 @@
         "ty": "f32",
         "values": [],
         "constraint": {
+          "maximum": 1.0,
+          "minimum": 0.0,
           "type": "number"
         },
         "text_form": "unknown",
@@ -411,6 +413,8 @@
         "ty": "f32",
         "values": [],
         "constraint": {
+          "maximum": 1.0,
+          "minimum": 0.0,
           "type": "number"
         },
         "text_form": "unknown",
@@ -843,6 +847,8 @@
               "sample_rate": {
                 "default": 1.0,
                 "description": "Fraction of captured events actually sent, `0.0`–`1.0`.\n\nA blunt volume cap — it drops whole issues, not repetitions of one — so leave it at `1.0`\nunless a quota forces otherwise. A value outside the range fails the boot.",
+                "maximum": 1.0,
+                "minimum": 0.0,
                 "type": "number"
               },
               "send_default_pii": {
@@ -868,6 +874,8 @@
               "traces_sample_rate": {
                 "default": 0.0,
                 "description": "Fraction of traces this process **starts** that are recorded, `0.0`–`1.0`.\n\n`0.0` (the default) means it starts none of its own, which is the right figure for a\nstatic file server: a trace per asset request is volume without a question it answers.\nIt does **not** mean this process is absent from a trace — a request arriving with a\ntrace already sampled is continued regardless, which is what keeps one reader action\nreadable across whatever sits in front of this server.",
+                "maximum": 1.0,
+                "minimum": 0.0,
                 "type": "number"
               }
             },

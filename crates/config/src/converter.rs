@@ -9,6 +9,7 @@ use std::path::PathBuf;
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct ConverterConfig {
     /// Directory holding the raw per-edition data dumps. Must exist; the converter refuses to
     /// start otherwise.
@@ -56,6 +57,7 @@ impl Default for ConverterConfig {
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct CacheConfig {
     /// Restore from and store into the cache directory.
     ///

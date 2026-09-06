@@ -20,6 +20,7 @@ use serde::Deserialize;
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct CspConfig {
     /// Send the header at all.
     ///
@@ -62,6 +63,7 @@ impl Default for CspConfig {
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct CloudflareConfig {
     /// Reserve a per-response nonce in `script-src`.
     ///
