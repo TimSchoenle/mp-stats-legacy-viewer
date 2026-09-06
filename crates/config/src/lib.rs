@@ -14,6 +14,17 @@
 //! `MP_STATS_EXPLAIN=1` makes either of them report which layer supplied each key before it does
 //! anything with the values.
 //!
+//! Every block below is closed — `#[serde(deny_unknown_fields)]` — so a key inside one that no
+//! binary reads fails the boot instead of being ignored. The *aggregates* stay open, and have to:
+//! one `config.toml` describes the whole platform, so each binary has to tolerate the other's
+//! block. Closing the blocks themselves is what turns a misspelt `dist_dr` from a silent default
+//! into a message naming it. It also makes the published contract true rather than optimistic:
+//! that document already reports `additionalProperties: false` for every level, from the
+//! generator's `closed` option, while the loader accepted the undeclared key anyway. No layer can
+//! supply a key that is not a field — the environment layer filters the reserved variables and
+//! every `MP_STATS_<KEY>_FILE` out before splitting, and the indirection and secrets layers key
+//! on the value's own path.
+//!
 //! The blocks below are also the source the documentation is generated from. Under the
 //! `config-schema` feature every struct here derives `Describe`, and
 //! `examples/config-schema.rs` renders the tables in `README.md` and `docs/CONFIGURATION.md`

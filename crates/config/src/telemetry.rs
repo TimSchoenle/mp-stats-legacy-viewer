@@ -22,6 +22,7 @@ use serde::Deserialize;
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct TelemetryConfig {
     /// `RUST_LOG`-style filter deciding which records are emitted at all, for example
     /// `info,mp_stats_server=debug`.
@@ -105,6 +106,7 @@ pub enum SentryLevel {
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 // `clippy::struct_excessive_bools` is not enabled in this workspace and so is not silenced
 // here: the six flags below are independent operator toggles, one per
 // `MP_STATS_TELEMETRY__SENTRY__*` variable, and collapsing them into a mode enum would mean
@@ -152,6 +154,7 @@ pub struct SentryConfig {
     /// A blunt volume cap — it drops whole issues, not repetitions of one — so leave it at `1.0`
     /// unless a quota forces otherwise. A value outside the range fails the boot.
     #[serde(default = "SentryConfig::default_sample_rate")]
+    #[cfg_attr(feature = "config-schema", config(range(min = 0.0, max = 1.0)))]
     pub sample_rate: f32,
     /// Fraction of traces this process **starts** that are recorded, `0.0`–`1.0`.
     ///
@@ -161,6 +164,7 @@ pub struct SentryConfig {
     /// trace already sampled is continued regardless, which is what keeps one reader action
     /// readable across whatever sits in front of this server.
     #[serde(default)]
+    #[cfg_attr(feature = "config-schema", config(range(min = 0.0, max = 1.0)))]
     pub traces_sample_rate: f32,
     /// Least severe `tracing` level reported as a Sentry **issue**.
     #[serde(default)]

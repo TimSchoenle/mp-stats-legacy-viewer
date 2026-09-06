@@ -14,6 +14,7 @@ use std::path::PathBuf;
     feature = "config-schema",
     derive(serde::Serialize, terrace_config::schema::Describe)
 )]
+#[serde(deny_unknown_fields)]
 pub struct ServerConfig {
     /// Address the HTTP listener binds.
     ///

@@ -203,6 +203,41 @@ mod tests {
         });
     }
 
+    /// A key no block declares fails the boot naming itself, rather than leaving the compiled
+    /// default in place. `dist_dr` is the whole class: it is spelled once, in the file nobody
+    /// reads again until the day the served directory is empty.
+    #[test]
+    fn a_misspelt_key_inside_a_block_is_refused() {
+        harness().run(|jail| {
+            jail.config("[server]\ndist_dr = \"/dist\"\n")?;
+
+            let error = jail
+                .load::<Sample>()
+                .expect_err("a key no block declares must fail the load");
+
+            assert!(
+                error.to_string().contains("dist_dr"),
+                "the error must name the key: {error}"
+            );
+            Ok(())
+        });
+    }
+
+    /// The other half of that decision, and the reason it stops at the block: the *aggregate*
+    /// stays open, so one file goes on describing the whole platform. A binary that refused a
+    /// table it does not read could not share a `config.toml` with the other one.
+    #[test]
+    fn a_table_this_binary_does_not_read_is_still_ignored() {
+        harness().run(|jail| {
+            jail.config("[server]\ndist_dir = \"/dist\"\n\n[frontend]\nhot_reload = true\n")?;
+
+            let config: Sample = jail.load()?;
+
+            assert_eq!(config.server.dist_dir, Path::new("/dist"));
+            Ok(())
+        });
+    }
+
     /// What `MP_STATS_EXPLAIN` prints at boot, asserted on the report rather than on the value:
     /// a value that a deployment reads from a mounted file and a value it reads from a stale
     /// variable are the same value, and only the layer says which one is being run on.
