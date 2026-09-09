@@ -1,0 +1,44 @@
+# Normalize everything git considers text to LF, even on a Windows checkout - the workflows,
+# the Dockerfile and the shell scripts they call all run on Linux runners.
+* text=auto eol=lf
+
+# Scripts invoked directly by a shebang; must stay LF regardless of what edited them last.
+*.sh text eol=lf
+
+# Git's built-in diff drivers: a hunk header shows the enclosing fn/impl or heading instead of
+# whatever brace or blank line the default driver would pick.
+*.rs diff=rust
+*.md diff=markdown
+
+# Rendered by `docs.yml` from `.github/templates/*.hbs` and the structs in crates/config; edit
+# the template or the source struct, not these.
+README.md linguist-generated
+docs/CONFIGURATION.md linguist-generated
+config.example.toml linguist-generated
+docs/config.contract.json linguist-generated
+
+# Written by the release-please bot from Conventional Commit history.
+CHANGELOG.md linguist-generated
+
+# `cargo` owns this file; it is committed for reproducible builds, not authored.
+Cargo.lock linguist-generated text eol=lf
+
+# The templates that produce the generated docs above, not source code themselves.
+*.hbs linguist-language=Handlebars
+
+# Historical StatsApi dumps: opaque compressed archives and their sidecar indexes, not source.
+# Diffed and counted as vendored binary data rather than as this repository's own text/code.
+data/** linguist-vendored
+data-test/** linguist-vendored
+*.xz binary
+*.tar.xz binary
+*.json.xz binary
+*.bin.xz binary
+
+# Dev tooling and CI-only material with nothing for a `git archive` tarball to do with it.
+/.github export-ignore
+/.claude export-ignore
+/.junie export-ignore
+/.serena export-ignore
+/data-test export-ignore
+/cst.yaml export-ignore
