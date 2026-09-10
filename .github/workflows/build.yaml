@@ -89,7 +89,7 @@ jobs:
       # no image on this runner - which is what makes this the cheap half, running on every pull
       # request without waiting for a build.
       - name: Verify the configuration contract
-        uses: TimSchoenle/actions/actions/rust/config-contract@30bc73a560c7aac65f449b23378b9fd7782f8d39 # tag=actions-rust-config-contract-v1.3.0
+        uses: TimSchoenle/actions/actions/rust/config-contract@cf936b448984595778c82c079af93d0bb5d49297 # tag=actions-rust-config-contract-v1.3.1
         with:
           package: mp-stats-config
           features: config-schema
@@ -334,7 +334,7 @@ jobs:
       # `dockerfile` and `contract` are emptied: the `Config Contract` job above
       # owns both, and repeating them here would report the same drift twice.
       - name: Verify the linux/amd64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@30bc73a560c7aac65f449b23378b9fd7782f8d39 # tag=actions-rust-config-contract-v1.3.0
+        uses: TimSchoenle/actions/actions/rust/config-contract@cf936b448984595778c82c079af93d0bb5d49297 # tag=actions-rust-config-contract-v1.3.1
         with:
           package: mp-stats-config
           features: config-schema
@@ -343,7 +343,7 @@ jobs:
           image: image:test
 
       - name: Verify the linux/arm64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@30bc73a560c7aac65f449b23378b9fd7782f8d39 # tag=actions-rust-config-contract-v1.3.0
+        uses: TimSchoenle/actions/actions/rust/config-contract@cf936b448984595778c82c079af93d0bb5d49297 # tag=actions-rust-config-contract-v1.3.1
         with:
           package: mp-stats-config
           features: config-schema
