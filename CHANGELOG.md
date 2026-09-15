@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.21.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.1...v0.21.2) (2026-09-15)
+
+
+### Miscellaneous
+
+* **deps:** update rust crate rustls to v0.23.45 [security] ([#522](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/522)) ([b60afaa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b60afaaf188ff90dc258acc574ec33468d36ae08))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.5.2 ([#525](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/525)) ([886fd02](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/886fd020abe022317af0e578835cd05d085b9dc6))
+
 ## [0.21.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.0...v0.21.1) (2026-09-13)
 
 
