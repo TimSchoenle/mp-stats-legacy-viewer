@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.21.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.1...v0.21.2) (2026-09-19)
+
+
+### Miscellaneous
+
+* **deps:** update docker/build-push-action digest to c3c9e26 ([#534](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/534)) ([4923528](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4923528380032b9d03859ac6a65bc88afb9dbb52))
+* **deps:** update docker/setup-buildx-action digest to f87e599 ([#535](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/535)) ([a0405f9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a0405f9d5dcb4d84968aea2056023fddf90b9a97))
+* **deps:** update rust crate rustls to v0.23.45 [security] ([#522](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/522)) ([b60afaa](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b60afaaf188ff90dc258acc574ec33468d36ae08))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.24 ([#524](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/524)) ([4a626fe](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4a626fe7aaa407e9b33319d7225c0c919b5da2c1))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.5.2 ([#525](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/525)) ([886fd02](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/886fd020abe022317af0e578835cd05d085b9dc6))
+* **deps:** update timschoenle/actions/actions/common/render-template to vactions-common-render-template-v1.2.2 ([#527](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/527)) ([b91665d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b91665dc08ad5fa0f345520a8f467cae28287b8c))
+* **deps:** update timschoenle/actions/actions/common/upsert-pr-comment to vactions-common-upsert-pr-comment-v1.1.2 ([#528](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/528)) ([f29a015](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f29a0159208233489eafe9e6f61bba1d47c1e623))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.18 ([#533](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/533)) ([d172286](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d172286453b5a85754f9ace6d16d4e468ebcff23))
+* **deps:** update timschoenle/actions/actions/rust/config-contract to vactions-rust-config-contract-v1.3.2 ([#530](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/530)) ([149f9c9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/149f9c9c6c1ec3c50dec0e136b57ba2a352b595f))
+
 ## [0.21.1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.0...v0.21.1) (2026-09-13)
 
 
