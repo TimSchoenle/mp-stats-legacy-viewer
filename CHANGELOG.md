@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.21.3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.2...v0.21.3) (2026-09-26)
+
+
+### Documentation
+
+* tag the code fences in data/README.md ([#547](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/547)) ([0952178](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/095217839bbd8a6814844cdc997bf7e3867dc8a8))
+
+
+### Miscellaneous
+
+* **deps:** update alpine:3.24 docker digest to 294b683 ([#542](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/542)) ([0b6bd14](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0b6bd1489fdb458dae766e291ed9d1d450e66ced))
+* **deps:** update rust crate sentry to v0.49.3 ([#545](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/545)) ([89a5602](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/89a5602a0203139d0da51f1d1034923f2b2e9a9f))
+* **deps:** update rust crate terrace-config to v0.13.0 ([#546](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/546)) ([4788535](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/47885353fdd43616f9942bf4da4148b84d273140))
+* **deps:** update rust:1.98-slim docker digest to f47a8de ([#544](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/544)) ([53751d0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/53751d00191db1dc19ed8fc69cac2e5e04085c83))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.6.11 ([#529](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/529)) ([8af6b0e](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8af6b0ec9bb4c2bbf3489192d6d705e91ac74445))
+
 ## [0.21.2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.1...v0.21.2) (2026-09-21)
 
 
