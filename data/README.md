@@ -2,7 +2,7 @@
 
 ## Directory Structure
 
-```
+```text
 /data
 └── /[edition]
     ├── /meta/map.json
@@ -45,7 +45,7 @@ The data is a strictly alternating sequence of `player_id` and `score`.
 Ranks are not stored in the binary buffer. Rank is calculated mathematically based on the chunk's filename index and the integer's position in the buffer.
 
 **Formula:**
-```
+```text
 Rank = (Chunk_Index - 1) × 10,000 + (Array_Index ÷ 2) + 1
 ```
 
@@ -86,7 +86,7 @@ All historical saves for a specific leaderboard track are bundled into a single 
 
 #### Internal File Structure
 
-```
+```text
 [YYYY-MM-DD_HH-MM-SS]/_meta.json          (Uncompressed JSON)
 [YYYY-MM-DD_HH-MM-SS]/chunk_XXXX.bin      (Uncompressed 64-bit Binary Buffer)
 ```
