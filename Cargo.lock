@@ -2291,7 +2291,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-common"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "lzma-rust2",
  "postcard",
@@ -2302,7 +2302,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-config"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "secrecy",
  "serde",
@@ -2311,7 +2311,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-converter"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "anyhow",
  "binary-layout",
@@ -2328,7 +2328,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-core"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "mp-stats-common",
  "serde",
@@ -2338,7 +2338,7 @@ dependencies = [
 
 [[package]]
 name = "mp-stats-frontend"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "dioxus",
  "futures",
@@ -2360,7 +2360,7 @@ version = "0.21.3"
 
 [[package]]
 name = "mp-stats-server"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "anyhow",
  "axum",
