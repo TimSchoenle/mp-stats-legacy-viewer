@@ -141,7 +141,7 @@ jobs:
           egress-policy: audit
 
       - name: Run Clippy
-        uses: TimSchoenle/actions/actions/rust/clippy@88e964d440835fd99f7e9d17b4ba1b48544303ba # tag=actions-rust-clippy-v1.1.11
+        uses: TimSchoenle/actions/actions/rust/clippy@7e8fd61045447d321c5139eea8f2e2b766333f8b # tag=actions-rust-clippy-v1.1.12
 
   # The half of the documentation standard a linter can hold. `missing_docs` and the rustdoc lint
   # tables are declared on the workspace and inherited by every member, but rustdoc's own lints
