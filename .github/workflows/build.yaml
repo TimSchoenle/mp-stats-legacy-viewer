@@ -413,38 +413,19 @@ jobs:
             gcr.io/gcp-runtimes/container-structure-test:latest test \
             --image image:test --config /cst.yaml
 
-      - name: Check image size
-        id: size-check
-        run: |
-          SIZE=$(docker image inspect image:test --format='{{.Size}}' | awk '{print int($1/1024/1024)}')
-          echo "size=${SIZE}" >> $GITHUB_OUTPUT
-          echo "Image size: ${SIZE}MB"
-          if [ $SIZE -gt 150 ]; then
-            echo "::warning::Image size (${SIZE}MB) exceeds 150MB threshold"
-          fi
-
-      - name: Scan Docker image for vulnerabilities
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+      # Size warning, Trivy scan, SARIF upload and the pull request comment in one step, on the
+      # amd64 image only - the one the inline steps this replaced measured and scanned. The arm64
+      # image above is loaded for its labels, not checked here.
+      #
+      # No `platform`, on purpose: without one the SARIF goes up under upload-sarif's default
+      # category, which is where the existing alerts live, and the comment keeps the
+      # `docker-image-size` identifier, so an open pull request has its comment updated rather
+      # than a second one posted beside it. The 150 MiB warning and the `CRITICAL,HIGH` filter are
+      # the action's defaults.
+      - name: Check image size and vulnerabilities
+        uses: TimSchoenle/actions/actions/docker/image-check@7568f9a485ca91c369095414ce4d9f1a8237df21 # tag=actions-docker-image-check-v1.1.0
         with:
-          image-ref: image:test
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Comment image size on PR
-        uses: TimSchoenle/actions/actions/common/upsert-pr-comment@7e8fd61045447d321c5139eea8f2e2b766333f8b # tag=actions-common-upsert-pr-comment-v1.1.3
-        if: github.event_name == 'pull_request'
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          identifier: docker-image-size
-          body: |
-            🐳 Docker image size: **${{ steps.size-check.outputs.size }}MB**
+          image: image:test
 
   dependency-review:
     name: Dependency Review
