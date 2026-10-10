@@ -1,6 +1,6 @@
 [package]
 name = "mp-stats-config"
-version = "0.21.4"
+version = "0.21.5"
 edition.workspace = true
 # Workspace-internal: the typed configuration surface of this repository, not a
 # reusable library.
