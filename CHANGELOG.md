@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.21.5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.4...v0.21.5) (2026-10-10)
+
+
+### Documentation
+
+* **readme:** add a Helm chart badge ([#597](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/597)) ([3bf74ca](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3bf74ca2cd9d023f72c11881d640798d906e2a07))
+
+
+### CI
+
+* move CodeQL to the shared action ([#599](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/599)) ([7123bac](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7123bacdf62a6236c784f4c0bea1d92192f29fa4))
+
+
+### Miscellaneous
+
+* **deps:** update rust crate terrace-config to v0.15.1 ([#589](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/589)) ([b9d8f2f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b9d8f2f1ff5c95560ea79715b90135836730eec7))
+* **deps:** update rust docker tag to v1.99 ([#588](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/588)) ([6eb207d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6eb207d1d5fc8dfca6537e48ba4178936269a683))
+* **deps:** update source-map-js to v1.2.2 [security] ([#598](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/598)) ([8c68ba5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8c68ba5d4efb15b7988d365a70c42283163cba91))
+* **deps:** update step-security/harden-runner action to v2.22.0 ([#587](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/587)) ([6b41cab](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6b41cab09b146c671ba1f1fbdb4aac562dea2193))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.27 ([#575](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/575)) ([0347ba9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0347ba969b0dd7ec18dc91c22397dc5b91253b0f))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-auto-approve-renovate.yaml to vworkflows-maintenance-auto-approve-renovate-v1.4.28 ([#600](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/600)) ([a074415](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a0744158a01b36b8d173945b7611749a46a81fcd))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.39 ([#576](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/576)) ([509c700](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/509c7000098cfafbbd87e85c1fa59e2a6b679d07))
+* **deps:** update timschoenle/actions/.github/workflows/maintenance-timed-auto-pr-approve.yaml to vworkflows-maintenance-timed-auto-pr-approve-v1.2.40 ([#601](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/601)) ([9ae591c](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/9ae591ccfae8e72225569a261e499dd6ff73e684))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.5.5 ([#578](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/578)) ([3216627](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3216627ba77f8c757e18d29337e5ba401c6be34c))
+* **deps:** update timschoenle/actions/actions/common/commit-changes to vactions-common-commit-changes-v1.5.6 ([#590](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/590)) ([935818f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/935818f524dceac109f1c288e2f405e442f5f5ab))
+* **deps:** update timschoenle/actions/actions/common/readme-variables to vactions-common-readme-variables-v1.2.5 ([#579](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/579)) ([b3043f7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b3043f73dcc56ec769d4d3e24d07b6ef1f5a8664))
+* **deps:** update timschoenle/actions/actions/common/readme-variables to vactions-common-readme-variables-v1.2.6 ([#591](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/591)) ([e411269](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e41126983ad7d0aac41469e1f8efcc0232018c53))
+* **deps:** update timschoenle/actions/actions/common/render-template to vactions-common-render-template-v1.2.5 ([#580](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/580)) ([ca071a1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ca071a14cd74be4efb4ede926e37873fe66d7c02))
+* **deps:** update timschoenle/actions/actions/common/render-template to vactions-common-render-template-v1.2.6 ([#592](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/592)) ([762f4a6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/762f4a6e0caf16881cca13fc0146610ff18c7e70))
+* **deps:** update timschoenle/actions/actions/common/render-template-and-commit to vactions-common-render-template-and-commit-v1.1.12 ([#581](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/581)) ([fc6c96f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/fc6c96f896dab27b7a6d382329cdc288f5f2df56))
+* **deps:** update timschoenle/actions/actions/common/render-template-and-commit to vactions-common-render-template-and-commit-v1.1.13 ([#593](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/593)) ([e776ffd](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e776ffd5c0a95f6b459f834b171fc0db82d5f23b))
+* **deps:** update timschoenle/actions/actions/common/render-template-and-commit to vactions-common-render-template-and-commit-v1.1.14 ([#602](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/602)) ([d557d8f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d557d8f5b00c8bf81c0e320d5b9a96ff77d05ebf))
+* **deps:** update timschoenle/actions/actions/common/upsert-pr-comment to vactions-common-upsert-pr-comment-v1.2.1 ([#582](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/582)) ([6be04a1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/6be04a171dc003b7b54bc82c72621fd8ffca64a1))
+* **deps:** update timschoenle/actions/actions/common/upsert-pr-comment to vactions-common-upsert-pr-comment-v1.2.2 ([#594](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/594)) ([18546a5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/18546a5db8982b9f750d559b3729204c28b81637))
+* **deps:** update timschoenle/actions/actions/docker/image-check to vactions-docker-image-check-v1.1.1 ([#583](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/583)) ([84a5355](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/84a53550e5c086e34c859368cecb4af23c8e1b96))
+* **deps:** update timschoenle/actions/actions/docker/image-check to vactions-docker-image-check-v1.1.2 ([#595](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/595)) ([e7542b0](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e7542b058cf28ffcea055e0f30a8311d0db9718c))
+* **deps:** update timschoenle/actions/actions/docker/image-check to vactions-docker-image-check-v1.1.3 ([#603](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/603)) ([39b1a11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/39b1a11e1f3714294bc8c77c60c0901b1be44954))
+* **deps:** update timschoenle/actions/actions/helm/update-chart-version to vactions-helm-update-chart-version-v1.6.15 ([#584](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/584)) ([234e4e2](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/234e4e2d3e3f5bda10a3e2be39c69fd2ded7c652))
+* **deps:** update timschoenle/actions/actions/rust/auto-format to vactions-rust-auto-format-v1.1.20 ([#585](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/585)) ([cd4b567](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cd4b56776e57f370de5ca67830ac635a5c306818))
+* **deps:** update timschoenle/actions/actions/rust/config-contract to vactions-rust-config-contract-v1.3.5 ([#586](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/586)) ([424e7e8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/424e7e83c3ea9165e199f083ee49f0629e9d2c74))
+* **deps:** update timschoenle/actions/actions/rust/config-contract to vactions-rust-config-contract-v1.3.6 ([#596](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/596)) ([8aa7ada](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8aa7ada218a75939055ae2c780ccba0d35bfc26f))
+
 ## [0.21.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.3...v0.21.4) (2026-10-05)
 
 
