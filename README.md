@@ -42,7 +42,7 @@ The statistics were collected with [StatsApi](https://github.com/TimSchoenle/Sta
 ## Quick start
 
 ```bash
-docker run --rm -p 8080:8080 timschoenle/mp-stats-legacy-viewer:v0.21.4
+docker run --rm -p 8080:8080 timschoenle/mp-stats-legacy-viewer:v0.21.5
 ```
 
 Then open <http://localhost:8080>. The image carries the converted data and its own `/config.toml`,
@@ -89,7 +89,7 @@ so it takes no arguments and needs no volume.
 ### Docker
 
 ```bash
-docker pull timschoenle/mp-stats-legacy-viewer:v0.21.4
+docker pull timschoenle/mp-stats-legacy-viewer:v0.21.5
 ```
 
 A multi-platform manifest for `linux/amd64` and `linux/arm64`. Every release is signed with
@@ -289,7 +289,7 @@ docker run --rm -p 8080:8080 \
   -e MP_STATS_TELEMETRY__SENTRY__ENABLED=true \
   -e MP_STATS_TELEMETRY__SENTRY__DSN_FILE=/run/secrets/sentry-dsn \
   -v ./sentry-dsn:/run/secrets/sentry-dsn:ro \
-  timschoenle/mp-stats-legacy-viewer:v0.21.4
+  timschoenle/mp-stats-legacy-viewer:v0.21.5
 ```
 
 It reports issues and breadcrumbs under thresholds of their own, the SDK's panic hook, and one
