@@ -16,6 +16,7 @@ differs.
 Historical Minecraft server statistics, converted to sharded binary chunks and queried in the browser by a Dioxus client.
 
 [![Release](https://img.shields.io/github/v/release/TimSchoenle/mp-stats-legacy-viewer?sort=semver)](https://github.com/TimSchoenle/mp-stats-legacy-viewer/releases)
+[![Chart](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Ftimschoenle.github.io%2Fhelm-charts%2Findex.yaml&query=%24.entries.mp-stats-legacy-viewer%5B0%5D.version&label=chart)](https://github.com/TimSchoenle/helm-charts/tree/main/charts/mp-stats-legacy-viewer)
 [![Build](https://img.shields.io/github/actions/workflow/status/TimSchoenle/mp-stats-legacy-viewer/build.yaml?branch=main)](https://github.com/TimSchoenle/mp-stats-legacy-viewer/actions/workflows/build.yaml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
