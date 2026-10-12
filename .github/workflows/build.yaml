@@ -1,4 +1,4 @@
-﻿name: Build
+name: Build
 
 on:
   push:
@@ -247,8 +247,15 @@ jobs:
       # into a host directory and inject it into the build, then extract and
       # save it again afterwards (the extraction runs in the cache-dance post
       # step, and `actions/cache` persists the host directory between runs).
+      #
+      # zizmor reports this cache as a poisoning path because the same job runs
+      # docker/build-push-action, and the layers it writes to `type=gha` are
+      # read by the release build. The entry `main` restores can only be
+      # written by a run on `main`: this workflow has no `pull_request_target`
+      # trigger, and a pull request run saves into its own ref's scope, which
+      # `main` never reads.
       - name: Restore converter data cache
-        id: converter-cache
+        id: converter-cache # zizmor: ignore[cache-poisoning] -- only runs on main write the entry main restores
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: converter-cache
