@@ -1520,9 +1520,9 @@ checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
 name = "gloo-console"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f1d5cec0b97edb53f21221f799c659cef3764ad5a00eca52950eb9b902028ba"
+checksum = "c8b39f7a21b04d982b709667625a20c7669890270ad77a40b74c0ad02bd61822"
 dependencies = [
  "gloo-utils 0.3.0",
  "js-sys",
