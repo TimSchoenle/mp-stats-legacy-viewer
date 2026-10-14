@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.21.5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.4...v0.21.5) (2026-10-13)
+
+
+### Dependencies
+
+* **deps:** update rust crate gloo-console to v0.4.1 ([#615](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/615)) ([de4c8ed](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/de4c8ed08d00c93a8400190095a7979779ced668))
+* **deps:** update rust crate serde_json to v1.0.152 ([#616](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/616)) ([1a09158](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1a09158b22aa53c331634f830525039972f64667))
+* **deps:** update rust:1.99-slim docker digest to 2752b33 ([#613](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/613)) ([2bec057](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2bec057a9836ac720ae7da4948fb0c5f4d2315b7))
+
 ## [0.21.4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.3...v0.21.4) (2026-10-05)
 
 
