@@ -89,7 +89,7 @@ jobs:
       # no image on this runner - which is what makes this the cheap half, running on every pull
       # request without waiting for a build.
       - name: Verify the configuration contract
-        uses: TimSchoenle/actions/actions/rust/config-contract@1e89d598e447ab05d36edc9e9d18e8771adf6426 # tag=actions-rust-config-contract-v1.3.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@f33849da61e2397d3a9277762d09a1bf0d2b9d7c # tag=actions-rust-config-contract-v1.3.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -129,7 +129,7 @@ jobs:
       # The arguments `test` runs with, which are the rust/test action's defaults. No crate embeds
       # the built frontend, so the tests need no Node step first.
       - name: Run Coverage
-        uses: TimSchoenle/actions/actions/rust/coverage-codecov@3dc15ee0f2fbacdc1741a20bc0e8ad1011b989c7 # tag=actions-rust-coverage-codecov-v2.0.0
+        uses: TimSchoenle/actions/actions/rust/coverage-codecov@f33849da61e2397d3a9277762d09a1bf0d2b9d7c # tag=actions-rust-coverage-codecov-v2.0.1
         with:
           test_arguments: '--all-features --workspace'
           flags: rust
@@ -365,7 +365,7 @@ jobs:
       # `dockerfile` and `contract` are emptied: the `Config Contract` job above
       # owns both, and repeating them here would report the same drift twice.
       - name: Verify the linux/amd64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@1e89d598e447ab05d36edc9e9d18e8771adf6426 # tag=actions-rust-config-contract-v1.3.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@f33849da61e2397d3a9277762d09a1bf0d2b9d7c # tag=actions-rust-config-contract-v1.3.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -374,7 +374,7 @@ jobs:
           image: image:test
 
       - name: Verify the linux/arm64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@1e89d598e447ab05d36edc9e9d18e8771adf6426 # tag=actions-rust-config-contract-v1.3.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@f33849da61e2397d3a9277762d09a1bf0d2b9d7c # tag=actions-rust-config-contract-v1.3.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -454,7 +454,7 @@ jobs:
       # than a second one posted beside it. The 150 MiB warning and the `CRITICAL,HIGH` filter are
       # the action's defaults.
       - name: Check image size and vulnerabilities
-        uses: TimSchoenle/actions/actions/docker/image-check@ff1e7853c7953c8d7176325ea4912add4a3c5398 # tag=actions-docker-image-check-v1.1.4
+        uses: TimSchoenle/actions/actions/docker/image-check@f33849da61e2397d3a9277762d09a1bf0d2b9d7c # tag=actions-docker-image-check-v1.1.5
         with:
           image: image:test
 
