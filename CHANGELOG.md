@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.21.6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.5...v0.21.6) (2026-10-17)
+
+
+### Dependencies
+
+* **deps:** update rust crate lzma-rust2 to 0.22.0 ([#617](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/617)) ([cf893b6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cf893b6e054ed1f4895ad1b420f092f3d4ec3333))
+* **deps:** update rust crate rustls to v0.23.46 [security] ([#621](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/621)) ([a30dfe8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a30dfe8dc8d0f3663b86bc6513288bdd896cdc5b))
+* **deps:** update rust crate serde_json to v1.0.153 ([#619](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/619)) ([3812226](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/38122268e8554e3ff9e9965e0fef458cfdf5802c))
+* **deps:** update rust crate serde_json to v1.0.154 ([#620](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/620)) ([2f5d78a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2f5d78a6ceb44a7e9136dbcfde38ceabc3c150f6))
+* **deps:** update rust crate tokio to v1.53.3 ([#624](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/624)) ([b170ea4](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b170ea40a5050b3e0818be4864df0eed80c4592e))
+
 ## [0.21.5](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.4...v0.21.5) (2026-10-13)
 
 
