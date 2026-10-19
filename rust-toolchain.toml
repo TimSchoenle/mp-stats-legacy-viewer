@@ -1,0 +1,20 @@
+# The compiler every build of this repository uses: local `cargo`, every CI job (none names a
+# toolchain of its own), and the container build, which copies this file into its `base` stage
+# before the first `cargo` call.
+#
+# Pinned to an exact release rather than `stable` so that a new Rust, with its new clippy lints
+# and rustfmt output, arrives as a reviewed Renovate pull request instead of turning an unrelated
+# pull request red on the day it ships.
+#
+# The Dockerfile's `rust:<version>-slim` base image names the same minor release. Renovate's
+# `rust toolchain` group moves both in one pull request. Should the image's digest still carry an
+# older patch, the build installs this one rather than compiling with the image's.
+[toolchain]
+channel = "1.99.1"
+# What the `cargo fmt --check` and `cargo clippy -- -D warnings` gates run.
+components = ["rustfmt", "clippy"]
+# `apps/frontend` is built for wasm by `dx` on every machine that builds the viewer. The musl
+# targets the server is cross-compiled to are only ever needed inside the image, so the
+# Dockerfile adds those itself.
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"
