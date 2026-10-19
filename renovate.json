@@ -18,6 +18,18 @@
       "matchPackageNames": [
         "/^dioxus/"
       ]
+    },
+    {
+      "description": "The Rust toolchain moves in one pull request: `rust-toolchain.toml` and the `rust:<version>-slim` base image in the Dockerfile name the same release and must not drift apart. Digest updates (same release, rebuilt image) stay ungrouped.",
+      "groupName": "rust toolchain",
+      "matchDepNames": [
+        "rust"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
     }
   ]
 }

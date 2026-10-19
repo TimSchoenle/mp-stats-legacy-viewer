@@ -33,11 +33,20 @@ RUN set -eux; \
 
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
-# Add rust targets
+WORKDIR /app
+
+# The compiler `rust-toolchain.toml` pins, with the wasm32 target it lists for the frontend.
+# Installed from the file rather than taken from the base image, whose digest can carry an older
+# patch of the same minor: every later stage that `COPY . .` would otherwise switch to the pin
+# halfway through the build and recompile what `cargo chef cook` cached. Copied on its own so
+# that no other change to the tree invalidates this layer.
+COPY rust-toolchain.toml ./
+RUN rustup toolchain install --no-self-update
+
+# The musl targets the server and converter are cross-compiled to, added to the pinned toolchain.
 RUN rustup target add \
     x86_64-unknown-linux-musl \
-    aarch64-unknown-linux-musl \
-    wasm32-unknown-unknown
+    aarch64-unknown-linux-musl
 
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-gnu-gcc \
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
@@ -65,8 +74,6 @@ case "$1" in
 esac
 EOF
 RUN chmod +x /usr/local/bin/rust-target
-
-WORKDIR /app
 
 FROM base AS chef
 RUN cargo install cargo-chef
