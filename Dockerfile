@@ -78,8 +78,8 @@ RUN chmod +x /usr/local/bin/rust-target
 # cargo-chef, taken from its publisher's image of the same Debian release as `base` and pinned by
 # digest. `cargo install cargo-chef` compiled whichever release was newest, without `--locked`, on
 # every rebuild of this layer, so two builds of one commit could cook with different versions.
-# `renovate.json` disables updates for this image, so the pin moves by hand. `--platform=$BUILDPLATFORM`
-# because the binary runs here, on the build host, whatever the target platform is.
+# Renovate's Dockerfile manager bumps the tag and digest. `--platform=$BUILDPLATFORM` because the
+# binary runs here, on the build host, whatever the target platform is.
 FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim@sha256:b22df2bf8abec048f46a6505c9303e2c8c0a8e22d21181f8b803b9ad5593ba99 AS cargo-chef
 
 FROM base AS chef
