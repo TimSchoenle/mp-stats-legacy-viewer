@@ -7,7 +7,7 @@ ARG GROUP_ID=1001
 # Every build stage is pinned to the *build* platform and cross-compiles to the
 # requested target platform. No target-architecture code is ever executed during
 # the build, so multi-arch images are produced without QEMU emulation.
-FROM --platform=$BUILDPLATFORM rust:1.99-slim@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581 AS base
+FROM --platform=$BUILDPLATFORM rust:1.99-slim@sha256:4df2ae8cfdfebdfc13a65da7f253b73d68983dc0339f2719bc17a279c913b13d AS base
 ARG BUILDARCH
 
 # Besides the native toolchain, install the GNU cross toolchain for the
