@@ -276,6 +276,18 @@ jobs:
             }
           skip-extraction: ${{ steps.converter-cache.outputs.cache-hit }}
 
+      # One cache scope per platform. A `type=gha` export replaces the index of its scope, so with
+      # one shared scope the arm64 export dropped the amd64-only layers from the index the amd64
+      # build had just written, and the next amd64 build found none of them; the amd64 export did
+      # the same to arm64 on the following run. A re-run of an unchanged `main` commit compiled
+      # the server's 187 dependencies again on both platforms, about 95 s each. Layers both
+      # platforms share are stored once either way: blobs are keyed by digest.
+      #
+      # Every build reads the cache; only a push to `main` writes it. A pull request's export
+      # lands in its own ref, which `main` never reads, but counts against the repository's 10 GB
+      # Actions cache, and GitHub makes room by evicting the least recently used entries, `main`'s
+      # among them. A pull request that changes the lockfile or the build stages cooks again on
+      # each of its pushes.
       - name: Build Docker image (linux/amd64)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
@@ -290,8 +302,8 @@ jobs:
             release=test
             vendor=Tim Schönle
             VERSION=test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=amd64
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=amd64' || '' }}
 
       # `load: true` cannot export a multi-platform *index*, but it exports a
       # single-platform image of any architecture perfectly well - the daemon
@@ -318,8 +330,8 @@ jobs:
             release=test
             vendor=Tim Schönle
             VERSION=test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=arm64
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=arm64' || '' }}
 
       # The document and the labels the two builds above put in their images, on
       # the host where they can be compared against them. One export of the
@@ -338,7 +350,7 @@ jobs:
             release=test
             vendor=Tim Schönle
             VERSION=test
-          cache-from: type=gha
+          cache-from: type=gha,scope=amd64
 
       # The check the hand-written `LABEL` region needs and that no source diff
       # can give: the action renders the labels from the configuration types

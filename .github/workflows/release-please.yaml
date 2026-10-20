@@ -118,9 +118,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # Read-only: the build workflow on `main` already populated this cache
-          # for both platforms, which keeps the release build from recompiling
-          # the full dependency set twice.
-          cache-from: type=gha
+          # for both platforms, one scope each, which keeps the release build
+          # from recompiling the full dependency set twice.
+          cache-from: |
+            type=gha,scope=amd64
+            type=gha,scope=arm64
           build-args: |
             version=${{ needs.release-please.outputs.tag_name }}
             release=${{ needs.release-please.outputs.tag_name }}
@@ -157,7 +159,7 @@ jobs:
           platforms: linux/amd64
           target: contract-export
           outputs: type=local,dest=contract-out
-          cache-from: type=gha
+          cache-from: type=gha,scope=amd64
           build-args: |
             version=${{ needs.release-please.outputs.tag_name }}
             release=${{ needs.release-please.outputs.tag_name }}
