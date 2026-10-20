@@ -78,8 +78,13 @@ RUN chmod +x /usr/local/bin/rust-target
 FROM base AS chef
 RUN cargo install cargo-chef
 
+# `data/` is the 330 MB of raw dumps the converter reads, and `data-test/` its CI fixture. Both
+# reach `data-optimizer` through a bind mount, which reads the build context directly, so
+# `.dockerignore` cannot exclude them. No Rust or npm build reads either, and a plain `COPY . .`
+# put them into the layer of every stage below that copies the tree, a new layer on every commit,
+# and into the layer cache that `mode=max` exports. Every such `COPY` therefore excludes them.
 FROM chef AS planner
-COPY . .
+COPY --exclude=data --exclude=data-test . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 # Dependencies for the build host's own architecture. Everything that has to
@@ -105,7 +110,7 @@ RUN set -eux; \
 # data actually changes - not on every unrelated frontend/server edit.
 FROM host_cacher AS converter_builder
 ARG BUILDARCH
-COPY . .
+COPY --exclude=data --exclude=data-test . .
 RUN set -eux; \
     target="$(rust-target "${BUILDARCH}")"; \
     cargo build --release --target "${target}" -p mp-stats-converter; \
@@ -148,7 +153,7 @@ RUN --mount=type=bind,source=${DATA_INPUT_DIRECTORY},target=/app/data \
 # different times can, and the labels are what a consumer finds the document by.
 FROM host_cacher AS contract-builder
 ARG BUILDARCH
-COPY . .
+COPY --exclude=data --exclude=data-test . .
 RUN set -eux; \
     target="$(rust-target "${BUILDARCH}")"; \
     mkdir -p /out; \
@@ -176,7 +181,7 @@ RUN cargo chef cook --release --target "$(rust-target "${TARGETARCH}")" -p mp-st
 
 FROM backend_cacher AS backend_builder
 ARG TARGETARCH
-COPY . .
+COPY --exclude=data --exclude=data-test . .
 RUN set -eux; \
     target="$(rust-target "${TARGETARCH}")"; \
     cargo build --release --target "${target}" -p mp-stats-server; \
@@ -204,7 +209,7 @@ RUN CARGO_PROFILE_WASM_RELEASE_STRIP=false \
     cargo chef cook --profile wasm-release --target wasm32-unknown-unknown -p mp-stats-frontend \
       --recipe-path recipe.json
 
-COPY . .
+COPY --exclude=data --exclude=data-test . .
 WORKDIR /app/apps/frontend
 RUN npm install
 # The two halves `dx` does not build: the fonts copied out of `node_modules`, and the Tailwind
