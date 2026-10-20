@@ -85,10 +85,20 @@ RUN cargo chef prepare --recipe-path recipe.json
 # Dependencies for the build host's own architecture. Everything that has to
 # *run* during the build (currently the converter) is compiled from here so it
 # executes natively, and its output stays independent of the target platform.
+#
+# Every cook names the package, features and targets of the build it stands in for. Without `-p`,
+# cargo builds only the workspace's root package, `mp-stats-platform`, which has no dependencies:
+# each cook compiled that one empty crate, and every dependency was compiled after `COPY . .`, in
+# each of the four stages that build, on every commit. The two selections here are the ones
+# `converter_builder` and `contract-builder` build; a different feature set would compile again.
 FROM chef AS host_cacher
 ARG BUILDARCH
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --target "$(rust-target "${BUILDARCH}")" --recipe-path recipe.json
+RUN set -eux; \
+    target="$(rust-target "${BUILDARCH}")"; \
+    cargo chef cook --release --target "${target}" -p mp-stats-converter --recipe-path recipe.json; \
+    cargo chef cook --release --target "${target}" \
+      -p mp-stats-config --features config-schema --examples --recipe-path recipe.json
 
 # Build the converter binary once in a dedicated stage so that the (expensive)
 # data conversion below is only re-run when the converter source or the input
@@ -156,12 +166,13 @@ FROM scratch AS contract-export
 COPY --from=contract-builder /out /out
 
 # Dependencies for the target architecture. Layered on top of `host_cacher` so
-# that a native build (target == build architecture) reuses those artifacts
-# instead of compiling the same dependency set twice.
+# that a native build (target == build architecture) reuses the units the
+# server shares with the converter and the generator, where their features agree.
 FROM host_cacher AS backend_cacher
 ARG TARGETARCH
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --target "$(rust-target "${TARGETARCH}")" --recipe-path recipe.json
+RUN cargo chef cook --release --target "$(rust-target "${TARGETARCH}")" -p mp-stats-server \
+      --recipe-path recipe.json
 
 FROM backend_cacher AS backend_builder
 ARG TARGETARCH
@@ -184,7 +195,14 @@ RUN cargo binstall --no-confirm dioxus-cli@0.7.10
 # platform; keeping it free of `TARGETARCH` lets multi-arch builds share it.
 FROM frontend_base AS frontend
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --target wasm32-unknown-unknown --recipe-path recipe.json
+# Cooked the way `dx build --release --web` compiles, or `dx` compiles every dependency again: the
+# `wasm-release` profile with the `strip=false` it forces through `--config`, and the
+# `getrandom_backend` cfg it puts in RUSTFLAGS. Both are dioxus-cli 0.7 internals, so a `dx` bump
+# that changes them shows up as `Compiled [n/248]` lines for dependencies in the step below.
+RUN CARGO_PROFILE_WASM_RELEASE_STRIP=false \
+    RUSTFLAGS='--cfg getrandom_backend="wasm_js"' \
+    cargo chef cook --profile wasm-release --target wasm32-unknown-unknown -p mp-stats-frontend \
+      --recipe-path recipe.json
 
 COPY . .
 WORKDIR /app/apps/frontend
