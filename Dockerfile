@@ -75,8 +75,16 @@ esac
 EOF
 RUN chmod +x /usr/local/bin/rust-target
 
+# cargo-chef, taken from its publisher's image of the same Debian release as `base` and pinned by
+# digest. `cargo install cargo-chef` compiled whichever release was newest, without `--locked`, on
+# every rebuild of this layer, so two builds of one commit could cook with different versions.
+# Renovate bumps the tag and digest like any other base image. `--platform=$BUILDPLATFORM` because
+# the binary runs here, on the build host, whatever the target platform is.
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim@sha256:b22df2bf8abec048f46a6505c9303e2c8c0a8e22d21181f8b803b9ad5593ba99 AS cargo-chef
+
 FROM base AS chef
-RUN cargo install cargo-chef
+COPY --from=cargo-chef /usr/local/cargo/bin/cargo-chef /usr/local/cargo/bin/cargo-chef
+RUN cargo chef --version
 
 # `data/` is the 330 MB of raw dumps the converter reads, and `data-test/` its CI fixture. Both
 # reach `data-optimizer` through a bind mount, which reads the build context directly, so
