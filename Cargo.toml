@@ -125,7 +125,7 @@ terrace-config = { git = "https://github.com/TimSchoenle/terrace-config", tag = 
 # Pinned by tag for the same reason as `terrace-config` above. The `cloudflare` feature is
 # `presets` and `nonce` together: the origin tables the Cloudflare products load from, and the
 # per-response nonce slot the edge-injected ones need.
-csp-shell = { git = "https://github.com/TimSchoenle/csp-shell", tag = "csp-shell-v0.2.0", features = ["cloudflare"] }
+csp-shell = { git = "https://github.com/TimSchoenle/csp-shell", tag = "csp-shell-v0.2.1", features = ["cloudflare"] }
 # The record stream both sinks below read. `tracing` rather than `log` because the Sentry
 # integration is a `tracing_subscriber::Layer` and because a span is the unit a transaction is
 # cut from; `log` records reach it anyway through the `tracing-log` bridge `tracing-subscriber`
