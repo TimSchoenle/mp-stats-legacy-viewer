@@ -22,16 +22,13 @@ static CONVERT_GUARD: Mutex<()> = Mutex::new(());
 /// directory the test binary is executed from.
 fn data_test_dir() -> Option<PathBuf> {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    for candidate in [
+    [
         manifest.join("../../data-test"),
         manifest.join("../../../data-test"),
         PathBuf::from("data-test"),
-    ] {
-        if candidate.join("java").is_dir() {
-            return Some(candidate);
-        }
-    }
-    None
+    ]
+    .into_iter()
+    .find(|candidate| candidate.join("java").is_dir())
 }
 
 #[test]

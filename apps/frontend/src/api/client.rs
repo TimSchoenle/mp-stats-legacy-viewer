@@ -572,7 +572,7 @@ mod tests {
         assert_eq!(decoded.len(), 2);
         // Legacy entries must be treated as having a profile so they stay
         // searchable.
-        for (_name, (_uuid, has_profile)) in &decoded {
+        for (_uuid, has_profile) in decoded.values() {
             assert!(
                 has_profile,
                 "legacy entries must be marked has_profile=true"
