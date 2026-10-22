@@ -246,7 +246,7 @@ the one that failed.
 The server sends a `Content-Security-Policy` on every document it serves, and the policy is
 derived from the shell rather than written down anywhere: at startup it reads the `index.html` in
 `dist_dir` and computes a `'sha256-…'` for each inline `<script>` in it, using
-[csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.0`. An
+[csp-shell](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.1`. An
 unreadable shell fails the boot, before the listener binds.
 
 As `dx` builds it, that shell carries no inline script at all: the WASM bootstrap is a module
