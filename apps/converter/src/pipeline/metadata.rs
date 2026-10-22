@@ -12,6 +12,12 @@ use std::io::BufReader;
 use std::path::Path;
 use walkdir::WalkDir;
 
+/// Player id to `(uuid, name)`.
+pub type IdLookup = HashMap<String, (String, String)>;
+
+/// Names index shard key to the `(name, uuid)` pairs filed under it.
+pub type NamesByShard = HashMap<String, Vec<(String, String)>>;
+
 /// Reads every dictionary file under `java_in` into the two lookups the rest of the run needs.
 ///
 /// The first maps a player id to their UUID and name, and is what turns the integer in a chunk or
@@ -30,10 +36,7 @@ pub fn process_dictionary_and_names(
     platform: &PlatformEdition,
     java_in: &Path,
     output_dir: &Path,
-) -> Result<(
-    HashMap<String, (String, String)>,
-    HashMap<String, Vec<(String, String)>>,
-)> {
+) -> Result<(IdLookup, NamesByShard)> {
     let _ = (platform, output_dir);
     let dict_in = java_in.join("dictionary/ids");
 
@@ -52,38 +55,33 @@ pub fn process_dictionary_and_names(
 
     let (names_map, global_id_map) = files
         .par_iter()
-        .map(
-            |path| -> Result<(
-                HashMap<String, Vec<(String, String)>>,
-                HashMap<String, (String, String)>,
-            )> {
-                // Read Dict
-                let file = File::open(path)?;
-                let map: HashMap<String, (String, Option<String>)> =
-                    serde_json::from_reader(BufReader::new(file))?;
+        .map(|path| -> Result<(NamesByShard, IdLookup)> {
+            // Read Dict
+            let file = File::open(path)?;
+            let map: HashMap<String, (String, Option<String>)> =
+                serde_json::from_reader(BufReader::new(file))?;
 
-                let mut local_names: HashMap<String, Vec<(String, String)>> = HashMap::new();
-                let mut local_ids = HashMap::new();
+            let mut local_names = NamesByShard::new();
+            let mut local_ids = IdLookup::new();
 
-                // Collect Names & IDs
-                for (id, (uuid, name_opt)) in map {
-                    if let Some(name) = name_opt {
-                        if let Ok(prefix) = name_shard(&name) {
-                            local_names
-                                .entry(prefix)
-                                .or_default()
-                                .push((name.clone(), uuid.clone()));
-                        }
-                        local_ids.insert(id, (uuid, name));
-                    } else {
-                        local_ids.insert(id, (uuid.clone(), uuid.clone()));
+            // Collect Names & IDs
+            for (id, (uuid, name_opt)) in map {
+                if let Some(name) = name_opt {
+                    if let Ok(prefix) = name_shard(&name) {
+                        local_names
+                            .entry(prefix)
+                            .or_default()
+                            .push((name.clone(), uuid.clone()));
                     }
+                    local_ids.insert(id, (uuid, name));
+                } else {
+                    local_ids.insert(id, (uuid.clone(), uuid.clone()));
                 }
-                Ok((local_names, local_ids))
-            },
-        )
+            }
+            Ok((local_names, local_ids))
+        })
         .reduce(
-            || Ok((HashMap::new(), HashMap::new())),
+            || Ok((NamesByShard::new(), IdLookup::new())),
             |acc, item| {
                 let (mut acc_names, mut acc_ids) = acc?;
                 let (item_names, item_ids) = item?;
@@ -119,7 +117,7 @@ pub fn process_dictionary_and_names(
 pub fn build_names_archive(
     platform: &PlatformEdition,
     output_dir: &Path,
-    names_map: HashMap<String, Vec<(String, String)>>,
+    names_map: NamesByShard,
     profiled_uuids: &HashSet<String>,
 ) -> Result<()> {
     for (prefix, entries) in names_map {
