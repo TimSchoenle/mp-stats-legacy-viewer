@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use mp_stats_common::compression::{decompress_file_auto, write_lzma_bin};
+use mp_stats_common::shard::uuid_shard;
 use mp_stats_core::models::{
     IdMap, PlatformEdition, PlayerProfile, StatRaw, competition_ranks_by_score,
 };
@@ -222,8 +223,7 @@ fn process_player_shard(
         };
 
         // Determine target shard from UUID
-        if uuid.len() >= 3 {
-            let prefix = uuid[..3].to_uppercase();
+        if let Ok(prefix) = uuid_shard(&uuid) {
             shards
                 .entry(prefix)
                 .or_default()
