@@ -7,6 +7,7 @@
 
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
+use mp_stats_common::shard::uuid_shard;
 use mp_stats_core::models::{
     GameLeaderboardData, IdMap, LeaderboardEntry, LeaderboardPage, PlatformEdition, PlatformMeta,
     PlayerProfile,
@@ -343,9 +344,9 @@ impl Api {
     ///
     /// # Errors
     ///
-    /// If the UUID fails that check, if the shard is missing or does not decode, or if the shard
-    /// exists and holds no entry for this player — which is what a player who never placed looks
-    /// like, rather than a fault.
+    /// If the UUID fails that check or [`uuid_shard`] refuses it, if the shard is missing or does
+    /// not decode, or if the shard exists and holds no entry for this player — which is what a
+    /// player who never placed looks like, rather than a fault.
     pub async fn fetch_player(
         &self,
         edition: &PlatformEdition,
@@ -361,9 +362,12 @@ impl Api {
             return Err(gloo_net::Error::GlooError("Invalid UUID format".into()));
         }
 
-        let shard = &uuid[..3].to_uppercase();
+        let shard = uuid_shard(uuid).map_err(|e| {
+            gloo_console::error!(e.to_string());
+            gloo_net::Error::GlooError(e.to_string())
+        })?;
 
-        let bin_path = format!("/data/{}", routes::player_shard_bin(edition, shard));
+        let bin_path = format!("/data/{}", routes::player_shard_bin(edition, &shard));
         let mut shard_map = self
             .fetch_bin_cached::<HashMap<String, PlayerProfile>>(
                 &bin_path,

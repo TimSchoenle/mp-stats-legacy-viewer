@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use mp_stats_common::compression::write_lzma_bin;
-use mp_stats_common::formats::raw;
+use mp_stats_common::shard::name_shard;
 use mp_stats_core::models::PlatformEdition;
 use mp_stats_core::routes;
 use rayon::prelude::*;
@@ -17,8 +17,8 @@ use walkdir::WalkDir;
 /// The first maps a player id to their UUID and name, and is what turns the integer in a chunk or
 /// a stride into a person. A player the dump gave no name to is given their UUID as one, so the
 /// map has no holes. The second groups names by their lowercased three-character prefix, which is
-/// the shard [`build_names_archive`] will write; a name shorter than that prefix is dropped, since
-/// there is no shard for it to go in and no query short enough to find it.
+/// the shard [`build_names_archive`] will write; a name [`name_shard`] refuses is dropped, since
+/// there is no shard for it to go in.
 ///
 /// Writes nothing. `platform` and `output_dir` are taken for symmetry with the other steps and
 /// are unused.
@@ -68,8 +68,7 @@ pub fn process_dictionary_and_names(
                 // Collect Names & IDs
                 for (id, (uuid, name_opt)) in map {
                     if let Some(name) = name_opt {
-                        if name.len() >= raw::MIN_NAME_LENGTH {
-                            let prefix = name[..raw::MIN_NAME_LENGTH].to_lowercase(); // Normalized prefix
+                        if let Ok(prefix) = name_shard(&name) {
                             local_names
                                 .entry(prefix)
                                 .or_default()
