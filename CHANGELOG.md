@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.7...v0.21.8) (2026-10-22)
+
+
+### Dependencies
+
+* **deps:** update rust crate csp-shell to csp-shell-v0.2.1 ([#649](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/649)) ([4db907f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4db907f1f378cf6f9653220c8915e424e2879820))
+
 ## [0.21.7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.6...v0.21.7) (2026-10-22)
 
 
