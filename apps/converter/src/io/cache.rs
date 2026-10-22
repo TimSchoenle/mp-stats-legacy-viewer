@@ -22,13 +22,13 @@ pub struct ConversionCache {
     enabled: bool,
 }
 
-/// Bumped by hand whenever the written records change shape.
+/// Bumped by hand whenever the written records change shape or move to a different file.
 ///
 /// It is hashed into every fingerprint, so raising it invalidates every stored output even though
-/// no dump moved. Nothing derives it: a field added to a record the converter writes is a change
-/// this constant has to be told about, and forgetting serves the old bytes to a reader that
-/// cannot decode them.
-const OUTPUT_SCHEMA_VERSION: u64 = 3;
+/// no dump moved. Nothing derives it: a field added to a record the converter writes, or a change
+/// to a key in `mp_stats_common::shard`, is a change this constant has to be told about, and
+/// forgetting serves the old bytes to a reader that cannot decode or cannot find them.
+const OUTPUT_SCHEMA_VERSION: u64 = 4;
 
 impl ConversionCache {
     /// An enabled cache storing its entries under `root`, which is created on the first store.
