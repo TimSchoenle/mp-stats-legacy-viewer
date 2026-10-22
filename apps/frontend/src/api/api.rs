@@ -398,8 +398,7 @@ impl Api {
     /// profile are left out, so no suggestion leads to an empty page.
     ///
     /// Matching and ordering compare [`normalize_name`] forms, the same case folding the shard key
-    /// uses, so every name in the fetched shard that the query is a prefix of is matched. Ordering
-    /// is exact match, then names starting with the query, then the rest, alphabetically within
+    /// uses: exact match, then names starting with the query, then the rest, alphabetically within
     /// each group.
     ///
     /// # Errors
@@ -420,39 +419,13 @@ impl Api {
 
         let (java_res, bedrock_res) = futures::future::join(java_future, bedrock_future).await;
 
-        // Each match carries its normalized name, computed once, for the ranking below.
-        let mut matches = Vec::new();
-        for (edition, index) in [
-            (PlatformEdition::Java, java_res),
-            (PlatformEdition::Bedrock, bedrock_res),
-        ] {
-            let Some(map) = index else {
-                continue;
-            };
-            for (name, (uuid, has_profile)) in map {
-                // Skip players without a profile so suggestions never lead to an
-                // empty "no profile data" page.
-                if !has_profile {
-                    continue;
-                }
-                let name_key = normalize_name(&name);
-                if name_key.contains(&query_key) {
-                    matches.push((name_key, (edition.clone(), name, uuid)));
-                }
-            }
-        }
-
-        // Exact match first, then starts with, then contains; alphabetical within each group.
-        matches.sort_by(|(a_key, _), (b_key, _)| {
-            let a_rank = (a_key != &query_key, !a_key.starts_with(&query_key));
-            let b_rank = (b_key != &query_key, !b_key.starts_with(&query_key));
-            a_rank.cmp(&b_rank).then_with(|| a_key.cmp(b_key))
-        });
-
-        let mut results = Vec::with_capacity(matches.len().min(10));
-        for (_, result) in matches.into_iter().take(10) {
-            results.push(result);
-        }
+        let results = rank_name_matches(
+            &query_key,
+            [
+                (PlatformEdition::Java, java_res),
+                (PlatformEdition::Bedrock, bedrock_res),
+            ],
+        );
 
         Ok(results)
     }
@@ -530,6 +503,49 @@ fn decode_name_index(bytes: &[u8]) -> Option<HashMap<String, (String, bool)>> {
     None
 }
 
+/// Most suggestions the search returns.
+const SEARCH_RESULT_LIMIT: usize = 10;
+
+/// The players across `indexes` whose [`normalize_name`] form contains `query_key`, best match
+/// first, at most [`SEARCH_RESULT_LIMIT`] of them.
+///
+/// An edition whose index is `None` contributes nothing. Players with no profile are left out, so
+/// no suggestion leads to an empty page. Ordering is exact match, then names starting with the
+/// query, then the rest, alphabetically by normalized name within each group.
+fn rank_name_matches(
+    query_key: &str,
+    indexes: impl IntoIterator<Item = (PlatformEdition, Option<HashMap<String, (String, bool)>>)>,
+) -> Vec<(PlatformEdition, String, String)> {
+    // Each match carries its normalized name, computed once, for the ranking below.
+    let mut matches = Vec::new();
+    for (edition, index) in indexes {
+        let Some(map) = index else {
+            continue;
+        };
+        for (name, (uuid, has_profile)) in map {
+            if !has_profile {
+                continue;
+            }
+            let name_key = normalize_name(&name);
+            if name_key.contains(query_key) {
+                matches.push((name_key, (edition.clone(), name, uuid)));
+            }
+        }
+    }
+
+    matches.sort_by(|(a_key, _), (b_key, _)| {
+        let a_rank = (a_key != query_key, !a_key.starts_with(query_key));
+        let b_rank = (b_key != query_key, !b_key.starts_with(query_key));
+        a_rank.cmp(&b_rank).then_with(|| a_key.cmp(b_key))
+    });
+
+    let mut results = Vec::with_capacity(matches.len().min(SEARCH_RESULT_LIMIT));
+    for (_, result) in matches.into_iter().take(SEARCH_RESULT_LIMIT) {
+        results.push(result);
+    }
+    results
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -576,5 +592,95 @@ mod tests {
     #[test]
     fn empty_payload_returns_none() {
         assert!(decode_name_index(&[]).is_none());
+    }
+
+    fn index(entries: &[(&str, &str, bool)]) -> Option<HashMap<String, (String, bool)>> {
+        let mut map = HashMap::new();
+        for (name, uuid, has_profile) in entries {
+            map.insert((*name).to_owned(), ((*uuid).to_owned(), *has_profile));
+        }
+        Some(map)
+    }
+
+    fn names(results: &[(PlatformEdition, String, String)]) -> Vec<&str> {
+        let mut out = Vec::new();
+        for (_, name, _) in results {
+            out.push(name.as_str());
+        }
+        out
+    }
+
+    #[test]
+    fn ranks_exact_then_prefix_then_contains_alphabetically() {
+        let results = rank_name_matches(
+            "abc",
+            [(
+                PlatformEdition::Java,
+                index(&[
+                    ("xxAbc", "1", true),
+                    ("AbcZ", "2", true),
+                    ("ABC", "3", true),
+                    ("abcA", "4", true),
+                    ("zabc", "5", true),
+                ]),
+            )],
+        );
+        assert_eq!(names(&results), ["ABC", "abcA", "AbcZ", "xxAbc", "zabc"]);
+    }
+
+    #[test]
+    fn skips_players_without_profile_and_non_matching_names() {
+        let results = rank_name_matches(
+            "abc",
+            [(
+                PlatformEdition::Java,
+                index(&[
+                    ("abcd", "1", false),
+                    ("abxd", "2", true),
+                    ("abce", "3", true),
+                ]),
+            )],
+        );
+        assert_eq!(names(&results), ["abce"]);
+    }
+
+    #[test]
+    fn matches_across_editions_and_ignores_a_missing_index() {
+        let results = rank_name_matches(
+            "abc",
+            [
+                (PlatformEdition::Java, None),
+                (PlatformEdition::Bedrock, index(&[("abcd", "b1", true)])),
+            ],
+        );
+        assert_eq!(
+            results,
+            [(PlatformEdition::Bedrock, "abcd".to_owned(), "b1".to_owned())]
+        );
+    }
+
+    #[test]
+    fn matches_a_query_ending_in_sigma_against_the_longer_name() {
+        // `str::to_lowercase` folds the query to "αβς" and the name to "αβσδ".
+        let results = rank_name_matches(
+            &normalize_name("ΑΒΣ"),
+            [(PlatformEdition::Java, index(&[("ΑΒΣΔ", "1", true)]))],
+        );
+        assert_eq!(names(&results), ["ΑΒΣΔ"]);
+    }
+
+    #[test]
+    fn caps_results_at_the_limit() {
+        let mut entries = Vec::new();
+        for i in 0..SEARCH_RESULT_LIMIT + 5 {
+            entries.push((format!("abc{i:02}"), i.to_string(), true));
+        }
+        let mut map = HashMap::new();
+        for (name, uuid, has_profile) in entries {
+            map.insert(name, (uuid, has_profile));
+        }
+        let results = rank_name_matches("abc", [(PlatformEdition::Java, Some(map))]);
+        assert_eq!(results.len(), SEARCH_RESULT_LIMIT);
+        assert_eq!(results[0].1, "abc00");
     }
 }
