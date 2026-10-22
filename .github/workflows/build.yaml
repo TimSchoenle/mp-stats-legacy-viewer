@@ -164,8 +164,13 @@ jobs:
         with:
           egress-policy: audit
 
+      # The action's default arguments lack `--workspace`, which lints the placeholder root package
+      # and none of the members. `-D warnings` is what makes a finding fail the required check
+      # rather than only annotate the diff. Keep in step with `just lint`.
       - name: Run Clippy
         uses: TimSchoenle/actions/actions/rust/clippy@ea4465fbe2bec98efad19b63849f8d1ac67b5c88 # tag=actions-rust-clippy-v1.1.13
+        with:
+          clippy_arguments: '--workspace --all-features --all-targets -- -D warnings'
 
   # The half of the documentation standard a linter can hold. `missing_docs` and the rustdoc lint
   # tables are declared on the workspace and inherited by every member, but rustdoc's own lints

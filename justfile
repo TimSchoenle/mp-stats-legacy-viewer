@@ -159,13 +159,12 @@ fmt:
     cargo fmt --all
 
 # `--workspace`, because the crate this file is mostly about is a member rather than the root
-# package and the root package alone compiles almost nothing. No `-D warnings`: the frontend
-# carries warnings that predate this file, and the gate that a pull request has to clear is
-# `TimSchoenle/actions/actions/rust/cargo-check`, not a second opinion here.
+# package and the root package alone compiles almost nothing. `-D warnings`, because the `Clippy`
+# job in `build.yaml` runs these same arguments and a pull request with a warning fails it.
 
 [group('check')]
 lint:
-    cargo clippy --workspace --all-features --all-targets
+    cargo clippy --workspace --all-features --all-targets -- -D warnings
 
 [group('check')]
 test:
