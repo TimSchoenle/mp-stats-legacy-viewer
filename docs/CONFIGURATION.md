@@ -183,7 +183,7 @@ positional arguments are likewise replaced by `converter.input_dir` and
 
 The header the server sends is **derived, not configured**. At startup the server reads the
 `index.html` it is about to serve and computes a `'sha256-…'` for every inline `<script>` in it,
-using [`csp-shell`](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.0`;
+using [`csp-shell`](https://github.com/TimSchoenle/csp-shell), pinned at `csp-shell-v0.2.1`;
 those hashes go into `script-src` alongside the rest of a WebAssembly-SPA policy. There is
 deliberately no key that spells the policy out, because a policy written in a config file drifts
 from the bundle the moment anyone rebuilds the frontend, and the browser reports that drift by
