@@ -157,7 +157,6 @@ pub fn PlayerView(edition: PlatformEdition, uuid: String) -> Element {
                                                     let rank = stat.rank;
                                                     let is_top10 = (1..=10).contains(&rank);
 
-                                                    #[allow(clippy::cast_precision_loss)]
                                                     let fill = if rank > 0 {
                                                         (1.0 - f64::from(rank) / f64::from(max_rank)).max(0.05) * 100.0
                                                     } else {
