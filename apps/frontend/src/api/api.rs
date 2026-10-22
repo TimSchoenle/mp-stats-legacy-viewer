@@ -7,7 +7,7 @@
 
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
-use mp_stats_common::shard::{name_shard, uuid_shard};
+use mp_stats_common::shard::{name_shard, normalize_name, uuid_shard};
 use mp_stats_core::models::{
     GameLeaderboardData, IdMap, LeaderboardEntry, LeaderboardPage, PlatformEdition, PlatformMeta,
     PlayerProfile,
@@ -397,8 +397,10 @@ impl Api {
     /// no index for the prefix contributes nothing rather than failing the search. Players with no
     /// profile are left out, so no suggestion leads to an empty page.
     ///
-    /// Ordering is exact match, then names starting with the query, then the rest, alphabetically
-    /// within each group.
+    /// Matching and ordering compare [`normalize_name`] forms, the same case folding the shard key
+    /// uses, so every name in the fetched shard that the query is a prefix of is matched. Ordering
+    /// is exact match, then names starting with the query, then the rest, alphabetically within
+    /// each group.
     ///
     /// # Errors
     ///
@@ -410,7 +412,7 @@ impl Api {
         let Ok(prefix) = name_shard(query) else {
             return Ok(Vec::new());
         };
-        let name_lower = query.to_lowercase();
+        let query_key = normalize_name(query);
 
         // Concurrent fetch mapping from cache
         let java_future = self.get_name_index(&PlatformEdition::Java, &prefix);
@@ -418,50 +420,39 @@ impl Api {
 
         let (java_res, bedrock_res) = futures::future::join(java_future, bedrock_future).await;
 
-        let mut results = Vec::new();
-
-        if let Some(map) = java_res {
+        // Each match carries its normalized name, computed once, for the ranking below.
+        let mut matches = Vec::new();
+        for (edition, index) in [
+            (PlatformEdition::Java, java_res),
+            (PlatformEdition::Bedrock, bedrock_res),
+        ] {
+            let Some(map) = index else {
+                continue;
+            };
             for (name, (uuid, has_profile)) in map {
                 // Skip players without a profile so suggestions never lead to an
                 // empty "no profile data" page.
-                if has_profile && name.to_lowercase().contains(&name_lower) {
-                    results.push((PlatformEdition::Java, name, uuid));
+                if !has_profile {
+                    continue;
+                }
+                let name_key = normalize_name(&name);
+                if name_key.contains(&query_key) {
+                    matches.push((name_key, (edition.clone(), name, uuid)));
                 }
             }
         }
 
-        if let Some(map) = bedrock_res {
-            for (name, (uuid, has_profile)) in map {
-                if has_profile && name.to_lowercase().contains(&name_lower) {
-                    results.push((PlatformEdition::Bedrock, name, uuid));
-                }
-            }
-        }
-
-        // Sort results: exact match first, then starts with, then contains
-        results.sort_by(|a, b| {
-            let a_name = a.1.to_lowercase();
-            let b_name = b.1.to_lowercase();
-
-            let a_exact = a_name == name_lower;
-            let b_exact = b_name == name_lower;
-
-            if a_exact != b_exact {
-                return b_exact.cmp(&a_exact);
-            }
-
-            let a_starts = a_name.starts_with(&name_lower);
-            let b_starts = b_name.starts_with(&name_lower);
-
-            if a_starts != b_starts {
-                return b_starts.cmp(&a_starts);
-            }
-
-            a_name.cmp(&b_name)
+        // Exact match first, then starts with, then contains; alphabetical within each group.
+        matches.sort_by(|(a_key, _), (b_key, _)| {
+            let a_rank = (a_key != &query_key, !a_key.starts_with(&query_key));
+            let b_rank = (b_key != &query_key, !b_key.starts_with(&query_key));
+            a_rank.cmp(&b_rank).then_with(|| a_key.cmp(b_key))
         });
 
-        // Limit results to top 10
-        results.truncate(10);
+        let mut results = Vec::with_capacity(matches.len().min(10));
+        for (_, result) in matches.into_iter().take(10) {
+            results.push(result);
+        }
 
         Ok(results)
     }

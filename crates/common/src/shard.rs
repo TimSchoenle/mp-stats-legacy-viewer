@@ -24,26 +24,31 @@ pub fn uuid_shard(uuid: &str) -> Result<String> {
     leading_bytes(uuid, raw::MIN_PREFIX_LENGTH, "UUID").map(str::to_uppercase)
 }
 
-/// The search index shard a name, or a search query, belongs in: its first
-/// [`MIN_NAME_LENGTH`](raw::MIN_NAME_LENGTH) characters after lowercasing.
+/// A name or search query in the case-folded form the names index and the search compare by.
+///
+/// Lowercasing is per character ([`char::to_lowercase`]) rather than per string, because
+/// [`str::to_lowercase`] lowercases a word-final `Σ` to `ς` and otherwise to `σ`: a query ending
+/// in `Σ` would then differ from the longer name it is a prefix of. A character that lowercases to
+/// several, such as `İ`, becomes each of them.
+#[must_use]
+pub fn normalize_name(name: &str) -> String {
+    name.chars().flat_map(char::to_lowercase).collect()
+}
+
+/// The search index shard a name, or a search query, belongs in: the first
+/// [`MIN_NAME_LENGTH`](raw::MIN_NAME_LENGTH) characters of its [`normalize_name`] form.
 ///
 /// The converter files a name under this key and the search looks a query up under it, so a query
 /// that is a prefix of a name always lands on that name's shard. Characters rather than bytes, so
 /// a name is searchable whatever script it is written in.
-///
-/// Lowercasing is per character ([`char::to_lowercase`]) rather than per string, because
-/// [`str::to_lowercase`] lowercases a word-final `Σ` to `ς` and otherwise to `σ`: a query ending
-/// in `Σ` would then key differently from the longer name it is a prefix of. A character that
-/// lowercases to several, such as `İ`, counts as each of them.
 ///
 /// # Errors
 ///
 /// [`DataError::Validation`] when the lowercased name is shorter than that. Such a name is also
 /// shorter than the shortest query the search accepts, so it is unreachable either way.
 pub fn name_shard(name: &str) -> Result<String> {
-    let key: String = name
+    let key: String = normalize_name(name)
         .chars()
-        .flat_map(char::to_lowercase)
         .take(raw::MIN_NAME_LENGTH)
         .collect();
     if key.chars().count() < raw::MIN_NAME_LENGTH {
@@ -134,6 +139,14 @@ mod tests {
         assert_eq!(name_shard("ΑΒΣ").unwrap(), "αβσ");
         // "İ" lowercases to two characters, so two characters of input fill the key.
         assert_eq!(name_shard("İa").unwrap(), name_shard("İabc").unwrap());
+    }
+
+    #[test]
+    fn test_normalize_name_matches_a_prefix_against_the_longer_name() {
+        // `str::to_lowercase` gives "αβς" for the query but "αβσδ" for the name.
+        assert!(normalize_name("ΑΒΣΔ").contains(&normalize_name("ΑΒΣ")));
+        assert!(normalize_name("ΑΒΣΔ").starts_with(&normalize_name("ΑΒΣ")));
+        assert_eq!(normalize_name("PlayerOne"), "playerone");
     }
 
     #[test]
