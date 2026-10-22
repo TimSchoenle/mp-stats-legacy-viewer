@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.21.7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.6...v0.21.7) (2026-10-22)
+
+
+### Bug Fixes
+
+* **search:** key names index writer and reader with one function ([#641](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/641)) ([8e8b900](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8e8b900b8d44c3312c9b94790e1702aa8b7612c9))
+* **shard:** stop slicing shard prefixes across character boundaries ([#638](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/638)) ([1a9ad54](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/1a9ad54c04f6dab00848824539f52cee71a85de5))
+
+
+### Code Refactoring
+
+* **frontend:** replace cast_precision_loss allows with reasoned expects ([#639](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/639)) ([d0ef79b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d0ef79bc9376a7acd148a075020cc068ab37198a))
+
+
+### Build System
+
+* **renovate:** take the rust toolchain group from the shared rust-application preset ([#635](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/635)) ([b8d550b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/b8d550b7bd079f1e6c4b1e5be28c92160569850f))
+
+
+### Dependencies
+
+* **deps:** update alpine:3.24 docker digest to 71e9b7b ([#643](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/643)) ([21e96e8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/21e96e87b83ebfff229ae9933a2e6a13cfaca83e))
+* **deps:** update rust crate lzma-rust2 to 0.23.0 ([#633](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/633)) ([f310876](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f3108762542dc4aa32d4260ac8bd486003fbf0f6))
+* **deps:** update rust crate smol_str to v0.3.7 ([#645](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/645)) ([50dbc2b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/50dbc2b050895186174cabf676a1293c5afd6f04))
+* **deps:** update rust crate terrace-config to v0.17.0 ([#646](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/646)) ([f66f99b](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f66f99bd83c781323a975992d48b3c93f8b9b96f))
+* **deps:** update rust crate tokio to v1.54.1 ([#647](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/647)) ([50a02a1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/50a02a180a130ffdf827af67f2695541a867c4c3))
+* **deps:** update rust:1.99-slim docker digest to d5928c6 ([#636](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/636)) ([5085832](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/50858320c9b3d6341d658ba4ce1a59b28c14efef))
+
 ## [0.21.6](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.5...v0.21.6) (2026-10-20)
 
 
