@@ -1,16 +1,20 @@
 //! Which file a UUID, a name or a player id belongs in.
 //!
-//! A shard is named by a fixed number of leading *bytes*, not characters. For the ASCII that UUIDs
-//! and player names are written in the two are the same; for anything else, counting bytes is what
-//! the tree has always been cut by, and counting characters instead would move existing entries
-//! to a different file. Input whose prefix would end inside a multi-byte character has no shard
-//! and is refused rather than split.
+//! Each function here is the only definition of its key: the converter writes a file under it and
+//! the client fetches the file under it, so the two cannot disagree about where an entry lives.
+//! For ASCII input every key is the leading three characters, cased; the functions differ only in
+//! what they do with anything else.
 
 use crate::error::{DataError, Result};
 use crate::formats::raw;
 
 /// The profile shard a UUID belongs in: its first
 /// [`MIN_PREFIX_LENGTH`](raw::MIN_PREFIX_LENGTH) bytes, uppercased.
+///
+/// Bytes rather than characters, because that is what the tree has always been cut by; a Bedrock
+/// "UUID" is a player name, and counting characters would move a non-ASCII one to another file.
+/// Input whose prefix would end inside a multi-byte character has no shard and is refused rather
+/// than split.
 ///
 /// # Errors
 ///
@@ -20,16 +24,34 @@ pub fn uuid_shard(uuid: &str) -> Result<String> {
     leading_bytes(uuid, raw::MIN_PREFIX_LENGTH, "UUID").map(str::to_uppercase)
 }
 
-/// The search index shard a name belongs in: its first
-/// [`MIN_NAME_LENGTH`](raw::MIN_NAME_LENGTH) bytes, lowercased.
+/// The search index shard a name, or a search query, belongs in: its first
+/// [`MIN_NAME_LENGTH`](raw::MIN_NAME_LENGTH) characters after lowercasing.
+///
+/// The converter files a name under this key and the search looks a query up under it, so a query
+/// that is a prefix of a name always lands on that name's shard. Characters rather than bytes, so
+/// a name is searchable whatever script it is written in.
+///
+/// Lowercasing is per character ([`char::to_lowercase`]) rather than per string, because
+/// [`str::to_lowercase`] lowercases a word-final `Σ` to `ς` and otherwise to `σ`: a query ending
+/// in `Σ` would then key differently from the longer name it is a prefix of. A character that
+/// lowercases to several, such as `İ`, counts as each of them.
 ///
 /// # Errors
 ///
-/// [`DataError::Validation`] when the name is shorter than that, or when that many bytes end
-/// inside a multi-byte character. A name shorter than the prefix is also shorter than the
-/// shortest query the search accepts, so it is unreachable either way.
+/// [`DataError::Validation`] when the lowercased name is shorter than that. Such a name is also
+/// shorter than the shortest query the search accepts, so it is unreachable either way.
 pub fn name_shard(name: &str) -> Result<String> {
-    leading_bytes(name, raw::MIN_NAME_LENGTH, "Name").map(str::to_lowercase)
+    let key: String = name
+        .chars()
+        .flat_map(char::to_lowercase)
+        .take(raw::MIN_NAME_LENGTH)
+        .collect();
+    if key.chars().count() < raw::MIN_NAME_LENGTH {
+        return Err(DataError::Validation(format!(
+            "Name too short for sharding: '{name}'"
+        )));
+    }
+    Ok(key)
 }
 
 /// The dictionary file a player id was dumped in, by integer division against
@@ -98,10 +120,20 @@ mod tests {
 
     #[test]
     fn test_name_shard_non_ascii() {
-        assert_eq!(name_shard("AÉz").unwrap(), "aé");
-        assert!(matches!(name_shard("abÉ"), Err(DataError::Validation(_))));
-        assert!(matches!(name_shard("Ö"), Err(DataError::Validation(_))));
+        assert_eq!(name_shard("AÉzx").unwrap(), "aéz");
+        assert_eq!(name_shard("abÉ").unwrap(), "abé");
+        assert_eq!(name_shard("😀😀😀😀").unwrap(), "😀😀😀");
+        assert!(matches!(name_shard("Öx"), Err(DataError::Validation(_))));
         assert!(matches!(name_shard("😀😀"), Err(DataError::Validation(_))));
+    }
+
+    #[test]
+    fn test_name_shard_query_keys_like_the_name_it_prefixes() {
+        // `str::to_lowercase` would key the query as "αβς" and the name as "αβσ".
+        assert_eq!(name_shard("ΑΒΣ").unwrap(), name_shard("ΑΒΣΔ").unwrap());
+        assert_eq!(name_shard("ΑΒΣ").unwrap(), "αβσ");
+        // "İ" lowercases to two characters, so two characters of input fill the key.
+        assert_eq!(name_shard("İa").unwrap(), name_shard("İabc").unwrap());
     }
 
     #[test]

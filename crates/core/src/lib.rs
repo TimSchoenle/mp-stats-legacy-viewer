@@ -17,8 +17,8 @@
 //!         latest/chunk_0000.bin.xz                         LeaderboardPage
 //!         latest/_meta.json                                copied from the dump, unread
 //!         history/<snapshot>/chunk_0000.bin.xz             LeaderboardPage
-//! <edition>/players/<UUID[..3] uppercased>.bin.xz          HashMap<String, PlayerProfile>
-//! <edition>/names_index/<name[..3] lowercased>.bin.xz      HashMap<String, (String, bool)>
+//! <edition>/players/<uuid_shard(UUID)>.bin.xz              HashMap<String, PlayerProfile>
+//! <edition>/names_index/<name_shard(name)>.bin.xz          HashMap<String, (String, bool)>
 //! ```
 //!
 //! `data/README.md` documents the dumps going in. This is what comes out, and nothing else
@@ -33,7 +33,8 @@
 //! from one, and the conversion does not carry that over.
 //!
 //! A profile shard is keyed on the first three characters of the player's UUID, uppercased, and a
-//! names-index shard on the first three of the name, lowercased. Both are the shortest prefix
+//! names-index shard on the first three of the name, lowercased; `mp_stats_common::shard` defines
+//! both exactly, including for input that is not ASCII. Both are the shortest prefix
 //! that keeps a search or a profile lookup to a single fetch instead of an index of everyone. A
 //! player whose UUID or name is shorter than three characters has no shard, and is therefore
 //! unreachable.

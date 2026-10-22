@@ -7,7 +7,7 @@
 
 use gloo_net::http::Request;
 use mp_stats_common::compression::uncompress_lzma;
-use mp_stats_common::shard::uuid_shard;
+use mp_stats_common::shard::{name_shard, uuid_shard};
 use mp_stats_core::models::{
     GameLeaderboardData, IdMap, LeaderboardEntry, LeaderboardPage, PlatformEdition, PlatformMeta,
     PlayerProfile,
@@ -392,8 +392,8 @@ impl Api {
 
     /// Up to ten players whose name contains `query`, across both editions, best match first.
     ///
-    /// A query shorter than three characters returns nothing: three is the length of a names index
-    /// shard, so there is no file to look in. Both editions are fetched at once, and one that has
+    /// A query [`name_shard`] refuses returns nothing: it is shorter than a names index shard key,
+    /// so there is no file to look in. Both editions are fetched at once, and one that has
     /// no index for the prefix contributes nothing rather than failing the search. Players with no
     /// profile are left out, so no suggestion leads to an empty page.
     ///
@@ -407,12 +407,10 @@ impl Api {
         &self,
         query: &str,
     ) -> ApiResult<Vec<(PlatformEdition, String, String)>> {
-        let name_lower = query.to_lowercase();
-        if name_lower.len() < 3 {
+        let Ok(prefix) = name_shard(query) else {
             return Ok(Vec::new());
-        }
-
-        let prefix = name_lower.chars().take(3).collect::<String>();
+        };
+        let name_lower = query.to_lowercase();
 
         // Concurrent fetch mapping from cache
         let java_future = self.get_name_index(&PlatformEdition::Java, &prefix);
