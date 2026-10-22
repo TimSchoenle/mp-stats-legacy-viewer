@@ -43,7 +43,10 @@ pub fn LeaderboardTable(
                         {
                             let is_top3 = row.rank <= 3;
                             let pct = if top_score > 0 {
-                                #[allow(clippy::cast_precision_loss)]
+                                #[expect(
+                                    clippy::cast_precision_loss,
+                                    reason = "scores past 2^53 only round a display-only bar width"
+                                )]
                                 let ratio = row.score as f64 / top_score as f64;
                                 (ratio * 100.0).clamp(0.0, 100.0)
                             } else {

@@ -28,7 +28,10 @@ fn browser_locale() -> String {
 
 /// One snapshot's timestamp as a date in `locale`.
 fn format_date(timestamp: u64, locale: &str) -> String {
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "`Date` takes f64 milliseconds; exact for any date before the year 287,000"
+    )]
     let milliseconds = (timestamp * 1000) as f64;
 
     Date::new(&JsValue::from_f64(milliseconds))
@@ -40,7 +43,10 @@ fn format_date(timestamp: u64, locale: &str) -> String {
 ///
 /// Placed by timestamp rather than evenly, so a decade of dumps taken at irregular intervals reads
 /// as the gaps it really has.
-#[allow(clippy::cast_precision_loss)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "an SVG x coordinate; second offsets are exact in f64 up to 2^53"
+)]
 fn tick_x(timestamp: u64, min_ts: u64, range: u64) -> f64 {
     let fraction = (timestamp - min_ts) as f64 / range as f64;
 
