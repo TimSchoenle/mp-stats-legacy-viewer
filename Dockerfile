@@ -80,7 +80,7 @@ RUN chmod +x /usr/local/bin/rust-target
 # every rebuild of this layer, so two builds of one commit could cook with different versions.
 # Renovate's Dockerfile manager bumps the tag and digest. `--platform=$BUILDPLATFORM` because the
 # binary runs here, on the build host, whatever the target platform is.
-FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim@sha256:b22df2bf8abec048f46a6505c9303e2c8c0a8e22d21181f8b803b9ad5593ba99 AS cargo-chef
+FROM --platform=$BUILDPLATFORM lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim@sha256:f122e3c240d1c05668b07179cf6fa07647db2a79a110f4bb8a91d75f90d5b8e4 AS cargo-chef
 
 FROM base AS chef
 COPY --from=cargo-chef /usr/local/cargo/bin/cargo-chef /usr/local/cargo/bin/cargo-chef
