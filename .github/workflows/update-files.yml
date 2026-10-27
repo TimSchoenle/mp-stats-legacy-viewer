@@ -15,39 +15,39 @@ concurrency:
 permissions: { }
 
 jobs:
-  update-lock-file:
-    name: Ensure Cargo Lock File is Up-to-Date
-    environment:
-      name: ci
-      deployment: false
+  # The lock-file sync comes in two halves, and the split is the security boundary of this
+  # workflow.
+  #
+  # `cargo fetch` runs code the pull request controls: the toolchain `rust-toolchain.toml` names,
+  # and whatever that toolchain's cargo does with the manifests. So the half that runs it holds no
+  # secret and a read-only `GITHUB_TOKEN`, and hands on only data: the changed `Cargo.lock`, as a
+  # patch artifact.
+  #
+  # The second half holds the maintenance App's private key and the write token minted from it,
+  # and runs nothing from the checkout: `common/commit-patch` refuses any path but `Cargo.lock`
+  # and commits the rest. Were both halves one job, anything the first ran could read the key out
+  # of the runner's memory or leave a process behind to collect the token once it was minted - a
+  # compromised toolchain or crate arriving in a Renovate pull request would be enough.
+  generate-lock-file:
+    name: Sync Cargo.lock with Cargo.toml
     runs-on: ubuntu-latest
-    outputs:
-      changes_detected: ${{ steps.auto-commit.outputs.changes_detected }}
     permissions:
-      contents: write # to push build artifacts
-      pull-requests: write # to comment on PRs
+      contents: read # to fetch code
+    outputs:
+      has_changes: ${{ steps.patch.outputs.has_changes }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
-      - name: Generate Bot Token
-        id: generate_token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
-
+      # The pull request head, not the merge commit: the patch is committed to the branch, so it
+      # has to be computed against the commit the branch points at.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          fetch-depth: 0
           ref: ${{ github.head_ref }}
-          token: ${{ steps.generate_token.outputs.token }}
 
       - name: Install pinned toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
@@ -55,16 +55,73 @@ jobs:
       - name: Sync Cargo.lock with Cargo.toml
         run: cargo fetch
 
+      - name: Hand the lock file on
+        id: patch
+        uses: TimSchoenle/actions/actions/common/create-patch@bbc2c5e2a0f9345cb2e84946846736f047a6eae3 # tag=actions-common-create-patch-v1.1.0
+        with:
+          artifact_name: cargo-lock
+          paths: Cargo.lock
+
+  update-lock-file:
+    name: Ensure Cargo Lock File is Up-to-Date
+    needs: generate-lock-file
+    # A fork's pull request gets no secrets, and its branch is not in this repository.
+    if: >-
+      needs.generate-lock-file.outputs.has_changes == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    # Where ACTIONS_MAINTENANCE_APP_ID and ACTIONS_MAINTENANCE_PRIVATE_KEY live. Only this job,
+    # which runs no repository code, gets it.
+    environment:
+      name: ci
+      deployment: false
+    runs-on: ubuntu-latest
+    outputs:
+      changes_detected: ${{ steps.auto-commit.outputs.changes_committed }}
+    permissions:
+      contents: read # to fetch the commit the patch applies to; the write uses the App token
+    steps:
+      # Blocking, not auditing: nothing here needs more than GitHub's own endpoints - the
+      # checkout, the token, the artifact download and the commit.
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+
+      # Only git's objects are needed. Nothing in this checkout is executed.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Generate Bot Token
+        id: generate_token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
+          permission-contents: write # to commit the lock file
+          permission-pull-requests: write # to comment on the pull request
+
+      # `artifact_name` is spelled out rather than read from the generate job's output, which a
+      # job running pull request code produced. `allowed_paths` admits the one file `cargo fetch`
+      # rewrites; any other path fails this job and nothing is committed.
       - name: Commit and Push if changed
         id: auto-commit
-        uses: TimSchoenle/actions/actions/common/commit-changes@8da2713994ba2b5f542e7e3334db287b1e22854a # tag=actions-common-commit-changes-v1.5.9
+        uses: TimSchoenle/actions/actions/common/commit-patch@bbc2c5e2a0f9345cb2e84946846736f047a6eae3 # tag=actions-common-commit-patch-v1.1.0
         with:
-          commit_message: 'build: update Cargo.lock'
-          file_pattern: 'Cargo.lock'
           token: ${{ steps.generate_token.outputs.token }}
+          artifact_name: cargo-lock
+          allowed_paths: 'Cargo.lock'
+          commit_message: 'build: update Cargo.lock'
 
       - name: Comment on PR
-        if: steps.auto-commit.outputs.changes_detected == 'true' && github.event_name == 'pull_request'
+        if: steps.auto-commit.outputs.changes_committed == 'true'
         uses: TimSchoenle/actions/actions/common/upsert-pr-comment@9414b1c665d3676efe832978d4e1728cf53119fd # tag=actions-common-upsert-pr-comment-v1.3.0
         with:
           token: ${{ steps.generate_token.outputs.token }}

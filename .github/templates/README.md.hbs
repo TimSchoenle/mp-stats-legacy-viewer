@@ -6,8 +6,8 @@ the name, description, licence, release tag, edition and documentation index fro
 docs/. `just docs-variables` supplies the two pinned dependency tags on top of it, and the tables
 below are Handlebars partials `just regenerate` writes out of the structs in crates/config.
 
-The `Render` job in .github/workflows/docs.yml renders this on every pull request and commits the
-result back to the branch. Where it cannot commit - a push to main, a pull request from a fork -
+The `Render` job in .github/workflows/docs.yml renders this on every pull request, and
+`Commit Render` commits the result back to the branch. Where it cannot commit - a push to main, a pull request from a fork -
 `Docs are current` renders the same template with `check: true` and fails on the first line that
 differs.
 -->
@@ -314,7 +314,7 @@ Five things here are generated and will be overwritten if edited directly: `READ
 [`.github/templates`](.github/templates); every key, default and environment spelling in any of
 them comes from the structs in [`crates/config`](crates/config/src/lib.rs) by way of
 [`crates/config/examples/config-schema.rs`](crates/config/examples/config-schema.rs). Run
-`just regenerate` before pushing, or let the `Render` job commit it back onto the branch.
+`just regenerate` before pushing, or let the `Commit Render` job commit it back onto the branch.
 
 ## Security
 
