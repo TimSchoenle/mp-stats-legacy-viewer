@@ -25,47 +25,52 @@ on:
 # so they queue instead. `cancel-in-progress: false` for the same reason - a cancelled run here
 # means a branch left holding half of a regeneration.
 concurrency:
-  group: branch-writes-${{ github.ref }}
+  group: branch-writes-${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.event.pull_request.head.ref || github.ref_name }}
+  queue: max
   cancel-in-progress: false
 
 permissions: { }
 
 jobs:
+  # `render` and `render-commit` are two halves, and the split is the security boundary of this
+  # workflow.
+  #
+  # `render` builds the pull request's code: the `just` recipes it calls run
+  # `cargo` under the toolchain `rust-toolchain.toml` names, with every build script and proc
+  # macro in the graph. So it holds no secret and a read-only `GITHUB_TOKEN`, and hands on only
+  # data: what it regenerated, as a patch artifact.
+  #
+  # `render-commit` holds the maintenance App's private key and the write token minted from it,
+  # and runs nothing from the checkout: it checks the patch against the files this workflow
+  # generates and commits it. Were both halves one job, anything `render` ran could read the key
+  # out of the runner's memory or leave a process behind to collect the token once it was minted
+  # - a compromised crate arriving in a Renovate pull request would be enough.
   render:
     name: Render
-    # Forks get no secrets, so the App token would be empty and the commit could not be pushed to
-    # their branch anyway. `verify` below picks those pull requests up instead.
+    # Forks get no secrets, so the commit could not be pushed to their branch anyway. `verify`
+    # below picks those pull requests up instead.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    environment:
-      name: ci
-      deployment: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read # the write happens with the App token below, not with GITHUB_TOKEN
+      contents: read # to fetch code; the write happens in `render-commit`
+    outputs:
+      has_changes: ${{ steps.patch.outputs.has_changes }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           egress-policy: audit
 
-      # An App installation token, so the commit is verified and - unlike one made with
-      # `GITHUB_TOKEN` - re-triggers the checks on the branch it lands on.
-      - name: Generate Bot Token
-        id: generate_token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
-          permission-contents: write
-
-      # The head of the branch, not the merge commit: the render has to read the `Cargo.toml` and
-      # the structs the pull request proposes, and the commit has to land on top of what is there
-      # now.
+      # The pull request's head commit, not the merge commit: the render has to read the
+      # `Cargo.toml` and the structs the pull request proposes. Pinned to the event's SHA rather
+      # than the branch name, because `render-commit` applies the patch to that SHA and no other;
+      # a branch that moved in between would only have its patch skipped, and the push that moved
+      # it runs this workflow again.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install pinned toolchain
@@ -78,8 +83,10 @@ jobs:
         with:
           tool: just
 
+      # `just regenerate` minus `dockerfile-labels`: the Dockerfile is never written here (see
+      # `Hand the regenerated files on`).
       - name: Regenerate everything the configuration types own
-        run: just regenerate
+        run: just contract-json tables toml-example
 
       # The two pinned dependency tags, straight out of `Cargo.toml`. They are the only scalars
       # this repository still has to produce itself: the name, the description, the licence, the
@@ -103,31 +110,25 @@ jobs:
           branch: ${{ github.event.repository.default_branch }}
           extra: ${{ steps.config.outputs.json }}
 
-      - name: Render and commit the README
-        id: readme
-        uses: TimSchoenle/actions/actions/common/render-template-and-commit@ea4465fbe2bec98efad19b63849f8d1ac67b5c88 # tag=actions-common-render-template-and-commit-v1.1.18
+      # Rendered into the working tree only; `render-commit` commits them. The partials both
+      # templates read live under `target/`, which the patch below does not reach.
+      - name: Render the README
+        uses: TimSchoenle/actions/actions/common/render-template@8da2713994ba2b5f542e7e3334db287b1e22854a # tag=actions-common-render-template-v1.2.9
         with:
           template: .github/templates/README.md.hbs
           output: README.md
           partials-dir: target/config-docs
           variables: ${{ steps.variables.outputs.variables }}
-          token: ${{ steps.generate_token.outputs.token }}
-          commit_message: 'docs: render README from template'
 
-      - name: Render and commit the configuration reference
-        id: reference
-        uses: TimSchoenle/actions/actions/common/render-template-and-commit@ea4465fbe2bec98efad19b63849f8d1ac67b5c88 # tag=actions-common-render-template-and-commit-v1.1.18
+      - name: Render the configuration reference
+        uses: TimSchoenle/actions/actions/common/render-template@8da2713994ba2b5f542e7e3334db287b1e22854a # tag=actions-common-render-template-v1.2.9
         with:
           template: .github/templates/CONFIGURATION.md.hbs
           output: docs/CONFIGURATION.md
           partials-dir: target/config-docs
           variables: ${{ steps.variables.outputs.variables }}
-          token: ${{ steps.generate_token.outputs.token }}
-          commit_message: 'docs: render configuration reference from template'
 
-      # Not renders: nothing templates either of them, so both are committed straight from the
-      # generator's output. `file_pattern` keeps this commit to those two files - the partials the
-      # two steps above rendered from live under `target/`, but a dirty working tree must not ride
+      # The four files this workflow owns, and nothing else: a dirty working tree must not ride
       # along in a documentation commit.
       #
       # The contract is here rather than behind a `git diff` gate because it carries the version
@@ -137,34 +138,89 @@ jobs:
       # it, and a configuration change still arrives as a reviewable diff in the pull request
       # that caused it. `verify` below is what keeps that true where nothing can be committed.
       #
-      # The Dockerfile is in the pattern because its `LABEL` region is part of the contract:
-      # `just regenerate` rewrites it between the `terrace-config:labels` markers, and a region
-      # left uncommitted here is one the `Config Contract` job would fail on for a drift this
-      # job had already fixed in the working tree and thrown away.
-      - name: Commit the example configuration and the contract
-        id: example
-        uses: TimSchoenle/actions/actions/common/commit-changes@8da2713994ba2b5f542e7e3334db287b1e22854a # tag=actions-common-commit-changes-v1.5.9
+      # The Dockerfile is not, as in TankoVault and discord-alertmanager. Its `terrace-config:labels`
+      # region holds three constants that move only with a deliberate prefix change, and a bot
+      # editing the build recipe is a change nobody reviewed. `Config Contract` reports a drift,
+      # and `just regenerate` locally is the fix.
+      - name: Hand the regenerated files on
+        id: patch
+        uses: TimSchoenle/actions/actions/common/create-patch@bbc2c5e2a0f9345cb2e84946846736f047a6eae3 # tag=actions-common-create-patch-v1.1.0
         with:
-          token: ${{ steps.generate_token.outputs.token }}
-          commit_message: 'docs: regenerate config.example.toml and the config contract'
-          file_pattern: 'config.example.toml docs/config.contract.json Dockerfile'
+          artifact_name: docs-render
+          paths: README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json
 
       - name: Summarise
         env:
-          README: ${{ steps.readme.outputs.changes_detected }}
-          REFERENCE: ${{ steps.reference.outputs.changes_detected }}
-          EXAMPLE: ${{ steps.example.outputs.changes_detected }}
+          HAS_CHANGES: ${{ steps.patch.outputs.has_changes }}
         run: |
-          regenerated=""
-          if [ "${README}" = "true" ]; then regenerated="${regenerated} README.md"; fi
-          if [ "${REFERENCE}" = "true" ]; then regenerated="${regenerated} docs/CONFIGURATION.md"; fi
-          if [ "${EXAMPLE}" = "true" ]; then regenerated="${regenerated} config.example.toml docs/config.contract.json Dockerfile"; fi
-
-          if [ -n "${regenerated}" ]; then
-            echo "Regenerated and committed:${regenerated}" >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          if [ "${HAS_CHANGES}" = "true" ]; then
+            {
+              echo "Regenerated, for \`Commit Render\` to commit:"
+              git status --porcelain -- README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json \
+                | sed 's/^.. /- /'
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Every generated file already matched its source." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  render-commit:
+    name: Commit Render
+    needs: render
+    if: >-
+      github.event_name == 'pull_request' && needs.render.outputs.has_changes == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    # Where ACTIONS_MAINTENANCE_APP_ID and ACTIONS_MAINTENANCE_PRIVATE_KEY live. Only this job,
+    # which runs no repository code, gets it.
+    environment:
+      name: ci
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # to fetch the commit the patch applies to; the write uses the App token
+    steps:
+      # Blocking, not auditing: nothing here needs more than GitHub's own endpoints - the
+      # checkout, the token, the artifact download and the commit.
+      - name: Harden Runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+
+      # Only git's objects are needed. Nothing in this checkout is executed.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # An App installation token, so the commit is verified and - unlike one made with
+      # `GITHUB_TOKEN` - re-triggers the checks on the branch it lands on. Scoped to the one
+      # permission the commit needs.
+      - name: Generate Bot Token
+        id: generate_token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
+          permission-contents: write # to commit the regenerated files
+
+      # `artifact_name` is spelled out rather than read from the render job's output, which a job
+      # running pull request code produced. `allowed_paths` is exactly the four files `render`
+      # regenerates; any other path fails this job and nothing is committed.
+      - name: Commit the regenerated files
+        id: commit
+        uses: TimSchoenle/actions/actions/common/commit-patch@bbc2c5e2a0f9345cb2e84946846736f047a6eae3 # tag=actions-common-commit-patch-v1.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          artifact_name: docs-render
+          allowed_paths: 'README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json'
+          commit_message: 'docs: regenerate the documentation and the config contract'
 
   verify:
     name: Docs are current
