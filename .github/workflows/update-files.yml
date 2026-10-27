@@ -30,6 +30,8 @@ jobs:
   # compromised toolchain or crate arriving in a Renovate pull request would be enough.
   generate-lock-file:
     name: Sync Cargo.lock with Cargo.toml
+    # A fork's branch is not in this repository, so there would be nothing to commit to.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read # to fetch code
@@ -41,13 +43,13 @@ jobs:
         with:
           egress-policy: audit
 
-      # The pull request head, not the merge commit: the patch is committed to the branch, so it
-      # has to be computed against the commit the branch points at.
+      # The pull request head commit, not the merge commit and not the branch name: the patch is
+      # committed to the branch, and `update-lock-file` applies it to exactly this commit.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install pinned toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
