@@ -62,13 +62,15 @@ jobs:
         with:
           egress-policy: audit
 
-      # The head of the branch, not the merge commit: the render has to read the `Cargo.toml` and
-      # the structs the pull request proposes, and the patch has to apply on top of what is there
-      # now.
+      # The pull request's head commit, not the merge commit: the render has to read the
+      # `Cargo.toml` and the structs the pull request proposes. Pinned to the event's SHA rather
+      # than the branch name, because `render-commit` applies the patch to that SHA and no other;
+      # a branch that moved in between would only have its patch skipped, and the push that moved
+      # it runs this workflow again.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install pinned toolchain
