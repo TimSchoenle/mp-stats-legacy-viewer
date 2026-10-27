@@ -25,7 +25,7 @@ on:
 # so they queue instead. `cancel-in-progress: false` for the same reason - a cancelled run here
 # means a branch left holding half of a regeneration.
 concurrency:
-  group: branch-writes-${{ github.ref }}
+  group: branch-writes-${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 permissions: { }
