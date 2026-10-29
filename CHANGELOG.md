@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.21.8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.7...v0.21.8) (2026-10-29)
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#652](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/652)) ([3c44781](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3c447819e88300728d214c8871ecc51381357f39))
+* **deps:** lock file maintenance ([#653](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/653)) ([e79e428](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e79e428d3ed3553f4436843227b08cca6631e196))
+* **deps:** update alpine:3.24 docker digest to be26560 ([#656](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/656)) ([62ecaea](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/62ecaea335dd28cabb3b52211e265de41ce3e503))
+* **deps:** update lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim docker digest to f122e3c ([#651](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/651)) ([0c4bb55](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0c4bb55b10bad14a17bdaeb9d2fdfb52ab0e3c73))
+* **deps:** update rust crate csp-shell to csp-shell-v0.2.1 ([#649](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/649)) ([4db907f](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4db907f1f378cf6f9653220c8915e424e2879820))
+* **deps:** update rust crate lzma-rust2 to 0.24.0 ([#658](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/658)) ([d5abb25](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d5abb25f83db2426d94b7252df8bb973165d7c00))
+
 ## [0.21.7](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.6...v0.21.7) (2026-10-22)
 
 
