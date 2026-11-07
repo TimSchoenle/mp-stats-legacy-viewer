@@ -520,15 +520,23 @@ jobs:
           docker logs smoke || true
           exit 1
 
-      # gcr.io publishes no release after v1.16.0, which `latest` also pointed at.
+      # container-structure-test from its GitHub release: the gcr.io image stopped at v1.16.0. The
+      # linux-amd64 binary is pinned by version and SHA-256, and Renovate's
+      # github-release-attachments datasource moves both together (custom manager in renovate.json),
+      # reading the new hash from the release's checksums.txt.
       - name: Run structure tests
+        env:
+          # renovate: datasource=github-release-attachments depName=GoogleContainerTools/container-structure-test
+          CST_VERSION: 'v1.22.1'
+          CST_SHA256: 'fa35e89512a8978585f76cf41397956d2e3a30c62c2ad3fb857b1597074d14ca'
         run: |
-          docker pull gcr.io/gcp-runtimes/container-structure-test:v1.16.0@sha256:377f9a9bc00376b9fa6dc6a3a020dbe40e84ebe9481b71969aa3ff9d1c9ea17e
-          docker run --rm \
-            -v "$PWD/cst.yaml:/cst.yaml" \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            gcr.io/gcp-runtimes/container-structure-test:v1.16.0@sha256:377f9a9bc00376b9fa6dc6a3a020dbe40e84ebe9481b71969aa3ff9d1c9ea17e test \
-            --image image:test --config /cst.yaml
+          set -euo pipefail
+          cst="${RUNNER_TEMP}/container-structure-test"
+          curl -fsSL --retry 3 -o "$cst" \
+            "https://github.com/GoogleContainerTools/container-structure-test/releases/download/${CST_VERSION}/container-structure-test-linux-amd64"
+          echo "${CST_SHA256}  ${cst}" | sha256sum -c -
+          chmod +x "$cst"
+          "$cst" test --image image:test --config cst.yaml
 
       # Size warning, Trivy scan, SARIF upload and the pull request comment in one step, on the
       # amd64 image only - the one the inline steps this replaced measured and scanned. The arm64
