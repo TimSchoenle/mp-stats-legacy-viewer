@@ -19,5 +19,17 @@
         "/^dioxus/"
       ]
     }
+  ],
+  "customManagers": [
+    {
+      "description": "Release binaries the workflows download directly, pinned as a pair of step environment values: <NAME>_VERSION holds the release tag and <NAME>_SHA256 the SHA-256 of one release asset, under a `# renovate:` comment naming the github-release-attachments datasource. The datasource finds the pinned hash in the release's checksum manifest and reads the matching line of the new release's, so version and checksum move in one commit and the step's verification keeps passing. Same manager as TimSchoenle/actions.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>github-release-attachments) depName=(?<depName>[\\w.-]+\\/[\\w.-]+)\\s+[A-Z0-9_]+_VERSION: [\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\s+[A-Z0-9_]+_SHA256: [\"']?(?<currentDigest>[a-f0-9]{64})[\"']?"
+      ]
+    }
   ]
 }
