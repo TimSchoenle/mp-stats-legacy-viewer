@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.21.9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.8...v0.21.9) (2026-11-07)
+
+
+### Dependencies
+
+* **deps:** update rust crate lzma-rust2 to 0.25.0 ([#668](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/668)) ([c7c847d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/c7c847dfb3661f39932805c130a48f668df24b25))
+* **deps:** update rust crate sentry to v0.49.5 ([#661](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/661)) ([f7e7c75](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/f7e7c759ec4dcfd7850016e045c2eac91ee58736))
+* **deps:** update rust crate terrace-config to v0.18.0 ([#663](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/663)) ([3487a71](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/3487a719182d2e32c1995e25b410ce18cb4db25d))
+* **deps:** update rust:1.99-slim docker digest to b8e062b ([#648](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/648)) ([8203287](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/8203287420734baf031ab6419cbfafc808a57ce4))
+
 ## [0.21.8](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.7...v0.21.8) (2026-10-29)
 
 
