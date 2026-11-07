@@ -19,31 +19,28 @@ on:
   push:
     branches: [ main ]
 
-# Shared with update-files.yml rather than scoped to this workflow: both commit to the pull
-# request branch, and the API call that makes a verified commit rejects one whose parent has
-# moved. Two writers racing would leave one of them failing for no reason a reader could act on,
-# so they queue instead. `cancel-in-progress: false` for the same reason - a cancelled run here
-# means a branch left holding half of a regeneration.
+# A newer push supersedes the run on the older head. Nothing here writes to the branch: the
+# commit happens in docs-commit.yml, which queues with the other writers to this branch.
 concurrency:
-  group: branch-writes-${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.event.pull_request.head.ref || github.ref_name }}
-  queue: max
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions: { }
 
 jobs:
-  # `render` and `render-commit` are two halves, and the split is the security boundary of this
-  # workflow.
+  # `render` and `render-commit` in docs-commit.yml (a workflow_run workflow the pull request cannot
+  # edit) are two halves, and the split is the security boundary of this workflow.
   #
   # `render` builds the pull request's code: the `just` recipes it calls run
   # `cargo` under the toolchain `rust-toolchain.toml` names, with every build script and proc
   # macro in the graph. So it holds no secret and a read-only `GITHUB_TOKEN`, and hands on only
   # data: what it regenerated, as a patch artifact.
   #
-  # `render-commit` holds the maintenance App's private key and the write token minted from it,
-  # and runs nothing from the checkout: it checks the patch against the files this workflow
-  # generates and commits it. Were both halves one job, anything `render` ran could read the key
-  # out of the runner's memory or leave a process behind to collect the token once it was minted
+  # `render-commit` in docs-commit.yml holds the maintenance App's private key and the write token
+  # minted from it, and runs nothing from the checkout: it checks the patch against the files this
+  # workflow generates and commits it. Were both halves one job, anything `render` ran could read
+  # the key out of the runner's memory or leave a process behind to collect the token once it was
+  # minted
   # - a compromised crate arriving in a Renovate pull request would be enough.
   render:
     name: Render
@@ -54,8 +51,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read # to fetch code; the write happens in `render-commit`
-    outputs:
-      has_changes: ${{ steps.patch.outputs.has_changes }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
@@ -64,9 +59,9 @@ jobs:
 
       # The pull request's head commit, not the merge commit: the render has to read the
       # `Cargo.toml` and the structs the pull request proposes. Pinned to the event's SHA rather
-      # than the branch name, because `render-commit` applies the patch to that SHA and no other;
-      # a branch that moved in between would only have its patch skipped, and the push that moved
-      # it runs this workflow again.
+      # than the branch name, because `render-commit` in docs-commit.yml applies the patch to that
+      # SHA and no other; a branch that moved in between would only have its patch skipped, and the
+      # push that moved it runs this workflow again.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -110,8 +105,8 @@ jobs:
           branch: ${{ github.event.repository.default_branch }}
           extra: ${{ steps.config.outputs.json }}
 
-      # Rendered into the working tree only; `render-commit` commits them. The partials both
-      # templates read live under `target/`, which the patch below does not reach.
+      # Rendered into the working tree only; `render-commit` in docs-commit.yml commits them. The
+      # partials both templates read live under `target/`, which the patch below does not reach.
       - name: Render the README
         uses: TimSchoenle/actions/actions/common/render-template@dc5b395636dc1954383f11af4062a08814e9b15a # tag=actions-common-render-template-v3.0.1
         with:
@@ -163,64 +158,6 @@ jobs:
           else
             echo "Every generated file already matched its source." >> "$GITHUB_STEP_SUMMARY"
           fi
-
-  render-commit:
-    name: Commit Render
-    needs: render
-    if: >-
-      github.event_name == 'pull_request' && needs.render.outputs.has_changes == 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    # Where ACTIONS_MAINTENANCE_APP_ID and ACTIONS_MAINTENANCE_PRIVATE_KEY live. Only this job,
-    # which runs no repository code, gets it.
-    environment:
-      name: ci
-      deployment: false
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read # to fetch the commit the patch applies to; the write uses the App token
-    steps:
-      # Blocking, not auditing: nothing here needs more than GitHub's own endpoints - the
-      # checkout, the token, the artifact download and the commit.
-      - name: Harden Runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            github.com:443
-            api.github.com:443
-            *.actions.githubusercontent.com:443
-            *.blob.core.windows.net:443
-
-      # Only git's objects are needed. Nothing in this checkout is executed.
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      # An App installation token, so the commit is verified and - unlike one made with
-      # `GITHUB_TOKEN` - re-triggers the checks on the branch it lands on. Scoped to the one
-      # permission the commit needs.
-      - name: Generate Bot Token
-        id: generate_token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
-          permission-contents: write # to commit the regenerated files
-
-      # `artifact_name` is spelled out rather than read from the render job's output, which a job
-      # running pull request code produced. `allowed_paths` is exactly the four files `render`
-      # regenerates; any other path fails this job and nothing is committed.
-      - name: Commit the regenerated files
-        id: commit
-        uses: TimSchoenle/actions/actions/common/commit-patch@dc5b395636dc1954383f11af4062a08814e9b15a # tag=actions-common-commit-patch-v1.1.1
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
-          artifact_name: docs-render
-          allowed_paths: 'README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json'
-          commit_message: 'docs: regenerate the documentation and the config contract'
 
   verify:
     name: Docs are current
