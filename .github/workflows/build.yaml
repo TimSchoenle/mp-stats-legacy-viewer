@@ -22,6 +22,7 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
     steps:
@@ -64,6 +65,7 @@ jobs:
   contract:
     name: Config Contract
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
     steps:
@@ -99,6 +101,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
     steps:
@@ -144,6 +147,7 @@ jobs:
     name: Auto Format
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
     outputs:
@@ -181,6 +185,7 @@ jobs:
       name: ci
       deployment: false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read # Required to fetch the commit the patch applies to; the write uses the App token
     steps:
@@ -202,7 +207,7 @@ jobs:
         id: token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
+          client-id: ${{ secrets.ACTIONS_MAINTENANCE_APP_ID }}
           private-key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
           permission-contents: write # Required to commit the formatted files
 
@@ -220,6 +225,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
       checks: write # Required to annotate the commit with clippy warnings
@@ -247,6 +253,7 @@ jobs:
   doc:
     name: Doc
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read # Required to checkout the code
     env:
@@ -282,6 +289,7 @@ jobs:
   docker-build-test:
     name: Docker Build and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # `doc` as well as `check`, so a documentation failure stops the merge rather than going red on
     # `main` and staying there. It costs a minute in front of a build that takes many.
     needs: [ check, doc ]
@@ -317,15 +325,8 @@ jobs:
       # into a host directory and inject it into the build, then extract and
       # save it again afterwards (the extraction runs in the cache-dance post
       # step, and `actions/cache` persists the host directory between runs).
-      #
-      # zizmor reports this cache as a poisoning path because the same job runs
-      # docker/build-push-action, and the layers it writes to `type=gha` are
-      # read by the release build. The entry `main` restores can only be
-      # written by a run on `main`: this workflow has no `pull_request_target`
-      # trigger, and a pull request run saves into its own ref's scope, which
-      # `main` never reads.
       - name: Restore converter data cache
-        id: converter-cache # zizmor: ignore[cache-poisoning] -- only runs on main write the entry main restores
+        id: converter-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: converter-cache
@@ -429,7 +430,7 @@ jobs:
       # The toolchain is here rather than at the top of the job because only the
       # two steps below need it, and `cache: false` because this job builds
       # images: a restored cache is writable by any branch, and caching in a job
-      # that produces a runtime artefact is the cache-poisoning path zizmor
+      # that produces a runtime artefact is the cache-poisoning path jactionlint
       # flags. The only thing compiled is the contract generator, so there is
       # nearly nothing to save.
       - name: Install pinned toolchain
@@ -479,6 +480,8 @@ jobs:
           trap 'docker rm -f contract-probe >/dev/null 2>&1 || true' EXIT
           status=0
           for entry in 'image:test linux/amd64' 'image:test-arm64 linux/arm64'; do
+            # Unquoted on purpose: the split into image and platform is the point.
+            # shellcheck disable=SC2086
             set -- ${entry}
             docker rm -f contract-probe >/dev/null 2>&1 || true
             docker create --platform "$2" --name contract-probe "$1" >/dev/null
@@ -517,13 +520,14 @@ jobs:
           docker logs smoke || true
           exit 1
 
+      # gcr.io publishes no release after v1.16.0, which `latest` also pointed at.
       - name: Run structure tests
         run: |
-          docker pull gcr.io/gcp-runtimes/container-structure-test:latest
+          docker pull gcr.io/gcp-runtimes/container-structure-test:v1.16.0@sha256:377f9a9bc00376b9fa6dc6a3a020dbe40e84ebe9481b71969aa3ff9d1c9ea17e
           docker run --rm \
-            -v $PWD/cst.yaml:/cst.yaml \
+            -v "$PWD/cst.yaml:/cst.yaml" \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            gcr.io/gcp-runtimes/container-structure-test:latest test \
+            gcr.io/gcp-runtimes/container-structure-test:v1.16.0@sha256:377f9a9bc00376b9fa6dc6a3a020dbe40e84ebe9481b71969aa3ff9d1c9ea17e test \
             --image image:test --config /cst.yaml
 
       # Size warning, Trivy scan, SARIF upload and the pull request comment in one step, on the
@@ -543,6 +547,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: check
     if: github.event_name == 'pull_request'
     steps:

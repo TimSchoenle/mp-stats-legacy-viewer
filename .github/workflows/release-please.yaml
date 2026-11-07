@@ -22,6 +22,7 @@ jobs:
       name: ci
       deployment: false
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write # Required to create release commits and tags
       issues: write # Required to create release issues
@@ -42,7 +43,7 @@ jobs:
         id: generate_token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
           permission-contents: write
           permission-issues: write
@@ -63,6 +64,7 @@ jobs:
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     permissions:
       contents: read # Required to checkout the code
       id-token: write # Required for OIDC authentication with Cosign
@@ -89,8 +91,12 @@ jobs:
       # from the runner's native architecture. Should a target-architecture
       # command ever sneak into the build, it must fail loudly rather than fall
       # back to (very slow) emulation.
+      #
+      # `cache-binary: false`: this job publishes, so it restores nothing from the Actions cache.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+        with:
+          cache-binary: false
 
       - name: Login to Docker Hub
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
@@ -117,12 +123,8 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Read-only: the build workflow on `main` already populated this cache
-          # for both platforms, one scope each, which keeps the release build
-          # from recompiling the full dependency set twice.
-          cache-from: |
-            type=gha,scope=amd64
-            type=gha,scope=arm64
+          # No `cache-from`: the Actions cache is writable from any branch's build,
+          # so the published image is built from source alone.
           build-args: |
             version=${{ needs.release-please.outputs.tag_name }}
             release=${{ needs.release-please.outputs.tag_name }}
@@ -134,13 +136,13 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          images=""
+          images=()
           for tag in ${TAGS}; do
-            images+="${tag}@${DIGEST} "
+            images+=("${tag}@${DIGEST}")
           done
           # `--recursive` also signs the per-architecture images referenced by
           # the multi-arch manifest list, not just the list itself.
-          cosign sign --yes --recursive ${images}
+          cosign sign --yes --recursive "${images[@]}"
 
       # ── the configuration contract ──────────────────────────────────────────
       # Everything below publishes the document that lets `TimSchoenle/helm-charts`
@@ -150,7 +152,7 @@ jobs:
 
       # The bytes the builder stage generated, on the runner. One export of the
       # `contract-export` stage rather than a second full build - everything it
-      # needs is already in the cache the push above read from - and the same
+      # needs is already in the builder's local cache from the push above - and the same
       # bytes the runtime stage COPYed to `/config/contract.json`.
       - name: Export the generated contract and labels
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
@@ -159,7 +161,6 @@ jobs:
           platforms: linux/amd64
           target: contract-export
           outputs: type=local,dest=contract-out
-          cache-from: type=gha,scope=amd64
           build-args: |
             version=${{ needs.release-please.outputs.tag_name }}
             release=${{ needs.release-please.outputs.tag_name }}
@@ -284,6 +285,7 @@ jobs:
     needs: [ release-please, docker-release ]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read # Required to checkout the code
     steps:
