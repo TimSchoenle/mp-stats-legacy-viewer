@@ -61,3 +61,11 @@ jobs:
         with:
           artifact_name: cargo-lock
           paths: Cargo.lock
+
+      # The patch is committed by update-files-commit.yml after this run has finished. While it is
+      # non-empty this head is not the one to merge: the run on the bot commit decides.
+      - name: Fail while the patch is uncommitted
+        if: steps.patch.outputs.has_changes == 'true'
+        run: |
+          echo "::error::Cargo.lock changed; update-files-commit.yml commits them and the run on that commit decides. If no bot commit appears, regenerate them locally and push."
+          exit 1
