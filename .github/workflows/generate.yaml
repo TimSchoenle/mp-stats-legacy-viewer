@@ -193,9 +193,9 @@ jobs:
   # secret and a read-only `GITHUB_TOKEN`, and hands on only data: the changed `Cargo.lock`, as a
   # patch artifact.
   #
-  # The second half, generate-commit.yaml, runs from the default branch's copy and holds the maintenance App's private key and the write token minted from it,
-  # and runs nothing from the checkout: `common/commit-patch` refuses any path but `Cargo.lock`
-  # and commits the patch. Were both halves one job, anything the first ran could read the key out
+  # The second half, generate-commit.yaml, runs from the default branch's copy and holds the
+  # maintenance App's private key and the write token minted from it, and runs nothing from the
+  # checkout: commit-patch refuses any path outside its allowlist. Were both halves one job, anything the first ran could read the key out
   # of the runner's memory or leave a process behind to collect the token once it was minted - a
   # compromised toolchain or crate arriving in a Renovate pull request would be enough.
   generate-lock-file:
