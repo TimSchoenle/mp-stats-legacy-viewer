@@ -42,7 +42,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
 
       - name: Verify Cargo.lock is up to date
         run: cargo update --workspace --locked
@@ -80,7 +80,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
 
       # The generator renders the region and the action diffs it, cut at the
       # `terrace-config:labels` markers rather than by line count: the `grep -A2` this step used
@@ -232,7 +232,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pinned toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
 
       # `--no-deps`, because the only crates whose documentation this gate is about are the ones in
       # this workspace, and a dependency's warnings are not ours to fix.
@@ -396,7 +396,7 @@ jobs:
       # flags. The only thing compiled is the contract generator, so there is
       # nearly nothing to save.
       - name: Install pinned toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache: false
 
@@ -510,7 +510,7 @@ jobs:
       # than a second one posted beside it. The 150 MiB warning and the `CRITICAL,HIGH` filter are
       # the action's defaults.
       - name: Check image size and vulnerabilities
-        uses: TimSchoenle/actions/actions/docker/image-check@dc5b395636dc1954383f11af4062a08814e9b15a # tag=actions-docker-image-check-v1.1.9
+        uses: TimSchoenle/actions/actions/docker/image-check@e2799424abd778c41e7f6d1547fd402386ef398e # tag=actions-docker-image-check-v1.1.10
         with:
           image: image:test
 
