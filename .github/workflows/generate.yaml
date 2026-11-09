@@ -14,7 +14,6 @@ name: Generate
 
 on:
   pull_request:
-    branches: [ "main" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -177,7 +176,7 @@ jobs:
           set -euo pipefail
           if [ "${HAS_CHANGES}" = "true" ]; then
             {
-              echo "Regenerated, for \`Commit Render\` to commit:"
+              echo "Regenerated, for \`Commit Generated Files\` to commit:"
               git status --porcelain -- README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json \
                 | sed 's/^.. /- /'
             } >> "$GITHUB_STEP_SUMMARY"
