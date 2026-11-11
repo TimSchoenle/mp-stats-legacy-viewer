@@ -219,7 +219,10 @@ RUN CARGO_PROFILE_WASM_RELEASE_STRIP=false \
 
 COPY --exclude=data --exclude=data-test . .
 WORKDIR /app/apps/frontend
-RUN npm install
+# `npm ci`, not `npm install`: install exactly what the lockfile records, and fail on a lockfile
+# that disagrees with `package.json` instead of resolving fresh versions into the image.
+# `--ignore-scripts`: the fonts and the Tailwind build need no install script.
+RUN npm ci --ignore-scripts --no-audit --no-fund
 # The two halves `dx` does not build: the fonts copied out of `node_modules`, and the Tailwind
 # stylesheet. Both land in `public/`, which `dx` then copies into the root of its output. Run
 # before the build rather than after, because that copy happens during it.

@@ -56,6 +56,7 @@ jobs:
       # The allowlist is every file a generator in generate.yaml writes, and nothing else:
       #
       #   Cargo.lock                 `generate-lock-file`
+      #   apps/frontend/package-lock.json  `generate-npm-lock-file`
       #   **/*.rs                    `fmt`
       #   README.md                  `render`
       #   docs/CONFIGURATION.md      `render`
@@ -68,6 +69,7 @@ jobs:
           private_key: ${{ secrets.ACTIONS_MAINTENANCE_PRIVATE_KEY }}
           allowed_paths: >-
             Cargo.lock
+            apps/frontend/package-lock.json
             **/*.rs
             README.md
             docs/CONFIGURATION.md
