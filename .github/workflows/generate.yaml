@@ -164,7 +164,7 @@ jobs:
       # and `just regenerate` locally is the fix.
       - name: Hand the regenerated files on
         id: patch
-        uses: TimSchoenle/actions/actions/common/create-patch@7c1147cf1e275c068a8484fa9a2dcb38a8b1f92f # tag=actions-common-create-patch-v2.0.1
+        uses: TimSchoenle/actions/actions/common/create-patch@0701d3b35ad7e10e3159471c82f4743b67fdc01f # tag=actions-common-create-patch-v2.0.2
         with:
           artifact_name: docs-render
           paths: README.md docs/CONFIGURATION.md config.example.toml docs/config.contract.json
@@ -229,7 +229,7 @@ jobs:
 
       - name: Hand the lock file on
         id: patch
-        uses: TimSchoenle/actions/actions/common/create-patch@7c1147cf1e275c068a8484fa9a2dcb38a8b1f92f # tag=actions-common-create-patch-v2.0.1
+        uses: TimSchoenle/actions/actions/common/create-patch@0701d3b35ad7e10e3159471c82f4743b67fdc01f # tag=actions-common-create-patch-v2.0.2
         with:
           artifact_name: cargo-lock
           paths: Cargo.lock
@@ -289,7 +289,7 @@ jobs:
 
       - name: Hand the lock file on
         id: patch
-        uses: TimSchoenle/actions/actions/common/create-patch@7c1147cf1e275c068a8484fa9a2dcb38a8b1f92f # tag=actions-common-create-patch-v2.0.1
+        uses: TimSchoenle/actions/actions/common/create-patch@0701d3b35ad7e10e3159471c82f4743b67fdc01f # tag=actions-common-create-patch-v2.0.2
         with:
           artifact_name: npm-lock
           paths: apps/frontend/package-lock.json
