@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.21.10](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.9...v0.21.10) (2026-11-12)
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#686](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/686)) ([ea1cced](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/ea1cced69a7b904e9643a517f65af8e6dcb3db40))
+* **deps:** lock file maintenance ([#688](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/688)) ([4c2e544](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4c2e544d6b9d18262686c30591a26efa71c193bb))
+* **deps:** update alpine:3.24 docker digest to f59abe6 ([#690](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/690)) ([cda33b3](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cda33b3e25f52aed9056ff5778126ba5ae02836a))
+* **deps:** update lukemathwalker/cargo-chef:0.1.78-rust-1.99-slim docker digest to c7b109b ([#675](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/675)) ([defec37](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/defec37c5bb53a51a5951e31660abe9e400e4c79))
+* **deps:** update rust crate terrace-config to v0.18.1 ([#679](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/679)) ([7893758](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/7893758ccee72dca8c1bfb21784f3495074d31a6))
+* **deps:** update rust:1.99-slim docker digest to f6c4a35 ([#676](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/676)) ([d8f854d](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d8f854d2983914272bbd769f6f977e460c20ea7e))
+* **deps:** update tailwindcss monorepo to v4.3.5 ([#684](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/684)) ([0cdd421](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/0cdd421a8222f4f8d55c4cb5e58d58b97a92b61b))
+
 ## [0.21.9](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.8...v0.21.9) (2026-11-08)
 
 
