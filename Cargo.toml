@@ -95,7 +95,7 @@ anyhow = "1.0.102"
 # The default features are left on: `launch` is what `dioxus::launch` is, and `devtools` is what
 # `dx serve` hot-patches through - both are compiled out of a release build.
 dioxus = { version = "0.7.10", features = ["web", "router"] }
-gloo-net = "0.7.0"
+gloo-net = "0.8.0"
 gloo-console = "0.4.0"
 wasm-bindgen = "0.2.110"
 wasm-bindgen-futures = "0.4.60"
