@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.21.11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.10...v0.21.11) (2026-11-18)
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#704](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/704)) ([4c1a6be](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/4c1a6be8c976c74430348d5b8c9efa289fac5225))
+* **deps:** update docker/dockerfile docker tag to v1.29 ([#697](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/697)) ([5166089](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/51660896acb0213a1412893bf55426a67a9a74b9))
+* **deps:** update rust crate gloo-net to 0.8.0 ([#702](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/702)) ([d4750c1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d4750c1c6858ef11c67685e21f7a35b14b9c3edd))
+* **deps:** update rust crate gloo-timers to v0.4.1 ([#699](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/699)) ([e87ef5a](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/e87ef5ae625676d44e692663b4c7cb00ca283a9b))
+* **deps:** update rust crate sentry to v0.49.6 ([a270371](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a2703713c3c8a5bedd65bbaabc4a279e55dd3d61))
+* **deps:** update rust crate sentry to v0.49.6 - abandoned ([#700](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/700)) ([a270371](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/a2703713c3c8a5bedd65bbaabc4a279e55dd3d61))
+* **deps:** update rust toolchain (minor) ([#703](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/703)) ([cb36904](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/cb369048dc384fa05038411599a16690fda8f4a7))
+
 ## [0.21.10](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.9...v0.21.10) (2026-11-15)
 
 
