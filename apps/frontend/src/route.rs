@@ -1,83 +1,98 @@
 //! The URL of every page, as the one enum the router and every link are built from.
 
-use crate::app::AppShell;
-use crate::pages::home::Home;
-use crate::pages::java::{EditionLanding, GameView, LeaderboardView, PlayerView};
-use crate::pages::not_found::NotFound;
-use dioxus::prelude::*;
-use mp_stats_core::models::PlatformEdition;
 use std::fmt::Display;
 use std::str::FromStr;
 
-/// Every page of the site, and the URL it is reached at.
-///
-/// The segments are the same strings the converted tree uses for its directories, so a route is
-/// most of the path to the files that answer it. Nothing validates them here: a game or a board
-/// that does not exist routes fine and fails at the fetch.
-///
-/// Every variant sits inside [`AppShell`], so the header and footer are mounted once and survive
-/// a navigation rather than being tacked onto each page. The component each variant renders is
-/// named explicitly in its `#[route]` rather than being taken from the variant name, because the
-/// names that read well as a URL are not the ones that read well as a component - and `Game`
-/// would collide with [`mp_stats_core::models::Game`].
-///
-/// `NotFound` is a catch-all rather than a fixed path. It is reached both by a URL that matches
-/// no shape at all and by one whose `:edition` is not an edition, because a dynamic segment that
-/// fails to parse falls through to the next route rather than failing the match outright.
-#[derive(Clone, Debug, PartialEq, Routable)]
-#[rustfmt::skip]
-pub enum Route {
-    #[layout(AppShell)]
-    /// The edition chooser, which is what a visitor lands on.
-    #[route("/", Home)]
-    Home {},
-    /// One edition's game list.
-    #[route("/:edition", EditionLanding)]
-    Landing {
-        /// Which platform's statistics to list.
-        edition: PlatformEdition,
-    },
-    /// One game's categories, with each board's leader beside it.
-    #[route("/:edition/game/:game", GameView)]
-    Game {
-        /// Which platform the game belongs to.
-        edition: PlatformEdition,
-        /// The game's directory in the tree.
-        game: String,
-    },
-    /// One page of one board of one category, at one snapshot.
-    #[route("/:edition/leaderboard/:game/:board/:stat/:page?:snapshot", LeaderboardView)]
-    Leaderboard {
-        /// Which platform the board belongs to.
-        edition: PlatformEdition,
-        /// The game's directory in the tree.
-        game: String,
-        /// The board's directory, such as the all-time board or one of the periodic ones.
-        board: String,
-        /// The category's directory, which may contain spaces.
-        stat: String,
-        /// 1-based page number, which the client turns into the zero-based chunk it fetches.
-        page: u32,
-        /// Which state of the board to read, in the query string rather than the path so that the
-        /// board tabs and the page controls can rewrite their half of the URL without either
-        /// having to know about the other.
-        snapshot: Snapshot,
-    },
-    /// One player's profile.
-    #[route("/:edition/player/:uuid", PlayerView)]
-    Player {
-        /// Which platform the profile belongs to.
-        edition: PlatformEdition,
-        /// The player's UUID, or on Bedrock the name standing in for one.
-        uuid: String,
-    },
-    /// Anything else.
-    #[route("/:..segments", NotFound)]
-    NotFound {
-        /// The path that matched nothing, which the page does not show but the router needs
-        /// somewhere to put.
-        segments: Vec<String>,
-    },
+pub use routes::Route;
+
+/// Holds only the `Route` enum, so that the lint exception below covers the code `Routable`
+/// derives and nothing written by hand.
+// Rust 1.100 reports the derive's error mapping for the catch-all route as an unreachable call:
+// `Vec<String>` parses from segments with `Infallible` as its error, so that arm can never run.
+// The code belongs to `dioxus-router-macro` 0.7 and cannot be changed from here.
+#[allow(
+    unreachable_code,
+    reason = "dioxus-router-macro maps the catch-all's Infallible parse error"
+)]
+mod routes {
+    use super::Snapshot;
+    use crate::app::AppShell;
+    use crate::pages::home::Home;
+    use crate::pages::java::{EditionLanding, GameView, LeaderboardView, PlayerView};
+    use crate::pages::not_found::NotFound;
+    use dioxus::prelude::*;
+    use mp_stats_core::models::PlatformEdition;
+
+    /// Every page of the site, and the URL it is reached at.
+    ///
+    /// The segments are the same strings the converted tree uses for its directories, so a route is
+    /// most of the path to the files that answer it. Nothing validates them here: a game or a board
+    /// that does not exist routes fine and fails at the fetch.
+    ///
+    /// Every variant sits inside [`AppShell`], so the header and footer are mounted once and survive
+    /// a navigation rather than being tacked onto each page. The component each variant renders is
+    /// named explicitly in its `#[route]` rather than being taken from the variant name, because the
+    /// names that read well as a URL are not the ones that read well as a component - and `Game`
+    /// would collide with [`mp_stats_core::models::Game`].
+    ///
+    /// `NotFound` is a catch-all rather than a fixed path. It is reached both by a URL that matches
+    /// no shape at all and by one whose `:edition` is not an edition, because a dynamic segment that
+    /// fails to parse falls through to the next route rather than failing the match outright.
+    #[derive(Clone, Debug, PartialEq, Routable)]
+    #[rustfmt::skip]
+    pub enum Route {
+        #[layout(AppShell)]
+        /// The edition chooser, which is what a visitor lands on.
+        #[route("/", Home)]
+        Home {},
+        /// One edition's game list.
+        #[route("/:edition", EditionLanding)]
+        Landing {
+            /// Which platform's statistics to list.
+            edition: PlatformEdition,
+        },
+        /// One game's categories, with each board's leader beside it.
+        #[route("/:edition/game/:game", GameView)]
+        Game {
+            /// Which platform the game belongs to.
+            edition: PlatformEdition,
+            /// The game's directory in the tree.
+            game: String,
+        },
+        /// One page of one board of one category, at one snapshot.
+        #[route("/:edition/leaderboard/:game/:board/:stat/:page?:snapshot", LeaderboardView)]
+        Leaderboard {
+            /// Which platform the board belongs to.
+            edition: PlatformEdition,
+            /// The game's directory in the tree.
+            game: String,
+            /// The board's directory, such as the all-time board or one of the periodic ones.
+            board: String,
+            /// The category's directory, which may contain spaces.
+            stat: String,
+            /// 1-based page number, which the client turns into the zero-based chunk it fetches.
+            page: u32,
+            /// Which state of the board to read, in the query string rather than the path so that the
+            /// board tabs and the page controls can rewrite their half of the URL without either
+            /// having to know about the other.
+            snapshot: Snapshot,
+        },
+        /// One player's profile.
+        #[route("/:edition/player/:uuid", PlayerView)]
+        Player {
+            /// Which platform the profile belongs to.
+            edition: PlatformEdition,
+            /// The player's UUID, or on Bedrock the name standing in for one.
+            uuid: String,
+        },
+        /// Anything else.
+        #[route("/:..segments", NotFound)]
+        NotFound {
+            /// The path that matched nothing, which the page does not show but the router needs
+            /// somewhere to put.
+            segments: Vec<String>,
+        },
+    }
 }
 
 /// Which state of a leaderboard is being read: the current standings, or one archived dump.
@@ -140,6 +155,7 @@ impl FromStr for Snapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mp_stats_core::models::PlatformEdition;
 
     /// Parse a URL the way the router does when the browser hands it one.
     fn parse(url: &str) -> Route {
