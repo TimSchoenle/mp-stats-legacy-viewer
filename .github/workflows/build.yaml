@@ -91,7 +91,7 @@ jobs:
       # no image on this runner - which is what makes this the cheap half, running on every pull
       # request without waiting for a build.
       - name: Verify the configuration contract
-        uses: TimSchoenle/actions/actions/rust/config-contract@0b3967d3d992d12aa88da1f8facf412b162d5ab2 # tag=actions-rust-config-contract-v2.0.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-rust-config-contract-v2.0.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -111,7 +111,7 @@ jobs:
           egress-policy: audit
 
       - name: Run Test
-        uses: TimSchoenle/actions/actions/rust/test@49acdef9979f343817ec2a85ddd25e5f34befc8b # tag=actions-rust-test-v2.0.0
+        uses: TimSchoenle/actions/actions/rust/test@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-rust-test-v2.0.1
 
   # Kept apart from `test`, so a Codecov outage fails this job alone. The upload authenticates
   # with this job's OIDC token, so the job needs no environment and no secret.
@@ -132,7 +132,7 @@ jobs:
       # The arguments `test` runs with, which are the rust/test action's defaults. No crate embeds
       # the built frontend, so the tests need no Node step first.
       - name: Run Coverage
-        uses: TimSchoenle/actions/actions/rust/coverage-codecov@49acdef9979f343817ec2a85ddd25e5f34befc8b # tag=actions-rust-coverage-codecov-v2.1.0
+        uses: TimSchoenle/actions/actions/rust/coverage-codecov@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-rust-coverage-codecov-v2.1.1
         with:
           test_arguments: '--all-features --workspace'
           flags: rust
@@ -154,7 +154,7 @@ jobs:
       # and none of the members. `-D warnings` is what makes a finding fail the required check
       # rather than only annotate the diff. Keep in step with `just lint`.
       - name: Run Clippy
-        uses: TimSchoenle/actions/actions/rust/clippy@49acdef9979f343817ec2a85ddd25e5f34befc8b # tag=actions-rust-clippy-v2.0.0
+        uses: TimSchoenle/actions/actions/rust/clippy@ded012bb09f11e42381c9b1b7c3ff0dbc09156bf # tag=actions-rust-clippy-v2.0.1
         with:
           clippy_arguments: '--workspace --all-features --all-targets -- -D warnings'
 
@@ -363,7 +363,7 @@ jobs:
       # `dockerfile` and `contract` are emptied: the `Config Contract` job above
       # owns both, and repeating them here would report the same drift twice.
       - name: Verify the linux/amd64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@0b3967d3d992d12aa88da1f8facf412b162d5ab2 # tag=actions-rust-config-contract-v2.0.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-rust-config-contract-v2.0.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -372,7 +372,7 @@ jobs:
           image: image:test
 
       - name: Verify the linux/arm64 image carries the contract labels
-        uses: TimSchoenle/actions/actions/rust/config-contract@0b3967d3d992d12aa88da1f8facf412b162d5ab2 # tag=actions-rust-config-contract-v2.0.6
+        uses: TimSchoenle/actions/actions/rust/config-contract@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-rust-config-contract-v2.0.7
         with:
           package: mp-stats-config
           features: config-schema
@@ -463,7 +463,7 @@ jobs:
       # than a second one posted beside it. The 150 MiB warning and the `CRITICAL,HIGH` filter are
       # the action's defaults.
       - name: Check image size and vulnerabilities
-        uses: TimSchoenle/actions/actions/docker/image-check@0b3967d3d992d12aa88da1f8facf412b162d5ab2 # tag=actions-docker-image-check-v1.1.17
+        uses: TimSchoenle/actions/actions/docker/image-check@ded012bb09f11e42381c9b1b7c3ff0dbc09156bf # tag=actions-docker-image-check-v1.1.19
         with:
           image: image:test
 
