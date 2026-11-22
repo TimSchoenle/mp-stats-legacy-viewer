@@ -179,6 +179,16 @@ jobs:
             | sudo tar -xz -C /usr/local/bin oras
           oras version
 
+      # For `terrace-contract image attach` below. It shells out to the `oras`
+      # installed above, hence `oras: 'false'`. The action also installs its own
+      # cosign, at the same release the step further up pins.
+      - name: Install terrace-contract
+        uses: TimSchoenle/actions/actions/terrace/setup@54a4dc05fd351a9bf9e9638fa3ebbc572b5f2d7f # tag=actions-terrace-setup-v4.0.3
+        with:
+          # renovate: datasource=github-releases depName=TimSchoenle/terrace-config extractVersion=^terrace-contract-v(?<version>.+)$
+          version: '0.14.2'
+          oras: 'false'
+
       # The checkpoint the whole scheme rests on, and the reason the `LABEL` block
       # in the Dockerfile is allowed to be hand-written. It reads the pushed index
       # the way the chart repository will: every platform manifest under it, each
@@ -223,56 +233,34 @@ jobs:
       # afterwards - because the attachment *is* the tie and there is no digest
       # field to fill in.
       #
-      # Skipped when one is already there. A re-run of this workflow would
-      # otherwise leave two referrers of the same artifact type on one digest,
-      # which the chart repository refuses rather than picks between.
-      - name: Attach the contract to the image digest
-        env:
-          IMAGE: docker.io/${{ env.DOCKER_REPO }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-          ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
-        run: |
-          set -euo pipefail
-          existing="$(bash .github/scripts/retry-registry-read.sh \
-            oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
-            "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // []) | length')"
-          if [ "${existing}" -gt 0 ]; then
-            echo "a contract is already attached to ${IMAGE}@${DIGEST}; leaving it alone"
-            exit 0
-          fi
-          oras attach --artifact-type "${ARTIFACT_TYPE}" "${IMAGE}@${DIGEST}" \
-            contract-out/out/contract.json:application/json
-
+      # Idempotent. `terrace-contract image attach` looks first: a referrer of this
+      # type with byte-identical content is reused and its digest printed, with
+      # nothing attached; a referrer with different content fails the step, since
+      # one digest must never carry two contracts; otherwise it attaches and prints
+      # the new referrer's digest. A re-run - the build is reproducible, so it
+      # pushes the same digest - therefore never leaves a second referrer of the
+      # same artifact type, which the chart repository refuses rather than picks
+      # between.
+      #
       # Signed from `release-please.yaml` on `refs/heads/main`, which is the
       # workflow identity the chart repository's `contract_signer` regexp admits.
       # Moving this step to another workflow or another ref breaks the vendoring
       # step over there with a signature error nobody would connect to it.
-      - name: Sign the attached contract
+      #
+      # It signs exactly the digest the attach printed, so there is no
+      # `oras discover` poll: Docker Hub's referrers index is eventually
+      # consistent, and reading it back right after attaching could return an
+      # empty index or only an older referrer, signing the wrong one.
+      - name: Attach and sign the contract
         env:
           IMAGE: docker.io/${{ env.DOCKER_REPO }}
           DIGEST: ${{ steps.build.outputs.digest }}
-          ARTIFACT_TYPE: application/vnd.terrace.config-schema.v1+json
         run: |
           set -euo pipefail
-          # Polled rather than read once. Docker Hub's referrers index is eventually consistent:
-          # the attach above returns as soon as the referrer manifest is stored, but
-          # `/v2/.../referrers/<digest>` keeps answering with an empty index for seconds
-          # afterwards. Reading it a single time is what failed v0.17.0 — the contract was
-          # attached, and this step could not see it 200ms later.
-          referrer=""
-          for attempt in 1 2 3 4 5 6; do
-            if [ "${attempt}" -gt 1 ]; then
-              sleep $(( (attempt - 1) * 5 ))
-            fi
-            referrer="$(bash .github/scripts/retry-registry-read.sh \
-              oras discover --format json --artifact-type "${ARTIFACT_TYPE}" \
-              "${IMAGE}@${DIGEST}" | jq -r '((.referrers // .manifests) // [])[0].digest // ""')"
-            if [ -n "${referrer}" ]; then
-              break
-            fi
-          done
-          if [ -z "${referrer}" ]; then
-            echo "::error::nothing of type ${ARTIFACT_TYPE} is attached to ${IMAGE}@${DIGEST} 75s after attaching it, so there is no contract to sign" >&2
+          referrer="$(terrace-contract image attach contract-out/out/contract.json \
+            --image "${IMAGE}@${DIGEST}")"
+          if ! [[ "${referrer}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::terrace-contract image attach printed '${referrer}', not a referrer digest" >&2
             exit 1
           fi
           cosign sign --yes "${IMAGE}@${referrer}"
