@@ -7,7 +7,7 @@
   },
   "app": {
     "name": "mp-stats-legacy-viewer",
-    "version": "v0.21.10",
+    "version": "v0.21.11",
     "source": "https://github.com/TimSchoenle/mp-stats-legacy-viewer"
   },
   "schema": {
