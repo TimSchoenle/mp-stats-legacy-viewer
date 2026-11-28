@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.21.12](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.11...v0.21.12) (2026-11-28)
+
+
+### Dependencies
+
+* **deps:** update rust crate anyhow to v1.0.105 ([#716](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/716)) ([2a6cb52](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/2a6cb52cc9a8ab14094bf27a498df15188d2ddcb))
+* **deps:** update rust crate terrace-config to v0.18.3 ([#714](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/714)) ([293a711](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/293a711b624b32855b24406d253299a8096d3019))
+* **deps:** update rust:1.100-slim docker digest to 3b199fd ([#712](https://github.com/TimSchoenle/mp-stats-legacy-viewer/issues/712)) ([d3c8fc1](https://github.com/TimSchoenle/mp-stats-legacy-viewer/commit/d3c8fc1d763b92aff612154bb27dfbd7f55ff04d))
+
 ## [0.21.11](https://github.com/TimSchoenle/mp-stats-legacy-viewer/compare/v0.21.10...v0.21.11) (2026-11-23)
 
 
