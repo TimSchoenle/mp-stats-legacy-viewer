@@ -1,6 +1,6 @@
 [package]
 name = "mp-stats-common"
-version = "0.21.11"
+version = "0.21.12"
 edition = "2024"
 
 [dependencies]
